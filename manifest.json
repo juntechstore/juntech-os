@@ -1,0 +1,14 @@
+{
+  "name": "JuntechOS",
+  "short_name": "JuntechOS",
+  "description": "Sistema de gestión JuntechStore",
+  "start_url": "/juntech-os/",
+  "display": "standalone",
+  "background_color": "#080c10",
+  "theme_color": "#080c10",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
