@@ -385,7 +385,22 @@ function iniciarAuth(){
     console.error(e);
   }
 }
-async function get(range){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`;const r=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});if(!r.ok)throw new Error('API '+r.status);return(await r.json()).values||[];}
+async function get(range){
+  const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE';
+  const r=await fetch(url,{
+    method:'GET',
+    headers:{
+      'Authorization':'Bearer '+accessToken,
+      'Content-Type':'application/json'
+    }
+  });
+  if(!r.ok){
+    const body=await r.text();
+    throw new Error('API '+r.status+': '+body.substring(0,200));
+  }
+  const data=await r.json();
+  return data.values||[];
+}
 async function append(range,values){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});if(!r.ok)throw new Error('Append '+r.status);return r.json();}
 function num(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return v;let s=v.toString().replace(/[$\s]/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return parseFloat(s)||0;}
 function str(v){return v?v.toString().trim():'';}
@@ -393,6 +408,17 @@ function addSaldo(s,m,monto,sig){if(m.includes('MERCADO'))s['MERCADO PAGO']+=mon
 
 async function cargarTodo(){
   const btn=$('sync-btn');btn.classList.add('loading');btn.textContent='Sync';
+  // Test rapido del token antes de empezar
+  try{
+    const testUrl='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=spreadsheetId';
+    const testR=await fetch(testUrl,{headers:{Authorization:'Bearer '+accessToken}});
+    if(!testR.ok){
+      const tb=await testR.text();
+      toast('Token error '+testR.status+': '+tb.substring(0,100),'err');
+      btn.classList.remove('loading');btn.textContent='Sync';
+      return;
+    }
+  }catch(e){toast('Test error: '+e.message,'err');btn.classList.remove('loading');btn.textContent='Sync';return;}
   try{
     // 1. PRODUCTOS -> nombres, categorias, precios sugeridos
     const pRows=await get('Productos!A2:F');
