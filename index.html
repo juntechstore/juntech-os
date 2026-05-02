@@ -353,9 +353,47 @@ const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-AR');
 function toast(msg,tipo='ok'){const t=$('toast');t.textContent=msg;t.className='toast on '+tipo;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
 function goTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('on'));$('tab-'+id).classList.add('on');el.classList.add('on');if(id==='items')renderItems('');}
 function setBtn(id,loading,label){const b=$(id);if(!b)return;b.disabled=loading;b.textContent=loading?'... Procesando...':label;}
+// ── AUTO LOGIN ──────────────────────────────
+function guardarToken(token, expiry){
+  try{
+    localStorage.setItem('jt_token', token);
+    localStorage.setItem('jt_expiry', expiry);
+  }catch(e){}
+}
+
+function tokenGuardado(){
+  try{
+    const t = localStorage.getItem('jt_token');
+    const e = parseInt(localStorage.getItem('jt_expiry')||'0');
+    if(t && e && Date.now() < e - 60000) return t; // valido si le quedan mas de 1 min
+  }catch(e){}
+  return null;
+}
+
+function cerrarSesion(){
+  try{ localStorage.removeItem('jt_token'); localStorage.removeItem('jt_expiry'); }catch(e){}
+  location.reload();
+}
+
+async function entrarConToken(token){
+  accessToken = token;
+  $('login').style.display='none';
+  $('app').classList.add('on');
+  $('main-nav').style.display='flex';
+  $('dot-on').style.display='block';
+  await cargarTodo();
+}
+
 function iniciarAuth(){
+  // Intentar token guardado primero
+  const tokenExistente = tokenGuardado();
+  if(tokenExistente){
+    $('login-msg').textContent='Reconectando...';
+    entrarConToken(tokenExistente);
+    return;
+  }
+
   $('login-msg').textContent='Conectando...';
-  // Verificar que el script de Google cargo
   if(typeof google==='undefined'||!google.accounts){
     $('login-msg').textContent='Cargando Google... espera un segundo.';
     setTimeout(iniciarAuth, 1500);
@@ -368,23 +406,28 @@ function iniciarAuth(){
       callback:async r=>{
         if(r.error){
           $('login-msg').textContent='Error: '+r.error;
-          $('login-btn').textContent='Reintentar';
           return;
         }
         accessToken=r.access_token;
-        $('login').style.display='none';
-        $('app').classList.add('on');
-        $('main-nav').style.display='flex';
-        $('dot-on').style.display='block';
-        await cargarTodo();
+        // Guardar token por 55 minutos (dura 1h pero renovamos antes)
+        guardarToken(r.access_token, Date.now() + 55*60*1000);
+        await entrarConToken(r.access_token);
       }
     });
-    tc.requestAccessToken({prompt:'consent'});
+    tc.requestAccessToken({prompt:''});
   }catch(e){
-    $('login-msg').textContent='Error: '+e.message+' - Recarga la pagina.';
+    $('login-msg').textContent='Error: '+e.message;
     console.error(e);
   }
 }
+
+// Intentar auto-login al cargar la pagina
+window.addEventListener('load', ()=>{
+  const t = tokenGuardado();
+  if(t){
+    setTimeout(()=>{ iniciarAuth(); }, 800);
+  }
+});
 async function get(range){
   const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE';
   const r=await fetch(url,{
