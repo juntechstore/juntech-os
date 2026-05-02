@@ -10,6 +10,7 @@
 <title>JuntechOS</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -342,7 +343,6 @@ select.f-in option{background:var(--s2)}
 
 <div class="toast" id="toast"></div>
 
-<script src="https://accounts.google.com/gsi/client"></script>
 <script>
 const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercontent.com';
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
@@ -353,7 +353,38 @@ const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-AR');
 function toast(msg,tipo='ok'){const t=$('toast');t.textContent=msg;t.className='toast on '+tipo;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
 function goTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('on'));$('tab-'+id).classList.add('on');el.classList.add('on');if(id==='items')renderItems('');}
 function setBtn(id,loading,label){const b=$(id);if(!b)return;b.disabled=loading;b.textContent=loading?'⏳ Procesando...':label;}
-function iniciarAuth(){$('login-msg').textContent='Conectando...';const tc=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:async r=>{if(r.error){$('login-msg').textContent='Error: '+r.error;return;}accessToken=r.access_token;$('login').style.display='none';$('app').classList.add('on');$('main-nav').style.display='flex';$('dot-on').style.display='block';await cargarTodo();}});tc.requestAccessToken({prompt:'consent'});}
+function iniciarAuth(){
+  $('login-msg').textContent='Conectando...';
+  // Verificar que el script de Google cargó
+  if(typeof google==='undefined'||!google.accounts){
+    $('login-msg').textContent='Cargando Google... esperá un segundo.';
+    setTimeout(iniciarAuth, 1500);
+    return;
+  }
+  try{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID,
+      scope:SCOPES,
+      callback:async r=>{
+        if(r.error){
+          $('login-msg').textContent='Error: '+r.error;
+          $('login-btn').textContent='Reintentar';
+          return;
+        }
+        accessToken=r.access_token;
+        $('login').style.display='none';
+        $('app').classList.add('on');
+        $('main-nav').style.display='flex';
+        $('dot-on').style.display='block';
+        await cargarTodo();
+      }
+    });
+    tc.requestAccessToken({prompt:''});
+  }catch(e){
+    $('login-msg').textContent='Error: '+e.message+' — Recargá la página.';
+    console.error(e);
+  }
+}
 async function get(range){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`;const r=await fetch(url,{headers:{Authorization:'Bearer '+accessToken}});if(!r.ok)throw new Error('API '+r.status);return(await r.json()).values||[];}
 async function append(range,values){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});if(!r.ok)throw new Error('Append '+r.status);return r.json();}
 function num(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return v;let s=v.toString().replace(/[$\s]/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return parseFloat(s)||0;}
