@@ -346,7 +346,7 @@ select.f-in option{background:var(--s2)}
 <script>
 const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercontent.com';
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
-const SCOPES='https://www.googleapis.com/auth/spreadsheets';
+const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 let accessToken=null,DB={prods:[],todo:[],finanzas:{}},cart=[],entradaCart=[],currentProd=null;
 const $=id=>document.getElementById(id);
 const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-AR');
@@ -379,7 +379,7 @@ function iniciarAuth(){
         await cargarTodo();
       }
     });
-    tc.requestAccessToken({prompt:''});
+    tc.requestAccessToken({prompt:'consent'});
   }catch(e){
     $('login-msg').textContent='Error: '+e.message+' - Recarga la pagina.';
     console.error(e);
