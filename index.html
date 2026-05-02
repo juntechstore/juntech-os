@@ -363,7 +363,7 @@ function guardarToken(token, expiry){
 
 function tokenGuardado(){
   try{
-    const t = localStorage.getItem('jt_token');
+      const t = localStorage.getItem('jt_token');
     const e = parseInt(localStorage.getItem('jt_expiry')||'0');
     if(t && e && Date.now() < e - 60000) return t; // valido si le quedan mas de 1 min
   }catch(e){}
@@ -508,7 +508,7 @@ todasLasSalidas.forEach(r => {
     let totalU=0,valC=0,alertas=0;
     Object.keys(pMap).forEach(nombre=>{
       const info=pMap[nombre];
-      const stock=(stockE[nombre]||0)-(stockS[nombre]||0);
+const stock = (stockE[nombre] || 0) - (stockS[nombre] || 0) + (stockA[nombre] || 0);
       const costo=costoR[nombre]||info.costo||0;
       const item={nombre,sku:info.sku,cat:info.cat,costo,precio:info.precio,stock};
       DB.todo.push(item);
