@@ -435,9 +435,7 @@ async function cargarTodo(){
     const stockS={};let ganV=0;
     sRows.forEach(r=>{if(!r[0])return;const n=str(r[0]),c=num(r[2]),pt=num(r[4]),ct=num(r[7]);stockS[n]=(stockS[n]||0)+c;if(pt>0)ganV+=(pt-ct);});
 
-    // 4. SALIDAS HISTORIAL -> ganancia historica (CLAVE!)
-    const hRows=await get('SalidasHistorial!A2:H');
-    hRows.forEach(r=>{if(!r[0])return;const pt=num(r[4]),ct=num(r[7]);if(pt>0)ganV+=(pt-ct);});
+    // SalidasHistorial NO se suma - es archivo historico, el Apps Script original tampoco la lee
 
     // 5. INVENTARIO
     DB.todo=[];DB.prods=[];
