@@ -489,6 +489,20 @@ todasLasSalidas.forEach(r => {
   if(pt > 0) ganV += (pt-ct);
 });
 
+    // 4. AJUSTES -> sumar o restar stock manualmente (¡Lo que se olvidó Claude!)
+    let aRows = [];
+    try {
+      aRows = await get('Ajustes!A2:D'); 
+    } catch(e) {}
+    
+    const stockA = {};
+    aRows.forEach(r => {
+      if(!r[0]) return;
+      const n = str(r[0]);
+      // Asumimos que el nombre está en la columna A y la cantidad en la C (índice 2) igual que en Entradas
+      const c = num(r[2]); 
+      stockA[n] = (stockA[n] || 0) + c;
+    });
     // 5. INVENTARIO
     DB.todo=[];DB.prods=[];
     let totalU=0,valC=0,alertas=0;
