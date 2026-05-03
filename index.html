@@ -473,23 +473,32 @@ async function cargarTodo(){
     const stockE={},costoR={};
     eRows.forEach(r=>{if(!r[0])return;const n=str(r[0]),c=num(r[2]),co=num(r[3]);stockE[n]=(stockE[n]||0)+c;if(co>0)costoR[n]=co;});
 
-   const sRows = await get('Salidas!A2:H');
-let sRowsHist = [];
-try { 
-  sRowsHist = await get('SalidasHistorial!A2:H'); 
-} catch(e) {} 
+    // 3. SALIDAS -> Stock histórico y Ganancia actual
+    const sRows = await get('Salidas!A2:H');
+    let sRowsHist = [];
+    try { 
+      sRowsHist = await get('SalidasHistorial!A2:H'); 
+    } catch(e) {} 
 
-const todasLasSalidas = sRows.concat(sRowsHist);
-const stockS = {}; let ganV = 0;
+    const stockS = {}; 
+    let ganV = 0;
 
-todasLasSalidas.forEach(r => {
-  if(!r[0]) return;
-  const n = str(r[0]), c = num(r[2]), pt = num(r[4]), ct = num(r[7]);
-  stockS[n] = (stockS[n]||0) + c;
-  if(pt > 0) ganV += (pt-ct);
-});
+    // Solo suma ganancia de ventas nuevas (La plata real)
+    sRows.forEach(r => {
+      if(!r[0]) return;
+      const pt = num(r[4]), ct = num(r[7]);
+      if(pt > 0) ganV += (pt-ct);
+    });
 
-    // 4. AJUSTES -> sumar o restar stock manualmente (¡Lo que se olvidó Claude!)
+    // Descuenta stock de TODAS las salidas (actuales + historial)
+    const todasLasSalidas = sRows.concat(sRowsHist);
+    todasLasSalidas.forEach(r => {
+      if(!r[0]) return;
+      const n = str(r[0]), c = num(r[2]);
+      stockS[n] = (stockS[n]||0) + c;
+    });
+
+    // 4. AJUSTES -> sumar o restar stock manualmente
     let aRows = [];
     try {
       aRows = await get('Ajustes!A2:D'); 
@@ -503,21 +512,25 @@ todasLasSalidas.forEach(r => {
       const c = num(r[2]); 
       stockA[n] = (stockA[n] || 0) + c;
     });
+
     // 5. INVENTARIO
     DB.todo=[];DB.prods=[];
     let totalU=0,valC=0,alertas=0;
     Object.keys(pMap).forEach(nombre=>{
       const info=pMap[nombre];
-const stock = (stockE[nombre] || 0) - (stockS[nombre] || 0) + (stockA[nombre] || 0);
+      
+      // Ecuacion final: Entradas - Salidas + Ajustes
+      const stock = (stockE[nombre] || 0) - (stockS[nombre] || 0) + (stockA[nombre] || 0);
       const costo=costoR[nombre]||info.costo||0;
+      
       const item={nombre,sku:info.sku,cat:info.cat,costo,precio:info.precio,stock};
       DB.todo.push(item);
       if(stock>0){DB.prods.push(item);totalU+=stock;valC+=stock*costo;}
       if(stock<=3&&stock>=0)alertas++;
     });
+    
     DB.todo.sort((a,b)=>a.nombre.localeCompare(b.nombre));
     DB.prods.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-
     // 6. CAJA
     const cRows=await get('Caja!A2:G');
     const saldos={EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
