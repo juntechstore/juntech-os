@@ -595,22 +595,55 @@ async function procesarVenta(){
   const cli=$('v-cli').value||'Cliente',metodo=$('v-metodo').value,desc=parseFloat($('v-desc-m').value)||0,descMot=$('v-desc-mot').value;
   let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);const total=sub-desc;
   setBtn('btn-vender',true,'');
+  
   try{
     const fecha=new Date();
     const id='#'+fecha.getDate().toString().padStart(2,'0')+(fecha.getMonth()+1).toString().padStart(2,'0')+fecha.getHours().toString().padStart(2,'0')+fecha.getMinutes().toString().padStart(2,'0');
     const fechaStr=fecha.toLocaleDateString('es-AR')+' '+fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    
+    // 1. GUARDAR EN SHEETS (Salidas y Caja)
     for(let i=0;i<cart.length;i++){
       const item=cart[i];const subNeto=(item.cant*item.precio)-(i===0?desc:0);
       await append('Salidas!A:N',[[item.nombre,item.sku||'-',item.cant,item.precio,subNeto,fechaStr,metodo,item.costo*item.cant,'','',cli,i===0?desc:0,i===0?descMot:'-',item.garantia||'-']]);
     }
     await append('Caja!A:G',[[id,fechaStr,'INGRESO','VENTA','Ticket '+id+' - '+cli,total,metodo]]);
-    await append('Comprobantes!A:E',[[id,fechaStr,cli,total,metodo]]);
+    
+    // ==========================================
+    // 2. CONEXIÓN AL MOTOR DE PDFs (APPS SCRIPT)
+    // ==========================================
+    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx6hfkfiP9l82dUnwYQZEuiuPV39NQ8h6835UOCH7Eih7JDEsH6vkkD5VfcEv0PnCcTZA/exec';
+    let pdfUrl = '';
+    
+    try {
+      toast('Generando PDF en la nube...', 'ok');
+      const req = await fetch(URL_SCRIPT, {
+        method: 'POST',
+        body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, items: cart }),
+        headers: {'Content-Type': 'text/plain;charset=utf-8'}
+      });
+      const res = await req.json();
+      if(res.success) pdfUrl = res.url;
+    } catch(err) {
+      console.error('Error al generar PDF:', err);
+    }
+
+    // 3. INTERFAZ Y MENSAJE DE WHATSAPP
     $('modal-ticket').textContent='Ticket '+id+' - '+cli+' - '+fmt(total);
-    $('modal-wsp').href='https://wa.me/?text='+encodeURIComponent('Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'. Cualquier consulta estamos aca!');
+    
+    let msgWsp = 'Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'. ';
+    if(pdfUrl) {
+        msgWsp += '\n\n📄 Podés ver y descargar tu recibo acá:\n' + pdfUrl + '\n\n';
+    }
+    msgWsp += '¡Cualquier consulta estamos acá!';
+    
+    $('modal-wsp').href='https://wa.me/?text='+encodeURIComponent(msgWsp);
     $('modal-venta').classList.add('on');
+    
     cart=[];renderCart();$('v-cli').value='';$('v-desc-m').value='';$('v-desc-p').value='';$('v-desc-mot').value='';
     await cargarTodo();
-  }catch(e){toast('Error: '+e.message,'err');}
+  }catch(e){
+    toast('Error: '+e.message,'err');
+  }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
 
