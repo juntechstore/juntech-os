@@ -174,7 +174,6 @@ select.f-in option{background:var(--s2)}
   </div>
 
   <div class="scroll">
-    <!-- HOME -->
     <div class="tab on" id="tab-home">
       <div class="kpi-grid">
         <div class="kpi blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
@@ -202,7 +201,6 @@ select.f-in option{background:var(--s2)}
       </div>
     </div>
 
-    <!-- VENDER -->
     <div class="tab" id="tab-sell">
       <div class="card">
         <div class="card-title">Nueva Venta</div>
@@ -242,7 +240,6 @@ select.f-in option{background:var(--s2)}
       </div>
     </div>
 
-    <!-- CAJA -->
     <div class="tab" id="tab-caja">
       <div class="card">
         <div class="card-title">Registrar Movimiento</div>
@@ -281,7 +278,6 @@ select.f-in option{background:var(--s2)}
       </div>
     </div>
 
-    <!-- STOCK -->
     <div class="tab" id="tab-stock">
       <div class="card">
         <div class="card-title">Entrada de Stock</div>
@@ -314,7 +310,6 @@ select.f-in option{background:var(--s2)}
       </div>
     </div>
 
-    <!-- ITEMS -->
     <div class="tab" id="tab-items">
       <div class="search-wrap"><span class="search-ico">🔍</span><input class="f-in ico" placeholder="Buscar producto..." oninput="filterItems(this.value)"></div>
       <div id="items-list"><div class="loader"><div class="l-dot"></div><div class="l-dot"></div><div class="l-dot"></div></div></div>
@@ -353,6 +348,7 @@ const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-AR');
 function toast(msg,tipo='ok'){const t=$('toast');t.textContent=msg;t.className='toast on '+tipo;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
 function goTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('on'));$('tab-'+id).classList.add('on');el.classList.add('on');if(id==='items')renderItems('');}
 function setBtn(id,loading,label){const b=$(id);if(!b)return;b.disabled=loading;b.textContent=loading?'Procesando...':label;}
+
 // ── AUTO LOGIN ──────────────────────────────
 function guardarToken(token, expiry){
   try{
@@ -365,7 +361,7 @@ function tokenGuardado(){
   try{
       const t = localStorage.getItem('jt_token');
     const e = parseInt(localStorage.getItem('jt_expiry')||'0');
-    if(t && e && Date.now() < e - 60000) return t; // valido si le quedan mas de 1 min
+    if(t && e && Date.now() < e - 60000) return t;
   }catch(e){}
   return null;
 }
@@ -385,14 +381,12 @@ async function entrarConToken(token){
 }
 
 function iniciarAuth(){
-  // Intentar token guardado primero
   const tokenExistente = tokenGuardado();
   if(tokenExistente){
     $('login-msg').textContent='Reconectando...';
     entrarConToken(tokenExistente);
     return;
   }
-
   $('login-msg').textContent='Conectando...';
   if(typeof google==='undefined'||!google.accounts){
     $('login-msg').textContent='Cargando Google... espera un segundo.';
@@ -409,7 +403,6 @@ function iniciarAuth(){
           return;
         }
         accessToken=r.access_token;
-        // Guardar token por 55 minutos (dura 1h pero renovamos antes)
         guardarToken(r.access_token, Date.now() + 55*60*1000);
         await entrarConToken(r.access_token);
       }
@@ -421,13 +414,13 @@ function iniciarAuth(){
   }
 }
 
-// Intentar auto-login al cargar la pagina
 window.addEventListener('load', ()=>{
   const t = tokenGuardado();
   if(t){
     setTimeout(()=>{ iniciarAuth(); }, 800);
   }
 });
+
 async function get(range){
   const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE';
   const r=await fetch(url,{
@@ -444,6 +437,7 @@ async function get(range){
   const data=await r.json();
   return data.values||[];
 }
+
 async function append(range,values){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values})});if(!r.ok)throw new Error('Append '+r.status);return r.json();}
 function num(v){if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return v;let s=v.toString().replace(/[$\s]/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return parseFloat(s)||0;}
 function str(v){return v?v.toString().trim():'';}
@@ -451,7 +445,6 @@ function addSaldo(s,m,monto,sig){if(m.includes('MERCADO'))s['MERCADO PAGO']+=mon
 
 async function cargarTodo(){
   const btn=$('sync-btn');btn.classList.add('loading');btn.textContent='Sync';
-  // Test rapido del token antes de empezar
   try{
     const testUrl='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=spreadsheetId';
     const testR=await fetch(testUrl,{headers:{Authorization:'Bearer '+accessToken}});
@@ -463,17 +456,14 @@ async function cargarTodo(){
     }
   }catch(e){toast('Test error: '+e.message,'err');btn.classList.remove('loading');btn.textContent='Sync';return;}
   try{
-    // 1. PRODUCTOS -> nombres, categorias, precios sugeridos
     const pRows=await get('Productos!A2:F');
     const pMap={};
     pRows.forEach(r=>{if(!r[0]||!r[1])return;pMap[str(r[1])]={sku:str(r[0]),cat:str(r[3]),costo:num(r[4]),precio:num(r[5])};});
 
-    // 2. ENTRADAS -> stock sumado + costo real
     const eRows=await get('Entradas!A2:D');
     const stockE={},costoR={};
     eRows.forEach(r=>{if(!r[0])return;const n=str(r[0]),c=num(r[2]),co=num(r[3]);stockE[n]=(stockE[n]||0)+c;if(co>0)costoR[n]=co;});
 
-    // 3. SALIDAS -> Stock histórico y Ganancia actual
     const sRows = await get('Salidas!A2:H');
     let sRowsHist = [];
     try { 
@@ -483,14 +473,12 @@ async function cargarTodo(){
     const stockS = {}; 
     let ganV = 0;
 
-    // Solo suma ganancia de ventas nuevas (La plata real)
     sRows.forEach(r => {
       if(!r[0]) return;
       const pt = num(r[4]), ct = num(r[7]);
       if(pt > 0) ganV += (pt-ct);
     });
 
-    // Descuenta stock de TODAS las salidas (actuales + historial)
     const todasLasSalidas = sRows.concat(sRowsHist);
     todasLasSalidas.forEach(r => {
       if(!r[0]) return;
@@ -498,9 +486,9 @@ async function cargarTodo(){
       stockS[n] = (stockS[n]||0) + c;
     });
 
-    // 4. AJUSTES -> sumar o restar stock manualmente
     let aRows = [];
     try {
+      // CORRECCIÓN APLICADA: AJUSTES EN MAYÚSCULA
       aRows = await get('AJUSTES!A2:D'); 
     } catch(e) {}
     
@@ -508,18 +496,14 @@ async function cargarTodo(){
     aRows.forEach(r => {
       if(!r[0]) return;
       const n = str(r[0]);
-      // Asumimos que el nombre está en la columna A y la cantidad en la C (índice 2) igual que en Entradas
       const c = num(r[2]); 
       stockA[n] = (stockA[n] || 0) + c;
     });
 
-    // 5. INVENTARIO
     DB.todo=[];DB.prods=[];
     let totalU=0,valC=0,alertas=0;
     Object.keys(pMap).forEach(nombre=>{
       const info=pMap[nombre];
-      
-      // Ecuacion final: Entradas - Salidas + Ajustes
       const stock = (stockE[nombre] || 0) - (stockS[nombre] || 0) + (stockA[nombre] || 0);
       const costo=costoR[nombre]||info.costo||0;
       
@@ -531,7 +515,7 @@ async function cargarTodo(){
     
     DB.todo.sort((a,b)=>a.nombre.localeCompare(b.nombre));
     DB.prods.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-    // 6. CAJA
+    
     const cRows=await get('Caja!A2:G');
     const saldos={EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
     let totalCaja=0,gastosJ=0,retirosJ=0,guardados=0,caps=0,ingP=0,gastP=0,fondo=0;
@@ -601,24 +585,23 @@ async function procesarVenta(){
     const id='#'+fecha.getDate().toString().padStart(2,'0')+(fecha.getMonth()+1).toString().padStart(2,'0')+fecha.getHours().toString().padStart(2,'0')+fecha.getMinutes().toString().padStart(2,'0');
     const fechaStr=fecha.toLocaleDateString('es-AR')+' '+fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     
-    // 1. GUARDAR EN SHEETS (Salidas y Caja)
     for(let i=0;i<cart.length;i++){
       const item=cart[i];const subNeto=(item.cant*item.precio)-(i===0?desc:0);
       await append('Salidas!A:N',[[item.nombre,item.sku||'-',item.cant,item.precio,subNeto,fechaStr,metodo,item.costo*item.cant,'','',cli,i===0?desc:0,i===0?descMot:'-',item.garantia||'-']]);
     }
     await append('Caja!A:G',[[id,fechaStr,'INGRESO','VENTA','Ticket '+id+' - '+cli,total,metodo]]);
     
-    // ==========================================
-    // 2. CONEXIÓN AL MOTOR DE PDFs (APPS SCRIPT)
-    // ==========================================
-    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx6hfkfiP9l82dUnwYQZEuiuPV39NQ8h6835UOCH7Eih7JDEsH6vkkD5VfcEv0PnCcTZA/exec';
+    // ==============================================================
+    // ⚠️ ¡ATENCIÓN JOACO! PEGAR EL LINK DE APPS SCRIPT ACÁ ABAJO ⚠️
+    // ==============================================================
+    const URL_SCRIPT = 'PEGA_ACA_TU_URL_DE_APPS_SCRIPT'; 
     let pdfUrl = '';
     
     try {
       toast('Generando PDF en la nube...', 'ok');
       const req = await fetch(URL_SCRIPT, {
         method: 'POST',
-        body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, items: cart }),
+        body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }),
         headers: {'Content-Type': 'text/plain;charset=utf-8'}
       });
       const res = await req.json();
@@ -627,7 +610,6 @@ async function procesarVenta(){
       console.error('Error al generar PDF:', err);
     }
 
-    // 3. INTERFAZ Y MENSAJE DE WHATSAPP
     $('modal-ticket').textContent='Ticket '+id+' - '+cli+' - '+fmt(total);
     
     let msgWsp = 'Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'. ';
