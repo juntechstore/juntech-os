@@ -236,6 +236,7 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Método de pago</label>
           <select class="f-in" id="v-metodo"><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>NX</option><option>MERCADO PAGO</option></select>
         </div>
+        <button class="btn btn-ghost" onclick="copiarPresupuesto()" style="margin-bottom:8px; border-color:var(--orange); color:var(--orange)">📋 Copiar Presupuesto</button>
         <button class="btn btn-blue" id="btn-vender" onclick="procesarVenta()">✓ Confirmar venta</button>
       </div>
     </div>
@@ -574,6 +575,43 @@ function syncDesc(t){let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);if(!sub)ret
 function calcTotal(){let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);$('cart-total').textContent=fmt(sub-(parseFloat($('v-desc-m').value)||0));}
 function cerrarModal(){$('modal-venta').classList.remove('on');}
 
+function copiarPresupuesto(){
+  if(!cart.length){toast('Agrega productos al carrito primero','err');return;}
+  
+  let msg = "Presupuesto de Juntech Store ⚡\n\n";
+  let totalLista = 0;
+  let totalContado = 0;
+  
+  cart.forEach(item => {
+    let subLista = item.cant * item.precio;
+    // Calculamos un 15% de descuento para el pago de contado
+    let subContado = Math.round(subLista * 0.85); 
+    totalLista += subLista;
+    totalContado += subContado;
+    
+    msg += `${item.cant}x ${item.nombre}\n`;
+    msg += `• Lista: $${Math.round(subLista).toLocaleString('es-AR')}\n`;
+    msg += `• Contado/Transfe: $${Math.round(subContado).toLocaleString('es-AR')} 🔥\n\n`;
+  });
+  
+  // Si hay más de un producto, le metemos un cierre con el total combinado
+  if(cart.length > 1) {
+    msg += "-------------------------\n";
+    msg += "💰 *TOTAL COMBINADO:*\n";
+    msg += `• Total Lista: $${Math.round(totalLista).toLocaleString('es-AR')}\n`;
+    msg += `• Total Contado: $${Math.round(totalContado).toLocaleString('es-AR')} 🚀\n\n`;
+  }
+  
+  msg += "¿Confirmás el pedido y ya te lo reservo?";
+  
+  // Magia negra para copiar directo al portapapeles del celu
+  navigator.clipboard.writeText(msg).then(() => {
+    toast('✓ Presupuesto copiado');
+  }).catch(err => {
+    toast('Error al copiar presupuesto','err');
+  });
+}
+  
 async function procesarVenta(){
   if(!cart.length){toast('Agrega productos primero','err');return;}
   const cli=$('v-cli').value||'Cliente',metodo=$('v-metodo').value,desc=parseFloat($('v-desc-m').value)||0,descMot=$('v-desc-mot').value;
@@ -689,8 +727,7 @@ async function crearProducto(){
   setBtn('btn-crear',false,'Crear producto ✨');
 }
 
-function renderItems(filter){const list=DB.todo.filter(p=>!filter||p.nombre.toLowerCase().includes(filter.toLowerCase()));if(!list.length){$('items-list').innerHTML='<div class="empty">Sin resultados</div>';return;}$('items-list').innerHTML=list.map(p=>{const sc=p.stock<=0?'var(--red)':p.stock<=3?'var(--orange)':'var(--cyan)';return`<div class="prod-item${p.stock<=3?' low':''}"><div style="flex:1;min-width:0"><div class="prod-name">${p.nombre}</div><div class="prod-meta">${p.cat||'-'} - Costo: ${fmt(p.costo)}</div></div><div style="flex-shrink:0;text-align:right"><div class="prod-price">${fmt(p.precio)}</div><div class="prod-stock" style="color:${sc}">${p.stock} u</div></div></div>`;}).join('');}
-function filterItems(v){renderItems(v);}
+function renderItems(filter){const list=DB.todo.filter(p=>!filter||p.nombre.toLowerCase().includes(filter.toLowerCase())).sort((a,b)=>b.stock-a.stock);if(!list.length){$('items-list').innerHTML='<div class="empty">Sin resultados</div>';return;}$('items-list').innerHTML=list.map(p=>{const sc=p.stock<=0?'var(--red)':p.stock<=3?'var(--orange)':'var(--cyan)';return`<div class="prod-item${p.stock<=3?' low':''}"><div style="flex:1;min-width:0"><div class="prod-name">${p.nombre}</div><div class="prod-meta">${p.cat||'-'} - Costo: ${fmt(p.costo)}</div></div><div style="flex-shrink:0;text-align:right"><div class="prod-price">${fmt(p.precio)}</div><div class="prod-stock" style="color:${sc}">${p.stock} u</div></div></div>`;}).join('');}function filterItems(v){renderItems(v);}
 </script>
 </body>
 </html>
