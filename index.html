@@ -215,7 +215,7 @@ select.f-in option{background:var(--s2)}
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
-          <div class="field"><label class="f-label">Precio Unit.</label><input class="f-in" id="v-precio" type="number" placeholder="$"></div>
+          <div class="field"><label class="f-label">Precio Unit.</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 1000/0.75" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
@@ -228,7 +228,10 @@ select.f-in option{background:var(--s2)}
         <div class="total-block">
           <div class="total-line"><span>Subtotal</span><span id="cart-sub">$0</span></div>
           <div style="margin:8px 0">
-            <div class="f-row"><input class="f-in" id="v-desc-m" type="number" placeholder="$ Descuento" oninput="syncDesc('m')"><input class="f-in" id="v-desc-p" type="number" placeholder="% Descuento" oninput="syncDesc('p')"></div>
+            <div class="f-row">
+              <input class="f-in" id="v-desc-m" type="text" placeholder="$ Desc (ej: 500+200)" onchange="evalMath(this); syncDesc('m')">
+              <input class="f-in" id="v-desc-p" type="text" placeholder="% Desc (ej: 25+10)" onchange="syncDesc('p')">
+            </div>
             <input class="f-in" id="v-desc-mot" placeholder="Motivo del descuento" style="margin-top:7px">
           </div>
           <div class="total-final"><span class="total-final-label">Total</span><span class="total-final-val" id="cart-total">$0</span></div>
@@ -349,6 +352,18 @@ const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-AR');
 function toast(msg,tipo='ok'){const t=$('toast');t.textContent=msg;t.className='toast on '+tipo;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
 function goTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('on'));$('tab-'+id).classList.add('on');el.classList.add('on');if(id==='items')renderItems('');}
 function setBtn(id,loading,label){const b=$(id);if(!b)return;b.disabled=loading;b.textContent=loading?'Procesando...':label;}
+
+// MODIFICACION 3: FUNCION PARA EVALUAR MATEMATICAS EN LOS CASILLEROS
+function evalMath(el) {
+  if(!el.value) return;
+  let v = el.value.toString().replace(/,/g, '.');
+  if(/[+\-*/]/.test(v)) {
+    try { 
+      let res = new Function('return ' + v)(); 
+      if(!isNaN(res)) el.value = Math.round(res); 
+    } catch(e){}
+  }
+}
 
 // ── AUTO LOGIN ──────────────────────────────
 function guardarToken(token, expiry){
@@ -489,7 +504,6 @@ async function cargarTodo(){
 
     let aRows = [];
     try {
-      // CORRECCIÓN APLICADA: AJUSTES EN MAYÚSCULA
       aRows = await get('AJUSTES!A2:D'); 
     } catch(e) {}
     
@@ -571,42 +585,70 @@ function selProduct(){const val=$('v-search').value;const p=DB.todo.find(x=>x.no
 function addToCart(){if(!currentProd){toast('Elegi un producto primero','err');return;}const cant=parseFloat($('v-cant').value)||1,precio=parseFloat($('v-precio').value)||currentProd.precio,gar=$('v-gar').value;if(cant>currentProd.stock&&!confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?'))return;cart.push({nombre:currentProd.nombre,sku:currentProd.sku,cant,precio,costo:currentProd.costo,garantia:gar});$('v-search').value='';$('v-precio').value='';$('v-gar').value='';$('v-cant').value='1';$('prod-prev').style.display='none';currentProd=null;renderCart();}
 function renderCart(){const div=$('cart-items');if(!cart.length){div.innerHTML='<div class="empty">Sin productos aun</div>';$('cart-count').textContent='0 items';$('cart-sub').textContent='$0';calcTotal();return;}let sub=0,html='';cart.forEach((item,i)=>{const s=item.cant*item.precio;sub+=s;html+=`<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${item.garantia?` <span style="color:var(--text3);font-size:10px">(${item.garantia})</span>`:''}</div><span class="cart-price">${fmt(s)}</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`;});div.innerHTML=html;$('cart-count').textContent=cart.length+' item'+(cart.length>1?'s':'');$('cart-sub').textContent=fmt(sub);calcTotal();}
 function removeCart(i){cart.splice(i,1);renderCart();}
-function syncDesc(t){let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);if(!sub)return;if(t==='m')$('v-desc-p').value=((((parseFloat($('v-desc-m').value)||0)/sub)*100)).toFixed(1);else $('v-desc-m').value=Math.round(((parseFloat($('v-desc-p').value)||0)/100)*sub);calcTotal();}
+
+// MODIFICACION 4: SINCROMIZADOR DE DESCUENTOS EN CASCADA
+function syncDesc(t){
+  let sub = 0;
+  cart.forEach(i => sub += i.cant * i.precio);
+  if(!sub) return;
+
+  if(t === 'm'){
+    let val = parseFloat($('v-desc-m').value) || 0;
+    $('v-desc-p').value = ((val / sub) * 100).toFixed(1);
+  } else {
+    let str = $('v-desc-p').value.toString().replace(/,/g, '.');
+    // Descuentos en cascada (ej: 25+10)
+    if(str.includes('+')) {
+      let pcts = str.split('+');
+      let remanente = sub;
+      let totDesc = 0;
+      pcts.forEach(p => {
+        let descPaso = remanente * ((parseFloat(p) || 0) / 100);
+        totDesc += descPaso;
+        remanente -= descPaso; // El próximo aplica sobre lo que va quedando
+      });
+      $('v-desc-m').value = Math.round(totDesc);
+    } else {
+      $('v-desc-m').value = Math.round(sub * ((parseFloat(str) || 0) / 100));
+    }
+  }
+  calcTotal();
+}
+
 function calcTotal(){let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);$('cart-total').textContent=fmt(sub-(parseFloat($('v-desc-m').value)||0));}
 function cerrarModal(){$('modal-venta').classList.remove('on');}
 
+// MODIFICACION 5: PRESUPUESTO DINAMICO
 function copiarPresupuesto(){
   if(!cart.length){toast('Agrega productos al carrito primero','err');return;}
-  
+  let descMonto = parseFloat($('v-desc-m').value) || 0;
+  let descMotivo = $('v-desc-mot').value || "Descuento / Pago Contado";
   let msg = "Presupuesto de Juntech Store ⚡\n\n";
   let totalLista = 0;
-  let totalContado = 0;
   
   cart.forEach(item => {
     let subLista = item.cant * item.precio;
-    // Calculamos un 15% de descuento para el pago de contado
-    let subContado = Math.round(subLista * 0.75); 
     totalLista += subLista;
-    totalContado += subContado;
-    
-    msg += `${item.cant}x ${item.nombre}\n`;
-    msg += `• Lista: $${Math.round(subLista).toLocaleString('es-AR')}\n`;
-    msg += `• Contado/Transfe: $${Math.round(subContado).toLocaleString('es-AR')} 🔥\n\n`;
+    msg += `🛍️ ${item.cant}x ${item.nombre}\n`;
+    if(item.cant > 1) {
+      msg += `• Unitario: $${Math.round(item.precio).toLocaleString('es-AR')}\n`;
+    }
+    msg += `• Subtotal: $${Math.round(subLista).toLocaleString('es-AR')}\n\n`;
   });
   
-  // Si hay más de un producto, le metemos un cierre con el total combinado
-  if(cart.length > 1) {
-    msg += "-------------------------\n";
-    msg += "💰 *TOTAL COMBINADO:*\n";
-    msg += `• Total Lista: $${Math.round(totalLista).toLocaleString('es-AR')}\n`;
-    msg += `• Total Contado: $${Math.round(totalContado).toLocaleString('es-AR')} 🚀\n\n`;
+  let totalFinal = totalLista - descMonto;
+  msg += "-------------------------\n";
+  msg += `📝 *TOTAL LISTA:* $${Math.round(totalLista).toLocaleString('es-AR')}\n`;
+  
+  if(descMonto > 0) {
+    msg += `🎁 *PROMO (${descMotivo.toUpperCase()}):* -$${Math.round(descMonto).toLocaleString('es-AR')}\n`;
   }
   
-  msg += "¿Confirmás el pedido y ya te lo reservo?";
+  msg += `🔥 *TOTAL A PAGAR:* $${Math.round(totalFinal).toLocaleString('es-AR')} 🚀\n\n`;
+  msg += "¿Confirmás el pedido y te lo separo?";
   
-  // Magia negra para copiar directo al portapapeles del celu
   navigator.clipboard.writeText(msg).then(() => {
-    toast('✓ Presupuesto copiado');
+    toast('✓ Presupuesto copiado a medida');
   }).catch(err => {
     toast('Error al copiar presupuesto','err');
   });
@@ -629,9 +671,6 @@ async function procesarVenta(){
     }
     await append('Caja!A:G',[[id,fechaStr,'INGRESO','VENTA','Ticket '+id+' - '+cli,total,metodo]]);
     
-    // ==============================================================
-    // ⚠️ ¡ATENCIÓN JOACO! PEGAR EL LINK DE APPS SCRIPT ACÁ ABAJO ⚠️
-    // ==============================================================
     const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec'; 
     let pdfUrl = '';
     
