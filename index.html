@@ -585,7 +585,7 @@ function copiarPresupuesto(){
   cart.forEach(item => {
     let subLista = item.cant * item.precio;
     // Calculamos un 15% de descuento para el pago de contado
-    let subContado = Math.round(subLista * 0.85); 
+    let subContado = Math.round(subLista * 0.75); 
     totalLista += subLista;
     totalContado += subContado;
     
