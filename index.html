@@ -217,6 +217,7 @@ select.f-in option{background:var(--s2)}
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
           <div class="field"><label class="f-label">Precio Unit.</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 1000/0.75" onchange="evalMath(this)"></div>
         </div>
+        <div class="field"><label class="f-label">Nombre en Ticket (Opcional)</label><input class="f-in" id="v-alias" placeholder="Dejar vacío para nombre original"></div>
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
       </div>
@@ -288,6 +289,7 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Producto</label>
           <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div>
         </div>
+        <div class="field"><label class="f-label">Proveedor (Opcional)</label><input class="f-in" id="e-prov" placeholder="Ej: Importador X"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" placeholder="Unidades"></div>
           <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="number" placeholder="$"></div>
@@ -353,7 +355,6 @@ function toast(msg,tipo='ok'){const t=$('toast');t.textContent=msg;t.className='
 function goTab(id,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav-btn').forEach(n=>n.classList.remove('on'));$('tab-'+id).classList.add('on');el.classList.add('on');if(id==='items')renderItems('');}
 function setBtn(id,loading,label){const b=$(id);if(!b)return;b.disabled=loading;b.textContent=loading?'Procesando...':label;}
 
-// MODIFICACION 3: FUNCION PARA EVALUAR MATEMATICAS EN LOS CASILLEROS
 function evalMath(el) {
   if(!el.value) return;
   let v = el.value.toString().replace(/,/g, '.');
@@ -365,7 +366,6 @@ function evalMath(el) {
   }
 }
 
-// ── AUTO LOGIN ──────────────────────────────
 function guardarToken(token, expiry){
   try{
     localStorage.setItem('jt_token', token);
@@ -582,11 +582,25 @@ function poblarListas(){
 }
 
 function selProduct(){const val=$('v-search').value;const p=DB.todo.find(x=>x.nombre===val);const prev=$('prod-prev');if(!p){prev.style.display='none';currentProd=null;return;}currentProd=p;$('pp-nombre').textContent=p.nombre;$('pp-stock').textContent=p.stock+' u';$('pp-precio').textContent=fmt(p.precio);$('pp-costo').textContent=fmt(p.costo);$('v-precio').value=p.precio;prev.style.display='block';}
-function addToCart(){if(!currentProd){toast('Elegi un producto primero','err');return;}const cant=parseFloat($('v-cant').value)||1,precio=parseFloat($('v-precio').value)||currentProd.precio,gar=$('v-gar').value;if(cant>currentProd.stock&&!confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?'))return;cart.push({nombre:currentProd.nombre,sku:currentProd.sku,cant,precio,costo:currentProd.costo,garantia:gar});$('v-search').value='';$('v-precio').value='';$('v-gar').value='';$('v-cant').value='1';$('prod-prev').style.display='none';currentProd=null;renderCart();}
+
+function addToCart(){
+  if(!currentProd){toast('Elegi un producto primero','err');return;}
+  const cant=parseFloat($('v-cant').value)||1,precio=parseFloat($('v-precio').value)||currentProd.precio,gar=$('v-gar').value;
+  // LOGICA PARA EL NOMBRE FANTASIA (ALIAS) EN TICKET
+  const alias=$('v-alias').value.trim();
+  const nombreFinal = alias || currentProd.nombre;
+  
+  if(cant>currentProd.stock&&!confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?'))return;
+  
+  // Guardamos nombreFinal para el PDF y sysName para restar el stock
+  cart.push({nombre:nombreFinal, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, costo:currentProd.costo, garantia:gar});
+  
+  $('v-search').value='';$('v-precio').value='';$('v-gar').value='';$('v-alias').value='';$('v-cant').value='1';$('prod-prev').style.display='none';currentProd=null;renderCart();
+}
+
 function renderCart(){const div=$('cart-items');if(!cart.length){div.innerHTML='<div class="empty">Sin productos aun</div>';$('cart-count').textContent='0 items';$('cart-sub').textContent='$0';calcTotal();return;}let sub=0,html='';cart.forEach((item,i)=>{const s=item.cant*item.precio;sub+=s;html+=`<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${item.garantia?` <span style="color:var(--text3);font-size:10px">(${item.garantia})</span>`:''}</div><span class="cart-price">${fmt(s)}</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`;});div.innerHTML=html;$('cart-count').textContent=cart.length+' item'+(cart.length>1?'s':'');$('cart-sub').textContent=fmt(sub);calcTotal();}
 function removeCart(i){cart.splice(i,1);renderCart();}
 
-// MODIFICACION 4: SINCROMIZADOR DE DESCUENTOS EN CASCADA
 function syncDesc(t){
   let sub = 0;
   cart.forEach(i => sub += i.cant * i.precio);
@@ -597,7 +611,6 @@ function syncDesc(t){
     $('v-desc-p').value = ((val / sub) * 100).toFixed(1);
   } else {
     let str = $('v-desc-p').value.toString().replace(/,/g, '.');
-    // Descuentos en cascada (ej: 25+10)
     if(str.includes('+')) {
       let pcts = str.split('+');
       let remanente = sub;
@@ -605,7 +618,7 @@ function syncDesc(t){
       pcts.forEach(p => {
         let descPaso = remanente * ((parseFloat(p) || 0) / 100);
         totDesc += descPaso;
-        remanente -= descPaso; // El próximo aplica sobre lo que va quedando
+        remanente -= descPaso; 
       });
       $('v-desc-m').value = Math.round(totDesc);
     } else {
@@ -618,7 +631,6 @@ function syncDesc(t){
 function calcTotal(){let sub=0;cart.forEach(i=>sub+=i.cant*i.precio);$('cart-total').textContent=fmt(sub-(parseFloat($('v-desc-m').value)||0));}
 function cerrarModal(){$('modal-venta').classList.remove('on');}
 
-// MODIFICACION 5: PRESUPUESTO DINAMICO
 function copiarPresupuesto(){
   if(!cart.length){toast('Agrega productos al carrito primero','err');return;}
   let descMonto = parseFloat($('v-desc-m').value) || 0;
@@ -667,7 +679,8 @@ async function procesarVenta(){
     
     for(let i=0;i<cart.length;i++){
       const item=cart[i];const subNeto=(item.cant*item.precio)-(i===0?desc:0);
-      await append('Salidas!A:N',[[item.nombre,item.sku||'-',item.cant,item.precio,subNeto,fechaStr,metodo,item.costo*item.cant,'','',cli,i===0?desc:0,i===0?descMot:'-',item.garantia||'-']]);
+      // USAMOS EL SYSNAME PARA QUE DESCUENTE DEL EXCEL REAL SIN IMPORTAR EL ALIAS DEL TICKET
+      await append('Salidas!A:N',[[item.sysName,item.sku||'-',item.cant,item.precio,subNeto,fechaStr,metodo,item.costo*item.cant,'','',cli,i===0?desc:0,i===0?descMot:'-',item.garantia||'-']]);
     }
     await append('Caja!A:G',[[id,fechaStr,'INGRESO','VENTA','Ticket '+id+' - '+cli,total,metodo]]);
     
@@ -738,15 +751,33 @@ async function ejecutarDist(){
 }
 
 function selEntrada(){const p=DB.todo.find(x=>x.nombre===$('e-prod').value);if(p)$('e-costo').value=p.costo;}
-function addEntrada(){const nombre=$('e-prod').value,cant=parseFloat($('e-cant').value)||0,costo=parseFloat($('e-costo').value)||0;if(!nombre||cant<=0){toast('Falta producto o cantidad','err');return;}entradaCart.push({nombre,cant,costo});$('e-prod').value='';$('e-cant').value='';$('e-costo').value='';renderEntrada();}
-function renderEntrada(){const div=$('entrada-items'),btn=$('btn-entrada');if(!entradaCart.length){div.innerHTML='<div class="empty">Nada para ingresar</div>';btn.disabled=true;$('entrada-count').textContent='0 items';return;}div.innerHTML=entradaCart.map((i,idx)=>`<div class="cart-item"><div class="cart-name">${i.cant}x ${i.nombre}</div><span class="cart-price">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`).join('');btn.disabled=false;$('entrada-count').textContent=entradaCart.length+' item'+(entradaCart.length>1?'s':'');}
+
+// MODIFICACION: ENTRADAS AHORA RECIBE EL PROVEEDOR
+function addEntrada(){
+  const nombre=$('e-prod').value,cant=parseFloat($('e-cant').value)||0,costo=parseFloat($('e-costo').value)||0;
+  const prov=$('e-prov').value.trim();
+  if(!nombre||cant<=0){toast('Falta producto o cantidad','err');return;}
+  entradaCart.push({nombre,cant,costo,prov});
+  $('e-prod').value='';$('e-cant').value='';$('e-costo').value='';$('e-prov').value='';renderEntrada();
+}
+
+function renderEntrada(){
+  const div=$('entrada-items'),btn=$('btn-entrada');
+  if(!entradaCart.length){div.innerHTML='<div class="empty">Nada para ingresar</div>';btn.disabled=true;$('entrada-count').textContent='0 items';return;}
+  div.innerHTML=entradaCart.map((i,idx)=>`<div class="cart-item"><div class="cart-name">${i.cant}x ${i.nombre}${i.prov?` <span style="color:var(--text3);font-size:10px">(${i.prov})</span>`:''}</div><span class="cart-price">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`).join('');
+  btn.disabled=false;$('entrada-count').textContent=entradaCart.length+' item'+(entradaCart.length>1?'s':'');
+}
 function delEntrada(i){entradaCart.splice(i,1);renderEntrada();}
 
 async function guardarEntrada(){
   if(!entradaCart.length)return;setBtn('btn-entrada',true,'');
   try{
     const fecha=new Date().toLocaleDateString('es-AR');
-    for(const item of entradaCart){const p=DB.todo.find(x=>x.nombre===item.nombre);await append('Entradas!A:F',[[item.nombre,p?p.sku:'',item.cant,item.costo,item.cant*item.costo,fecha]]);}
+    for(const item of entradaCart){
+      const p=DB.todo.find(x=>x.nombre===item.nombre);
+      // MODIFICACION: GUARDA EL PROVEEDOR EN LA COLUMNA G
+      await append('Entradas!A:G',[[item.nombre,p?p.sku:'',item.cant,item.costo,item.cant*item.costo,fecha,item.prov||'-']]);
+    }
     toast('✓ Stock actualizado');entradaCart=[];renderEntrada();await cargarTodo();
   }catch(e){toast('Error: '+e.message,'err');}
   setBtn('btn-entrada',false,'💾 Guardar stock');
