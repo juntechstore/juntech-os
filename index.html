@@ -292,7 +292,9 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Proveedor (Opcional)</label><input class="f-in" id="e-prov" placeholder="Ej: Importador X"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" placeholder="Unidades"></div>
-          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="number" placeholder="$"></div>
+          
+<div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" placeholder="Ej: 5000+(2000/10)" onchange="evalMath(this)"></div>
+          
         </div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
@@ -308,10 +310,10 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Nombre</label><input class="f-in" id="n-nombre" placeholder="Nombre del producto"></div>
         <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Cables, Audio..."></div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="n-prov" placeholder="Nombre del proveedor"></div>
-        <div class="f-row">
-          <div class="field"><label class="f-label">Costo $</label><input class="f-in" id="n-costo" type="number" placeholder="0"></div>
-          <div class="field"><label class="f-label">Precio Venta $</label><input class="f-in" id="n-precio" type="number" placeholder="0"></div>
-        </div>
+       <div class="f-row">
+  <div class="field"><label class="f-label">Costo $</label><input class="f-in" id="n-costo" type="text" placeholder="Costo + Envío prorrateado" onchange="evalMath(this)"></div>
+  <div class="field"><label class="f-label">Precio Venta $</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: Contado/0.75" onchange="evalMath(this)"></div>
+</div>
         <button class="btn btn-blue" id="btn-crear" onclick="crearProducto()">Crear producto ✨</button>
       </div>
     </div>
