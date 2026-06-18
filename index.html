@@ -636,30 +636,27 @@ function cerrarModal(){$('modal-venta').classList.remove('on');}
 function copiarPresupuesto(){
   if(!cart.length){toast('Agrega productos al carrito primero','err');return;}
   let descMonto = parseFloat($('v-desc-m').value) || 0;
-  let descMotivo = $('v-desc-mot').value || "Descuento / Pago Contado";
-  let msg = "Presupuesto de Juntech Store ⚡\n\n";
+  // Si no ponés nada en el motivo, clava automáticamente "Pago Efectivo/Transf."
+  let descMotivo = $('v-desc-mot').value.trim() || "Pago Efectivo/Transf.";
+  
+  let msg = "⚡ Presupuesto JuntechStore\n";
   let totalLista = 0;
   
   cart.forEach(item => {
     let subLista = item.cant * item.precio;
     totalLista += subLista;
-    msg += `🛍️ ${item.cant}x ${item.nombre}\n`;
-    if(item.cant > 1) {
-      msg += `• Unitario: $${Math.round(item.precio).toLocaleString('es-AR')}\n`;
-    }
-    msg += `• Subtotal: $${Math.round(subLista).toLocaleString('es-AR')}\n\n`;
+    msg += `🛍️ ${item.cant}x ${item.nombre} ($${Math.round(subLista).toLocaleString('es-AR')})\n`;
   });
   
   let totalFinal = totalLista - descMonto;
-  msg += "-------------------------\n";
-  msg += `📝 *TOTAL LISTA:* $${Math.round(totalLista).toLocaleString('es-AR')}\n`;
+  msg += `📝 Valor de Lista: $${Math.round(totalLista).toLocaleString('es-AR')}\n`;
   
   if(descMonto > 0) {
-    msg += `🎁 *PROMO (${descMotivo.toUpperCase()}):* -$${Math.round(descMonto).toLocaleString('es-AR')}\n`;
+    msg += `🎁 Ahorro (${descMotivo}): -$${Math.round(descMonto).toLocaleString('es-AR')}\n`;
   }
   
-  msg += `🔥 *TOTAL A PAGAR:* $${Math.round(totalFinal).toLocaleString('es-AR')} 🚀\n\n`;
-  msg += "¿Confirmás el pedido y te lo separo?";
+  msg += `🔥 TOTAL A PAGAR: $${Math.round(totalFinal).toLocaleString('es-AR')} 🚀\n`;
+  msg += "¿Confirmás y te lo separo?";
   
   navigator.clipboard.writeText(msg).then(() => {
     toast('✓ Presupuesto copiado a medida');
