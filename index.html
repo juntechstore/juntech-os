@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#07090d">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="JuntechOS">
-<title>JuntechOS</title>
-<link rel="manifest" href="manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#07090d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JuntechOS">
+  <title>JuntechOS</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -165,7 +166,7 @@ select.f-in option{background:var(--s2)}
   <div class="hdr">
     <div class="hdr-left">
       <div class="logo-sm"><img id="logo-hdr" src="icon-192.png" alt="J" onerror="this.parentElement.style.display='none'"></div>
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v2.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v3.0</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -292,9 +293,7 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Proveedor (Opcional)</label><input class="f-in" id="e-prov" placeholder="Ej: Importador X"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" placeholder="Unidades"></div>
-          
-<div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" placeholder="Ej: 5000+(2000/10)" onchange="evalMath(this)"></div>
-          
+          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" placeholder="Ej: 5000+(2000/10)" onchange="evalMath(this)"></div>
         </div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
@@ -310,10 +309,10 @@ select.f-in option{background:var(--s2)}
         <div class="field"><label class="f-label">Nombre</label><input class="f-in" id="n-nombre" placeholder="Nombre del producto"></div>
         <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Cables, Audio..."></div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="n-prov" placeholder="Nombre del proveedor"></div>
-       <div class="f-row">
-  <div class="field"><label class="f-label">Costo $</label><input class="f-in" id="n-costo" type="text" placeholder="Costo + Envío prorrateado" onchange="evalMath(this)"></div>
-  <div class="field"><label class="f-label">Precio Venta $</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: Contado/0.75" onchange="evalMath(this)"></div>
-</div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Costo $</label><input class="f-in" id="n-costo" type="text" placeholder="Costo + Envío prorrateado" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Precio Venta $</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: Contado/0.75" onchange="evalMath(this)"></div>
+        </div>
         <button class="btn btn-blue" id="btn-crear" onclick="crearProducto()">Crear producto ✨</button>
       </div>
     </div>
@@ -322,8 +321,18 @@ select.f-in option{background:var(--s2)}
       <div class="search-wrap"><span class="search-ico">🔍</span><input class="f-in ico" placeholder="Buscar producto..." oninput="filterItems(this.value)"></div>
       <div id="items-list"><div class="loader"><div class="l-dot"></div><div class="l-dot"></div><div class="l-dot"></div></div></div>
     </div>
-  </div>
-</div>
+
+    <div class="tab" id="tab-dashboard" style="padding: 5px; padding-bottom: 20px;">
+      <div class="card" style="border: 1px solid #2f81f740; background: var(--s1);">
+        <h3 style="margin-top:0; margin-bottom:4px; color: var(--text-color, #fff); font-size: 1.1rem; letter-spacing: -0.3px;">🔥 Top Rentabilidad</h3>
+        <p style="color: var(--text2); font-size: 0.85em; margin-bottom: 15px;">Los productos que más margen neto dejan</p>
+        <div style="position: relative; height:300px; width:100%">
+          <canvas id="graficoRentabilidad"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div> </div>
 
 <div class="nav" id="main-nav" style="display:none">
   <button class="nav-btn on" onclick="goTab('home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</button>
@@ -331,6 +340,7 @@ select.f-in option{background:var(--s2)}
   <button class="nav-btn" onclick="goTab('caja',this)"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja</button>
   <button class="nav-btn" onclick="goTab('stock',this)"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock</button>
   <button class="nav-btn" onclick="goTab('items',this)"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Items</button>
+  <button class="nav-btn" onclick="goTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Métricas</button>
 </div>
 
 <div class="modal-bg" id="modal-venta">
@@ -552,6 +562,10 @@ async function cargarTodo(){
     DB.finanzas={saldos,totalCaja,gananciaDisp:ganD,capitalJuntech:capJ,billeteraJoaco:billJ,fondo,historial};
     renderHome(totalU,valC,alertas,historial.slice(-12).reverse());
     poblarListas();
+    
+    // === GATILLO DEL DASHBOARD AQUÍ ===
+    renderDashboard(); 
+    
     $('h-hora').textContent=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     toast('✓ Datos actualizados');
   }catch(e){toast('Error: '+e.message,'err');console.error(e);}
@@ -751,7 +765,6 @@ async function ejecutarDist(){
 
 function selEntrada(){const p=DB.todo.find(x=>x.nombre===$('e-prod').value);if(p)$('e-costo').value=p.costo;}
 
-// MODIFICACION: ENTRADAS AHORA RECIBE EL PROVEEDOR
 function addEntrada(){
   const nombre=$('e-prod').value,cant=parseFloat($('e-cant').value)||0,costo=parseFloat($('e-costo').value)||0;
   const prov=$('e-prov').value.trim();
@@ -774,7 +787,6 @@ async function guardarEntrada(){
     const fecha=new Date().toLocaleDateString('es-AR');
     for(const item of entradaCart){
       const p=DB.todo.find(x=>x.nombre===item.nombre);
-      // MODIFICACION: GUARDA EL PROVEEDOR EN LA COLUMNA G
       await append('Entradas!A:G',[[item.nombre,p?p.sku:'',item.cant,item.costo,item.cant*item.costo,fecha,item.prov||'-']]);
     }
     toast('✓ Stock actualizado');entradaCart=[];renderEntrada();await cargarTodo();
@@ -797,6 +809,52 @@ async function crearProducto(){
 }
 
 function renderItems(filter){const list=DB.todo.filter(p=>!filter||p.nombre.toLowerCase().includes(filter.toLowerCase())).sort((a,b)=>b.stock-a.stock);if(!list.length){$('items-list').innerHTML='<div class="empty">Sin resultados</div>';return;}$('items-list').innerHTML=list.map(p=>{const sc=p.stock<=0?'var(--red)':p.stock<=3?'var(--orange)':'var(--cyan)';return`<div class="prod-item${p.stock<=3?' low':''}"><div style="flex:1;min-width:0"><div class="prod-name">${p.nombre}</div><div class="prod-meta">${p.cat||'-'} - Costo: ${fmt(p.costo)}</div></div><div style="flex-shrink:0;text-align:right"><div class="prod-price">${fmt(p.precio)}</div><div class="prod-stock" style="color:${sc}">${p.stock} u</div></div></div>`;}).join('');}function filterItems(v){renderItems(v);}
+
+// === MOTOR DEL DASHBOARD ===
+let graficoRent = null; 
+function renderDashboard() {
+  let rentabilidad = DB.todo
+    .filter(p => p.precio > 0 && p.costo > 0)
+    .map(p => {
+      return {
+        nombre: p.nombre,
+        margen: p.precio - p.costo
+      };
+    });
+
+  rentabilidad.sort((a, b) => b.margen - a.margen);
+  let top5 = rentabilidad.slice(0, 5);
+
+  let labels = top5.map(p => p.nombre.length > 15 ? p.nombre.substring(0, 15) + '...' : p.nombre);
+  let data = top5.map(p => p.margen);
+
+  const ctx = document.getElementById('graficoRentabilidad');
+  if (graficoRent) graficoRent.destroy(); 
+
+  graficoRent = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Ganancia Neta ($)',
+        data: data,
+        backgroundColor: 'rgba(47, 129, 247, 0.8)',
+        borderColor: '#2f81f7',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' }, beginAtZero: true },
+        x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
