@@ -11,7 +11,6 @@
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -156,7 +155,7 @@ select.f-in option{background:var(--s2)}
   <div class="login-logo"><img id="logo-login" src="icon-192.png" alt="J" onerror="this.style.display='none'"></div>
   <div class="login-title">
     <h1>JUNTECH<span>OS</span></h1>
-    <p>Sistema de gestión v2.1</p>
+    <p>Sistema de gestión v3.0</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg"></p>
@@ -322,16 +321,6 @@ select.f-in option{background:var(--s2)}
       <div id="items-list"><div class="loader"><div class="l-dot"></div><div class="l-dot"></div><div class="l-dot"></div></div></div>
     </div>
 
-    <div class="tab" id="tab-dashboard" style="padding: 5px; padding-bottom: 20px;">
-      <div class="card" style="border: 1px solid #2f81f740; background: var(--s1);">
-        <h3 style="margin-top:0; margin-bottom:4px; color: var(--text-color, #fff); font-size: 1.1rem; letter-spacing: -0.3px;">🔥 Top Rentabilidad</h3>
-        <p style="color: var(--text2); font-size: 0.85em; margin-bottom: 15px;">Los productos que más margen neto dejan</p>
-        <div style="position: relative; height:300px; width:100%">
-          <canvas id="graficoRentabilidad"></canvas>
-        </div>
-      </div>
-    </div>
-
   </div> </div>
 
 <div class="nav" id="main-nav" style="display:none">
@@ -340,7 +329,6 @@ select.f-in option{background:var(--s2)}
   <button class="nav-btn" onclick="goTab('caja',this)"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja</button>
   <button class="nav-btn" onclick="goTab('stock',this)"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock</button>
   <button class="nav-btn" onclick="goTab('items',this)"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Items</button>
-  <button class="nav-btn" onclick="goTab('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>Métricas</button>
 </div>
 
 <div class="modal-bg" id="modal-venta">
@@ -508,8 +496,6 @@ async function cargarTodo(){
     });
 
     const todasLasSalidas = sRows.concat(sRowsHist);
-DB.ventas = todasLasSalidas; // <--- Agregá esto acá
-    
     todasLasSalidas.forEach(r => {
       if(!r[0]) return;
       const n = str(r[0]), c = num(r[2]);
@@ -565,9 +551,6 @@ DB.ventas = todasLasSalidas; // <--- Agregá esto acá
     renderHome(totalU,valC,alertas,historial.slice(-12).reverse());
     poblarListas();
     
-    // === GATILLO DEL DASHBOARD AQUÍ ===
-    renderDashboard(); 
-    
     $('h-hora').textContent=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     toast('✓ Datos actualizados');
   }catch(e){toast('Error: '+e.message,'err');console.error(e);}
@@ -604,13 +587,11 @@ function selProduct(){const val=$('v-search').value;const p=DB.todo.find(x=>x.no
 function addToCart(){
   if(!currentProd){toast('Elegi un producto primero','err');return;}
   const cant=parseFloat($('v-cant').value)||1,precio=parseFloat($('v-precio').value)||currentProd.precio,gar=$('v-gar').value;
-  // LOGICA PARA EL NOMBRE FANTASIA (ALIAS) EN TICKET
   const alias=$('v-alias').value.trim();
   const nombreFinal = alias || currentProd.nombre;
   
   if(cant>currentProd.stock&&!confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?'))return;
   
-  // Guardamos nombreFinal para el PDF y sysName para restar el stock
   cart.push({nombre:nombreFinal, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, costo:currentProd.costo, garantia:gar});
   
   $('v-search').value='';$('v-precio').value='';$('v-gar').value='';$('v-alias').value='';$('v-cant').value='1';$('prod-prev').style.display='none';currentProd=null;renderCart();
@@ -652,7 +633,6 @@ function cerrarModal(){$('modal-venta').classList.remove('on');}
 function copiarPresupuesto(){
   if(!cart.length){toast('Agrega productos al carrito primero','err');return;}
   let descMonto = parseFloat($('v-desc-m').value) || 0;
-  // Si no ponés nada en el motivo, clava automáticamente "Pago Efectivo/Transf."
   let descMotivo = $('v-desc-mot').value.trim() || "Pago Efectivo/Transf.";
   
   let msg = "⚡ Presupuesto JuntechStore\n";
@@ -694,7 +674,6 @@ async function procesarVenta(){
     
     for(let i=0;i<cart.length;i++){
       const item=cart[i];const subNeto=(item.cant*item.precio)-(i===0?desc:0);
-      // USAMOS EL SYSNAME PARA QUE DESCUENTE DEL EXCEL REAL SIN IMPORTAR EL ALIAS DEL TICKET
       await append('Salidas!A:N',[[item.sysName,item.sku||'-',item.cant,item.precio,subNeto,fechaStr,metodo,item.costo*item.cant,'','',cli,i===0?desc:0,i===0?descMot:'-',item.garantia||'-']]);
     }
     await append('Caja!A:G',[[id,fechaStr,'INGRESO','VENTA','Ticket '+id+' - '+cli,total,metodo]]);
@@ -812,75 +791,6 @@ async function crearProducto(){
 
 function renderItems(filter){const list=DB.todo.filter(p=>!filter||p.nombre.toLowerCase().includes(filter.toLowerCase())).sort((a,b)=>b.stock-a.stock);if(!list.length){$('items-list').innerHTML='<div class="empty">Sin resultados</div>';return;}$('items-list').innerHTML=list.map(p=>{const sc=p.stock<=0?'var(--red)':p.stock<=3?'var(--orange)':'var(--cyan)';return`<div class="prod-item${p.stock<=3?' low':''}"><div style="flex:1;min-width:0"><div class="prod-name">${p.nombre}</div><div class="prod-meta">${p.cat||'-'} - Costo: ${fmt(p.costo)}</div></div><div style="flex-shrink:0;text-align:right"><div class="prod-price">${fmt(p.precio)}</div><div class="prod-stock" style="color:${sc}">${p.stock} u</div></div></div>`;}).join('');}function filterItems(v){renderItems(v);}
 
-  // === MOTOR DEL DASHBOARD (VERSIÓN GUITA REAL) ===
-let graficoRent = null; 
-function renderDashboard() {
-  let rentMap = {};
-
-  // 1. Recorrer el historial REAL de ventas
-  if(DB.ventas) {
-    DB.ventas.forEach(r => {
-      if(!r[0]) return;
-      let nombre = str(r[0]);
-      let precioCobrado = num(r[4]); // Lo que pagó el cliente (con descuento aplicado)
-      let costoTotal = num(r[7]);    // Lo que te costó a vos
-
-      // Solo contamos ventas reales que generaron plata
-      if(precioCobrado > 0) {
-        let gananciaLimpia = precioCobrado - costoTotal;
-        rentMap[nombre] = (rentMap[nombre] || 0) + gananciaLimpia;
-      }
-    });
-  }
-
-  // 2. Convertir a lista y ordenar por los que más plata física dejaron
-  let rentabilidad = Object.keys(rentMap).map(nombre => {
-    return { nombre: nombre, margen: rentMap[nombre] };
-  });
-  rentabilidad.sort((a, b) => b.margen - a.margen);
-
-  // 3. Agarrar el Top 5
-  let top5 = rentabilidad.slice(0, 5);
-
-  let labels = top5.map(p => p.nombre.length > 15 ? p.nombre.substring(0, 15) + '...' : p.nombre);
-  let data = top5.map(p => p.margen);
-
-  const ctx = document.getElementById('graficoRentabilidad');
-  if (graficoRent) graficoRent.destroy(); 
-
-  graficoRent = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Plata Real Generada ($)',
-        data: data,
-        backgroundColor: 'rgba(47, 129, 247, 0.8)',
-        borderColor: '#2f81f7',
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { 
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return '$' + context.raw.toLocaleString('es-AR');
-            }
-          }
-        }
-      },
-      scales: {
-        y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' }, beginAtZero: true },
-        x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { display: false } }
-      }
-    }
-  });
-}
 </script>
 </body>
 </html>
