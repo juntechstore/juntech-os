@@ -508,6 +508,8 @@ async function cargarTodo(){
     });
 
     const todasLasSalidas = sRows.concat(sRowsHist);
+DB.ventas = todasLasSalidas; // <--- Agregá esto acá
+    
     todasLasSalidas.forEach(r => {
       if(!r[0]) return;
       const n = str(r[0]), c = num(r[2]);
@@ -810,19 +812,34 @@ async function crearProducto(){
 
 function renderItems(filter){const list=DB.todo.filter(p=>!filter||p.nombre.toLowerCase().includes(filter.toLowerCase())).sort((a,b)=>b.stock-a.stock);if(!list.length){$('items-list').innerHTML='<div class="empty">Sin resultados</div>';return;}$('items-list').innerHTML=list.map(p=>{const sc=p.stock<=0?'var(--red)':p.stock<=3?'var(--orange)':'var(--cyan)';return`<div class="prod-item${p.stock<=3?' low':''}"><div style="flex:1;min-width:0"><div class="prod-name">${p.nombre}</div><div class="prod-meta">${p.cat||'-'} - Costo: ${fmt(p.costo)}</div></div><div style="flex-shrink:0;text-align:right"><div class="prod-price">${fmt(p.precio)}</div><div class="prod-stock" style="color:${sc}">${p.stock} u</div></div></div>`;}).join('');}function filterItems(v){renderItems(v);}
 
-// === MOTOR DEL DASHBOARD ===
+  // === MOTOR DEL DASHBOARD (VERSIÓN GUITA REAL) ===
 let graficoRent = null; 
 function renderDashboard() {
-  let rentabilidad = DB.todo
-    .filter(p => p.precio > 0 && p.costo > 0)
-    .map(p => {
-      return {
-        nombre: p.nombre,
-        margen: p.precio - p.costo
-      };
-    });
+  let rentMap = {};
 
+  // 1. Recorrer el historial REAL de ventas
+  if(DB.ventas) {
+    DB.ventas.forEach(r => {
+      if(!r[0]) return;
+      let nombre = str(r[0]);
+      let precioCobrado = num(r[4]); // Lo que pagó el cliente (con descuento aplicado)
+      let costoTotal = num(r[7]);    // Lo que te costó a vos
+
+      // Solo contamos ventas reales que generaron plata
+      if(precioCobrado > 0) {
+        let gananciaLimpia = precioCobrado - costoTotal;
+        rentMap[nombre] = (rentMap[nombre] || 0) + gananciaLimpia;
+      }
+    });
+  }
+
+  // 2. Convertir a lista y ordenar por los que más plata física dejaron
+  let rentabilidad = Object.keys(rentMap).map(nombre => {
+    return { nombre: nombre, margen: rentMap[nombre] };
+  });
   rentabilidad.sort((a, b) => b.margen - a.margen);
+
+  // 3. Agarrar el Top 5
   let top5 = rentabilidad.slice(0, 5);
 
   let labels = top5.map(p => p.nombre.length > 15 ? p.nombre.substring(0, 15) + '...' : p.nombre);
@@ -836,7 +853,7 @@ function renderDashboard() {
     data: {
       labels: labels,
       datasets: [{
-        label: 'Ganancia Neta ($)',
+        label: 'Plata Real Generada ($)',
         data: data,
         backgroundColor: 'rgba(47, 129, 247, 0.8)',
         borderColor: '#2f81f7',
@@ -847,7 +864,16 @@ function renderDashboard() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return '$' + context.raw.toLocaleString('es-AR');
+            }
+          }
+        }
+      },
       scales: {
         y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' }, beginAtZero: true },
         x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { display: false } }
