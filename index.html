@@ -345,45 +345,54 @@ select.f-in option{background:var(--s2)}
   <button class="nav-btn" onclick="goTab('items',this)"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Items</button>
 </div>
 
-<div id="remito-pro">
-  <div style="display: flex; justify-content: space-between; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-    <div>
-      <h2 style="margin:0; color: #000; font-size: 24px; font-weight: 900;">JUNTECH STORE</h2>
-      <p style="margin: 0; color: #333; font-size: 14px; text-transform: uppercase;">División Mayorista</p>
-    </div>
+<div id="remito-pro" style="background: white !important; color: black !important; padding: 40px; font-family: sans-serif;">
+  <!-- LOGO Y ENCABEZADO -->
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px;">
+    <img src="https://juntechstore.github.io/juntech-os/icon-512.png" style="width: 80px; height: 80px; border-radius: 10px;">
     <div style="text-align: right;">
-      <h3 style="margin:0; font-size: 18px;">REMITO DE CONTROL</h3>
-      <p id="remito-fecha" style="margin: 0; color: #333; font-size: 14px;">Fecha: --/--/----</p>
+      <h2 style="margin:0; font-size: 28px;">JUNTECH STORE</h2>
+      <p style="margin:0;">División Mayorista</p>
+      <p id="remito-fecha" style="margin:5px 0 0 0; font-weight:bold;"></p>
     </div>
   </div>
 
-  <div style="margin-bottom: 20px; font-size: 16px;">
-    <strong>Revendedor:</strong> <span id="remito-cliente" style="text-transform: uppercase;">--</span>
+  <div style="margin-bottom: 20px;">
+    <strong>Revendedor:</strong> <span id="remito-cliente" style="text-transform: uppercase;"></span>
   </div>
 
+  <!-- TABLA -->
   <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
     <thead>
-      <tr style="background-color: #f0f0f0; border-bottom: 2px solid #000;">
-        <th style="padding: 8px; text-align: center; width: 10%;">Cant.</th>
-        <th style="padding: 8px; text-align: left; width: 60%;">Descripción</th>
-        <th style="padding: 8px; text-align: right; width: 30%;">Subtotal</th>
+      <tr style="border-bottom: 2px solid #000; text-align: left;">
+        <th style="padding: 10px;">Cant.</th>
+        <th style="padding: 10px;">Descripción</th>
+        <th style="padding: 10px; text-align: right;">Subtotal</th>
       </tr>
     </thead>
     <tbody id="remito-items-print"></tbody>
   </table>
 
-  <div style="background: #f9f9f9; padding: 10px; border: 1px solid #ccc; font-size: 12px; margin-bottom: 20px;">
-    <strong>CONDICIONES DE GARANTÍA:</strong> Los productos cuentan con garantía por falla de fábrica (verificar al recibir). No se aceptan cambios por mal uso, golpes o humedad. Reclamos dentro de los 30 días de la fecha de este remito.
+  <!-- TOTALES Y DESCUENTOS -->
+  <div id="remito-descuento-container" style="text-align: right; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; display: none;">
+    <span id="remito-motivo-desc" style="font-size: 12px; color: #555;"></span>: 
+    <span id="remito-valor-desc" style="font-weight: bold;"></span>
+  </div>
+  
+  <div style="text-align: right; font-size: 24px; font-weight: 900; margin-top: 10px;">
+    TOTAL: $<span id="remito-total">0</span>
   </div>
 
-  <div style="text-align: right; font-size: 20px; font-weight: 900; border-top: 2px solid #000; padding-top: 10px;">
-    TOTAL INVERSIÓN: $<span id="remito-total">0</span>
+  <!-- GARANTÍA -->
+  <div style="margin-top: 40px; border: 1px solid #000; padding: 15px; font-size: 11px;">
+    <strong>CONDICIONES DE GARANTÍA:</strong> Los productos tienen garantía por falla de fábrica. No cubre mal uso, golpes o humedad. Reclamos dentro de los 30 días. Para gestionar garantías, contactar vía WhatsApp indicando ticket y falla.
   </div>
 
-  <div style="margin-top: 50px; text-align: center;">
-    <div style="width: 200px; margin: 0 auto; border-top: 2px solid #000; padding-top: 5px; font-size: 12px;">Firma y Sello JuntechStore</div>
+  <div style="margin-top: 40px; text-align: center;">
+    <div style="width: 200px; margin: 0 auto; border-top: 1px solid #000; padding-top: 5px; font-size: 12px;">Firma y Sello JuntechStore</div>
   </div>
 </div>
+    <!-- //HASTA ACA ES REMITOPRO -->
+
   
 <div class="modal-bg" id="modal-venta">
   <div class="modal-box">
