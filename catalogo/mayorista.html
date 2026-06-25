@@ -9,7 +9,7 @@
     body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 0 0 100px 0; margin: 0; }
     
     .header { text-align: center; background: var(--s1); padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;}
-    .logo { max-width: 120px; height: auto; margin-bottom: 10px; border-radius: 20%;} /* Ajusté un poco el tamaño para el icon-512 */
+    .logo { max-width: 120px; height: auto; margin-bottom: 10px; border-radius: 20%;} 
     .header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; text-transform: uppercase; }
     .header p { color: #8b949e; font-size: 0.9rem; margin: 5px 0 0 0; }
 
@@ -94,17 +94,23 @@
         document.querySelector('.spinner').style.display = 'none';
         document.getElementById('loader-text').innerHTML = `
           <div class="error-msg">
-            Error al conectar con la base de datos.<br><br>
-            Solución: En Google Apps Script andá a <b>Implementar > Nueva Implementación</b>, y asegurate de que <b>"Quién tiene acceso"</b> diga <b>"Cualquiera"</b>.
+            Error de conexión.<br>Verificá los permisos del script de Google.
           </div>`;
-        console.error("Detalle del error:", error);
+        console.error("Error:", error);
       });
 
     function renderCatalog(productosData) {
       const div = document.getElementById('catalog');
       div.innerHTML = '';
+      let productosRenderizados = 0;
+
       productosData.forEach(p => {
-        if(p.stock > 0 && p.precio > 0) {
+        // Validación estricta: tiene que haber stock y precio mayor a cero
+        let precioNum = parseFloat(p.precio) || 0;
+        let stockNum = parseInt(p.stock) || 0;
+
+        if(stockNum > 0 && precioNum > 0) {
+          productosRenderizados++;
           const imgHTML = p.imagen && p.imagen.trim() !== "" 
             ? `<img src="${p.imagen}" alt="${p.nombre}">` 
             : `<div class="img-placeholder">Sin imagen</div>`;
@@ -114,15 +120,19 @@
               <div class="img-container">${imgHTML}</div>
               <div class="card-body">
                 <h2>${p.nombre}</h2>
-                <div class="precio">$${p.precio.toLocaleString('es-AR')}</div>
-                <div class="stock">Stock disponible: ${p.stock}</div>
+                <div class="precio">$${precioNum.toLocaleString('es-AR')}</div>
+                <div class="stock">Stock disponible: ${stockNum}</div>
                 <div class="controls">
-                  <input type="number" placeholder="Cant." min="0" oninput="validarYAgregar('${p.nombre}', this, ${p.precio}, ${p.stock})">
+                  <input type="number" placeholder="Cant." min="0" oninput="validarYAgregar('${p.nombre}', this, ${precioNum}, ${stockNum})">
                 </div>
               </div>
             </div>`;
         }
       });
+
+      if (productosRenderizados === 0) {
+        div.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #8b949e;">No hay productos con stock y precio configurado en este momento.</div>`;
+      }
     }
 
     function validarYAgregar(nombre, inputElem, precio, maxStock) {
@@ -162,7 +172,7 @@
       } else {
         btn.disabled = true;
         msgMinimo.style.color = "#f85149";
-        msgMinimo.innerText = \`Faltan $\${(MINIMO_COMPRA - total).toLocaleString('es-AR')} para el mínimo\`;
+        msgMinimo.innerText = "Faltan $" + (MINIMO_COMPRA - total).toLocaleString('es-AR') + " para el mínimo";
       }
     }
 
