@@ -8,17 +8,14 @@
     :root { --bg:#07090d; --s1:#161b22; --blue:#2f81f7; --text:#e6edf3; --green:#39d353; --border:#30363d; }
     body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 0 0 100px 0; margin: 0; }
     
-    /* Header & Logo */
     .header { text-align: center; background: var(--s1); padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;}
-    .logo { max-width: 150px; height: auto; margin-bottom: 10px; border-radius: 8px;}
+    .logo { max-width: 120px; height: auto; margin-bottom: 10px; border-radius: 20%;} /* Ajusté un poco el tamaño para el icon-512 */
     .header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; text-transform: uppercase; }
     .header p { color: #8b949e; font-size: 0.9rem; margin: 5px 0 0 0; }
 
-    /* Layout */
     .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
     
-    /* Cards */
     .card { background: var(--s1); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; }
     .card:hover { border-color: var(--blue); transform: translateY(-3px); }
     .img-container { width: 100%; height: 200px; background: #0d1117; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -29,17 +26,15 @@
     .precio { font-size: 1.4rem; color: var(--green); font-weight: 800; margin-bottom: 5px; }
     .stock { font-size: 0.8rem; color: #8b949e; margin-bottom: 15px; }
     
-    /* Inputs */
     .controls { display: flex; align-items: center; gap: 10px; margin-top: auto; }
     input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; text-align: center; font-size: 1rem; outline: none; transition: 0.2s;}
     input:focus { border-color: var(--blue); }
     
-    /* Loader */
     .loader-container { text-align: center; padding: 50px; }
     .spinner { width: 40px; height: 40px; border: 4px solid rgba(47, 129, 247, 0.2); border-left-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error-msg { color: #f85149; font-weight: bold; margin-top: 10px; padding: 15px; border: 1px solid #f85149; border-radius: 8px; background: rgba(248, 81, 73, 0.1); }
 
-    /* Footer Cart */
     .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13, 17, 23, 0.95); padding: 15px 20px; border-top: 1px solid var(--border); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
     .cart-info { display: flex; flex-direction: column; }
     .total { font-size: 1.4rem; font-weight: bold; color: var(--green); }
@@ -48,7 +43,6 @@
     .btn-wp:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
     .btn-wp:not(:disabled):hover { background: #20b858; transform: scale(1.05); }
 
-    /* Mobile adjustments */
     @media (max-width: 600px) {
       .cart-panel { flex-direction: column; gap: 15px; text-align: center; }
       .btn-wp { width: 100%; }
@@ -58,7 +52,6 @@
 <body>
 
   <div class="header">
-    <!-- Ajustá el nombre de tu archivo de logo acá (ej: logo.png, logo.jpg) -->
     <img src="./icon-512.png" alt="Juntech Logo" class="logo">
     <h1>Portal Mayorista</h1>
     <p>Precios exclusivos para revendedores</p>
@@ -67,7 +60,7 @@
   <div class="container">
     <div id="loader" class="loader-container">
       <div class="spinner"></div>
-      <div style="color: #8b949e;">Sincronizando stock en vivo...</div>
+      <div id="loader-text" style="color: #8b949e;">Sincronizando stock en vivo...</div>
     </div>
     <div id="catalog" class="grid" style="display: none;"></div>
   </div>
@@ -81,20 +74,30 @@
   </div>
 
   <script>
-    // --- CONFIGURACIÓN ---
-    const API_URL = "https://script.google.com/macros/s/AKfycbwB9pXsgFuu_pQlckpwbtejT1qbeq8ulPIUO7tsQvRSHSL_9PGsL2Lx8p9hZ0P8jlTpCg/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz4BDjwEyyVJjoacFQUc3FjlXh5gpA-wggMb89YEcycW8pK4beQ9iHiGnzafN6PL-baGg/exec";
     const NUMERO_WP = "5493521464618";
-    const MINIMO_COMPRA = 30000; // aca va el minimo de compra
-    // ---------------------
+    const MINIMO_COMPRA = 30000; 
 
     let carrito = {};
 
     fetch(API_URL)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("Google bloqueó la conexión.");
+        return r.json();
+      })
       .then(data => {
         document.getElementById('loader').style.display = 'none';
         document.getElementById('catalog').style.display = 'grid';
         renderCatalog(data);
+      })
+      .catch(error => {
+        document.querySelector('.spinner').style.display = 'none';
+        document.getElementById('loader-text').innerHTML = `
+          <div class="error-msg">
+            Error al conectar con la base de datos.<br><br>
+            Solución: En Google Apps Script andá a <b>Implementar > Nueva Implementación</b>, y asegurate de que <b>"Quién tiene acceso"</b> diga <b>"Cualquiera"</b>.
+          </div>`;
+        console.error("Detalle del error:", error);
       });
 
     function renderCatalog(productosData) {
