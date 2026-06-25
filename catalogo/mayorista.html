@@ -3,49 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juntech | Catálogo Mayorista</title>
+  <title>JuntechStore | Catálogo Mayorista</title>
   <style>
-    :root { --bg:#07090d; --s1:#0d1117; --blue:#2f81f7; --text:#e6edf3; }
-    body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 20px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-    .card { background: var(--s1); padding: 15px; border-radius: 10px; border: 1px solid #30363d; }
-    h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
-    .stock { font-size: 0.9rem; color: #8b949e; margin-bottom: 10px; }
-    input { width: 50px; background: #161b22; border: 1px solid #30363d; color: white; padding: 5px; border-radius: 5px; text-align: center; }
-    button { background: var(--blue); color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    :root { --bg:#07090d; --s1:#0d1117; --blue:#2f81f7; --text:#e6edf3; --green:#39d353; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #30363d; padding-bottom: 15px;}
+    .header h1 { margin: 0; font-size: 1.8rem; color: var(--blue); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding-bottom: 100px; }
+    .card { background: rgba(22, 27, 34, 0.8); padding: 20px; border-radius: 12px; border: 1px solid #30363d; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    h2 { margin: 0 0 10px 0; font-size: 1.1rem; text-transform: uppercase; }
+    .precio { font-size: 1.5rem; color: var(--green); font-weight: bold; margin-bottom: 5px; }
+    .stock { font-size: 0.85rem; color: #8b949e; margin-bottom: 15px; }
+    .controls { display: flex; gap: 10px; }
+    input { flex: 1; background: #07090d; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px; text-align: center; font-size: 1.1rem; }
+    input:focus { outline: none; border-color: var(--blue); }
+    .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13, 17, 23, 0.95); padding: 15px 20px; border-top: 1px solid var(--blue); text-align: center; backdrop-filter: blur(5px); z-index: 100;}
+    .total { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; color: var(--text);}
+    .btn-wp { background: #25D366; color: #000; border: none; padding: 14px; width: 100%; max-width: 400px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; transition: 0.2s; }
+    .btn-wp:hover { background: #20b858; transform: scale(1.02); }
   </style>
 </head>
 <body>
-  <h1>Catálogo Mayorista</h1>
-  <div id="catalog" class="grid">Cargando productos...</div>
-  <button onclick="finalizarPedido()" style="margin-top:20px; background: #25D366;">Enviar Pedido por WhatsApp</button>
+  <div class="header">
+    <h1>JUNTECH STORE</h1>
+    <p style="color: #8b949e; margin: 5px 0 0 0; font-size: 0.9rem;">Portal de Compras Mayoristas</p>
+  </div>
+  
+  <div id="catalog" class="grid">Cargando el arsenal...</div>
+  
+  <div class="cart-panel">
+    <div class="total">Inversión Estimada: $<span id="total-price">0</span></div>
+    <button class="btn-wp" onclick="finalizarPedido()">Generar Pedido por WhatsApp</button>
+  </div>
 
   <script>
-    // --- ACÁ PEGÁS LA URL QUE TE DIO GOOGLE APPS SCRIPT ---
-    const API_URL = "https://script.google.com/macros/s/AKfycbzrt_PXqXnFmbakZHi94UnUcn4FHyREk5mOEdjxBCfTuv_7MBE-_YhUnTS9FjKL2zl99Q/exec";
+    // --- 1. PEGÁ ACÁ LA URL DE TU NUEVA IMPLEMENTACIÓN DE APPS SCRIPT ---
+    const API_URL = "URL_DE_TU_APPS_SCRIPT_ACA";
+    
+    // --- 2. PEGÁ ACÁ TU NÚMERO DE WHATSAPP (Sin el +, pero con el 549) ---
+    const NUMERO_WP = "549TÚ_NÚMERO_ACÁ";
+
+    let productosData = [];
     let carrito = {};
 
     fetch(API_URL)
       .then(r => r.json())
       .then(data => {
-        const div = document.getElementById('catalog');
-        div.innerHTML = '';
-        data.forEach(p => {
-          if(p.stock > 0) { // Oculta si no hay stock
-            div.innerHTML += `
-              <div class="card">
-                <h2>${p.nombre}</h2>
-                <div class="stock">Stock: ${p.stock}</div>
-                <input type="number" placeholder="Cant" onchange="carrito['${p.nombre}'] = this.value">
-              </div>`;
-          }
-        });
+        productosData = data;
+        renderCatalog();
+      })
+      .catch(e => {
+        document.getElementById('catalog').innerHTML = "Error al conectar con la base de datos de Juntech.";
       });
 
+    function renderCatalog() {
+      const div = document.getElementById('catalog');
+      div.innerHTML = '';
+      productosData.forEach(p => {
+        // Solo renderiza si hay stock y si le pusiste un precio mayor a 0
+        if(p.stock > 0 && p.precio > 0) {
+          div.innerHTML += `
+            <div class="card">
+              <div>
+                <h2>${p.nombre}</h2>
+                <div class="precio">$${p.precio}</div>
+                <div class="stock">Disponibles: ${p.stock} u.</div>
+              </div>
+              <div class="controls">
+                <input type="number" placeholder="Cant." min="0" max="${p.stock}" oninput="actualizarCarrito('${p.nombre}', this.value, ${p.precio})">
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    function actualizarCarrito(nombre, cantidad, precio) {
+      if (cantidad > 0) {
+        carrito[nombre] = { cantidad: parseInt(cantidad), precio: precio };
+      } else {
+        delete carrito[nombre];
+      }
+      calcularTotal();
+    }
+
+    function calcularTotal() {
+      let total = 0;
+      for (let prod in carrito) {
+        total += carrito[prod].cantidad * carrito[prod].precio;
+      }
+      document.getElementById('total-price').innerText = total.toLocaleString('es-AR');
+    }
+
     function finalizarPedido() {
-      let msg = "¡Hola! Quiero hacer un pedido mayorista:%0A";
-      for(let prod in carrito) { msg += `${carrito[prod]}x ${prod}%0A`; }
-      window.open(`https://wa.me/5493521464618?text=${msg}`);
+      if (Object.keys(carrito).length === 0) {
+        alert("Agregá algún producto antes de mandar el pedido.");
+        return;
+      }
+
+      // Mensaje estructurado para vos
+      let msg = "¡Qué onda Joaco! Acá va mi pedido mayorista para JuntechStore:%0A%0A";
+      let totalFinal = 0;
+
+      for(let prod in carrito) { 
+        let subtotal = carrito[prod].cantidad * carrito[prod].precio;
+        msg += `▪ ${carrito[prod].cantidad}x ${prod} ($${subtotal})%0A`; 
+        totalFinal += subtotal;
+      }
+      
+      msg += `%0A*TOTAL ESTIMADO: $${totalFinal.toLocaleString('es-AR')}*%0A%0A`;
+      msg += `Espero tu confirmación para cerrar los números.`;
+
+      window.open(`https://wa.me/${NUMERO_WP}?text=${msg}`);
     }
   </script>
 </body>
