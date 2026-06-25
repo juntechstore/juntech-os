@@ -3,83 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JuntechStore | Catálogo Mayorista</title>
+  <title>JuntechStore | Mayorista</title>
   <style>
-    :root { --bg:#07090d; --s1:#0d1117; --blue:#2f81f7; --text:#e6edf3; --green:#39d353; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 20px; margin: 0; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #30363d; padding-bottom: 15px;}
-    .header h1 { margin: 0; font-size: 1.8rem; color: var(--blue); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding-bottom: 100px; }
-    .card { background: rgba(22, 27, 34, 0.8); padding: 20px; border-radius: 12px; border: 1px solid #30363d; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-    h2 { margin: 0 0 10px 0; font-size: 1.1rem; text-transform: uppercase; }
-    .precio { font-size: 1.5rem; color: var(--green); font-weight: bold; margin-bottom: 5px; }
-    .stock { font-size: 0.85rem; color: #8b949e; margin-bottom: 15px; }
-    .controls { display: flex; gap: 10px; }
-    input { flex: 1; background: #07090d; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px; text-align: center; font-size: 1.1rem; }
-    input:focus { outline: none; border-color: var(--blue); }
-    .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13, 17, 23, 0.95); padding: 15px 20px; border-top: 1px solid var(--blue); text-align: center; backdrop-filter: blur(5px); z-index: 100;}
-    .total { font-size: 1.3rem; font-weight: bold; margin-bottom: 10px; color: var(--text);}
-    .btn-wp { background: #25D366; color: #000; border: none; padding: 14px; width: 100%; max-width: 400px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; transition: 0.2s; }
-    .btn-wp:hover { background: #20b858; transform: scale(1.02); }
+    :root { --bg:#07090d; --s1:#161b22; --blue:#2f81f7; --text:#e6edf3; --green:#39d353; --border:#30363d; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 0 0 100px 0; margin: 0; }
+    
+    /* Header & Logo */
+    .header { text-align: center; background: var(--s1); padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;}
+    .logo { max-width: 150px; height: auto; margin-bottom: 10px; border-radius: 8px;}
+    .header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; text-transform: uppercase; }
+    .header p { color: #8b949e; font-size: 0.9rem; margin: 5px 0 0 0; }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    
+    /* Cards */
+    .card { background: var(--s1); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; }
+    .card:hover { border-color: var(--blue); transform: translateY(-3px); }
+    .img-container { width: 100%; height: 200px; background: #0d1117; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .img-container img { width: 100%; height: 100%; object-fit: cover; }
+    .img-placeholder { color: #8b949e; font-size: 0.8rem; }
+    .card-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+    h2 { margin: 0 0 8px 0; font-size: 1rem; }
+    .precio { font-size: 1.4rem; color: var(--green); font-weight: 800; margin-bottom: 5px; }
+    .stock { font-size: 0.8rem; color: #8b949e; margin-bottom: 15px; }
+    
+    /* Inputs */
+    .controls { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+    input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; text-align: center; font-size: 1rem; outline: none; transition: 0.2s;}
+    input:focus { border-color: var(--blue); }
+    
+    /* Loader */
+    .loader-container { text-align: center; padding: 50px; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(47, 129, 247, 0.2); border-left-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Footer Cart */
+    .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(13, 17, 23, 0.95); padding: 15px 20px; border-top: 1px solid var(--border); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
+    .cart-info { display: flex; flex-direction: column; }
+    .total { font-size: 1.4rem; font-weight: bold; color: var(--green); }
+    .alerta-minimo { font-size: 0.8rem; color: #f85149; margin-top: 2px;}
+    .btn-wp { background: #25D366; color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+    .btn-wp:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+    .btn-wp:not(:disabled):hover { background: #20b858; transform: scale(1.05); }
+
+    /* Mobile adjustments */
+    @media (max-width: 600px) {
+      .cart-panel { flex-direction: column; gap: 15px; text-align: center; }
+      .btn-wp { width: 100%; }
+    }
   </style>
 </head>
 <body>
+
   <div class="header">
-    <h1>JUNTECH STORE</h1>
-    <p style="color: #8b949e; margin: 5px 0 0 0; font-size: 0.9rem;">Portal de Compras Mayoristas</p>
+    <!-- Ajustá el nombre de tu archivo de logo acá (ej: logo.png, logo.jpg) -->
+    <img src="./icon-512.png" alt="Juntech Logo" class="logo">
+    <h1>Portal Mayorista</h1>
+    <p>Precios exclusivos para revendedores</p>
   </div>
   
-  <div id="catalog" class="grid">Cargando el arsenal...</div>
+  <div class="container">
+    <div id="loader" class="loader-container">
+      <div class="spinner"></div>
+      <div style="color: #8b949e;">Sincronizando stock en vivo...</div>
+    </div>
+    <div id="catalog" class="grid" style="display: none;"></div>
+  </div>
   
   <div class="cart-panel">
-    <div class="total">Inversión Estimada: $<span id="total-price">0</span></div>
-    <button class="btn-wp" onclick="finalizarPedido()">Generar Pedido por WhatsApp</button>
+    <div class="cart-info">
+      <div class="total">Total: $<span id="total-price">0</span></div>
+      <div id="minimo-msg" class="alerta-minimo">Mínimo de compra: $30.000</div>
+    </div>
+    <button id="btn-enviar" class="btn-wp" disabled onclick="finalizarPedido()">Generar Pedido</button>
   </div>
 
   <script>
-    // --- 1. PEGÁ ACÁ LA URL DE TU NUEVA IMPLEMENTACIÓN DE APPS SCRIPT ---
-    const API_URL = "https://script.google.com/macros/s/AKfycbz43A6WJMuvnRiH951xu1MGzBeFk8SohdtfVDEhz7kjdtqZQEh4YJfCJgkjW7ycczvEUA/exec";
-    
-    // --- 2. PEGÁ ACÁ TU NÚMERO DE WHATSAPP (Sin el +, pero con el 549) ---
+    // --- CONFIGURACIÓN ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbwB9pXsgFuu_pQlckpwbtejT1qbeq8ulPIUO7tsQvRSHSL_9PGsL2Lx8p9hZ0P8jlTpCg/exec";
     const NUMERO_WP = "5493521464618";
+    const MINIMO_COMPRA = 30000; // aca va el minimo de compra
+    // ---------------------
 
-    let productosData = [];
     let carrito = {};
 
     fetch(API_URL)
       .then(r => r.json())
       .then(data => {
-        productosData = data;
-        renderCatalog();
-      })
-      .catch(e => {
-        document.getElementById('catalog').innerHTML = "Error al conectar con la base de datos de Juntech.";
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('catalog').style.display = 'grid';
+        renderCatalog(data);
       });
 
-    function renderCatalog() {
+    function renderCatalog(productosData) {
       const div = document.getElementById('catalog');
       div.innerHTML = '';
       productosData.forEach(p => {
-        // Solo renderiza si hay stock y si le pusiste un precio mayor a 0
         if(p.stock > 0 && p.precio > 0) {
+          const imgHTML = p.imagen && p.imagen.trim() !== "" 
+            ? `<img src="${p.imagen}" alt="${p.nombre}">` 
+            : `<div class="img-placeholder">Sin imagen</div>`;
+
           div.innerHTML += `
             <div class="card">
-              <div>
+              <div class="img-container">${imgHTML}</div>
+              <div class="card-body">
                 <h2>${p.nombre}</h2>
-                <div class="precio">$${p.precio}</div>
-                <div class="stock">Disponibles: ${p.stock} u.</div>
-              </div>
-              <div class="controls">
-                <input type="number" placeholder="Cant." min="0" max="${p.stock}" oninput="actualizarCarrito('${p.nombre}', this.value, ${p.precio})">
+                <div class="precio">$${p.precio.toLocaleString('es-AR')}</div>
+                <div class="stock">Stock disponible: ${p.stock}</div>
+                <div class="controls">
+                  <input type="number" placeholder="Cant." min="0" oninput="validarYAgregar('${p.nombre}', this, ${p.precio}, ${p.stock})">
+                </div>
               </div>
             </div>`;
         }
       });
     }
 
-    function actualizarCarrito(nombre, cantidad, precio) {
-      if (cantidad > 0) {
-        carrito[nombre] = { cantidad: parseInt(cantidad), precio: precio };
+    function validarYAgregar(nombre, inputElem, precio, maxStock) {
+      let valor = parseInt(inputElem.value) || 0;
+      
+      if (valor > maxStock) {
+        valor = maxStock;
+        inputElem.value = maxStock;
+      } else if (valor < 0) {
+        valor = 0;
+        inputElem.value = "";
+      }
+
+      if (valor > 0) {
+        carrito[nombre] = { cantidad: valor, precio: precio };
       } else {
         delete carrito[nombre];
       }
@@ -91,28 +146,34 @@
       for (let prod in carrito) {
         total += carrito[prod].cantidad * carrito[prod].precio;
       }
+      
       document.getElementById('total-price').innerText = total.toLocaleString('es-AR');
+      
+      const btn = document.getElementById('btn-enviar');
+      const msgMinimo = document.getElementById('minimo-msg');
+      
+      if (total >= MINIMO_COMPRA) {
+        btn.disabled = false;
+        msgMinimo.style.color = "#8b949e";
+        msgMinimo.innerText = "Mínimo alcanzado ✓";
+      } else {
+        btn.disabled = true;
+        msgMinimo.style.color = "#f85149";
+        msgMinimo.innerText = \`Faltan $\${(MINIMO_COMPRA - total).toLocaleString('es-AR')} para el mínimo\`;
+      }
     }
 
     function finalizarPedido() {
-      if (Object.keys(carrito).length === 0) {
-        alert("Agregá algún producto antes de mandar el pedido.");
-        return;
-      }
-
-      // Mensaje estructurado para vos
-      let msg = "¡Qué onda Joaco! Acá va mi pedido mayorista para JuntechStore:%0A%0A";
+      let msg = "¡Qué onda Joaco! Pedido mayorista JuntechStore:%0A%0A";
       let totalFinal = 0;
 
       for(let prod in carrito) { 
         let subtotal = carrito[prod].cantidad * carrito[prod].precio;
-        msg += `▪ ${carrito[prod].cantidad}x ${prod} ($${subtotal})%0A`; 
+        msg += `▪ ${carrito[prod].cantidad}x ${prod} ($${subtotal.toLocaleString('es-AR')})%0A`; 
         totalFinal += subtotal;
       }
       
-      msg += `%0A*TOTAL ESTIMADO: $${totalFinal.toLocaleString('es-AR')}*%0A%0A`;
-      msg += `Espero tu confirmación para cerrar los números.`;
-
+      msg += `%0A*TOTAL: $${totalFinal.toLocaleString('es-AR')}*%0A`;
       window.open(`https://wa.me/${NUMERO_WP}?text=${msg}`);
     }
   </script>
