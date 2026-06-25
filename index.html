@@ -208,16 +208,18 @@
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     /* =========================================
-       REMITO MAYORISTA (IMPRESIÓN)
+       REMITO MAYORISTA (IMPRESIÓN) BLINDADO
     ========================================= */
     @media print {
-      body * { visibility: hidden; }
-      #remito-pro, #remito-pro * { visibility: visible; }
-      #remito-pro { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; margin: 0 !important; }
-      .no-print { display: none !important; }
+      /* 1. Forzamos la hoja a blanco puro y matamos el modo oscuro */
+      html, body { background: #ffffff !important; color: #000000 !important; }
+      /* 2. Apagamos tu sistema entero para que no deje "espacios fantasma" negros */
+      #app, #login, .nav, .modal-bg, .toast { display: none !important; }
+      /* 3. Imprimimos el remito limpio */
+      #remito-pro { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 0 !important; margin: 0 !important; }
+      #remito-pro * { color: #000000 !important; }
     }
     #remito-pro { display: none; }
-  </style>
 </head>
 <body>
 
