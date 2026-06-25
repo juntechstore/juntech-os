@@ -288,8 +288,11 @@
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
-          <div class="field"><label class="f-label">Precio Unit.</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 1000/0.75" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Precio a cobrar</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 3000" onchange="evalMath(this)"></div>
         </div>
+        
+        <div class="field"><label class="f-label">Precio de Lista (Tachado)</label><input class="f-in" id="v-precio-lista" type="text" placeholder="Opcional. Ej: 5000" onchange="evalMath(this)"></div>
+        
         <div class="field"><label class="f-label">Nombre en Ticket (Opcional)</label><input class="f-in" id="v-alias" placeholder="Dejar vacío para nombre original"></div>
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
@@ -424,13 +427,15 @@
   <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
     <thead>
       <tr style="border-bottom: 2px solid #000; text-align: left;">
-        <th style="padding: 10px;">Cant.</th>
-        <th style="padding: 10px;">Descripción</th>
-        <th style="padding: 10px; text-align: right;">Subtotal</th>
+        <th style="padding: 10px; width: 10%;">Cant.</th>
+        <th style="padding: 10px; width: 50%;">Descripción</th>
+        <th style="padding: 10px; width: 20%; text-align: right;">Precio U.</th>
+        <th style="padding: 10px; width: 20%; text-align: right;">Subtotal</th>
       </tr>
     </thead>
     <tbody id="remito-items-print"></tbody>
   </table>
+  
 
   <div id="remito-descuento-container" style="text-align: right; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; display: none;">
     <span id="remito-motivo-desc" style="font-size: 12px; color: #555;"></span>: 
@@ -750,16 +755,16 @@ function poblarListas(){
 
 /* --- SISTEMA DE VENTAS Y CARRITO --- */
 function selProduct(){
-  const val = $('v-search').value;
-  const p = DB.todo.find(x => x.nombre===val);
-  const prev = $('prod-prev');
+  const val=$('v-search').value; const p=DB.todo.find(x=>x.nombre===val); const prev=$('prod-prev');
   if(!p){ prev.style.display='none'; currentProd=null; return; }
-  currentProd = p;
-  $('pp-nombre').textContent = p.nombre;
-  $('pp-stock').textContent = p.stock+' u';
-  $('pp-precio').textContent = fmt(p.precio);
-  $('pp-costo').textContent = fmt(p.costo);
+  currentProd=p; $('pp-nombre').textContent=p.nombre; $('pp-stock').textContent=p.stock+' u';
+  $('pp-precio').textContent=fmt(p.precio); $('pp-costo').textContent=fmt(p.costo);
+  
+  // Cuando elegís el producto, te precarga el precio del Excel en AMBAS casillas.
+  // Vos podés dejar el de lista como está, y bajar el precio a cobrar.
   $('v-precio').value = p.precio;
+  $('v-precio-lista').value = p.precio; 
+  
   prev.style.display='block';
 }
 
@@ -767,19 +772,19 @@ function addToCart(){
   if(!currentProd){ toast('Elegi un producto primero','err'); return; }
   const cant = parseFloat($('v-cant').value)||1;
   const precio = parseFloat($('v-precio').value)||currentProd.precio;
+  // Toma el precio de lista que vos tipeaste a mano, si lo dejás vacío usa el del Excel
+  const precioLista = parseFloat($('v-precio-lista').value) || currentProd.precio; 
   const gar = $('v-gar').value;
   const alias = $('v-alias').value.trim();
   const nombreFinal = alias || currentProd.nombre;
   
   if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?')) return;
   
-  cart.push({nombre:nombreFinal, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, costo:currentProd.costo, garantia:gar});
+  cart.push({nombre:nombreFinal, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:gar});
   
-  $('v-search').value=''; $('v-precio').value=''; $('v-gar').value=''; $('v-alias').value=''; $('v-cant').value='1'; 
-  $('prod-prev').style.display='none'; currentProd=null; 
-  renderCart();
+  $('v-search').value=''; $('v-precio').value=''; $('v-precio-lista').value=''; $('v-gar').value=''; $('v-alias').value=''; $('v-cant').value='1'; 
+  $('prod-prev').style.display='none'; currentProd=null; renderCart();
 }
-
 function renderCart(){
   const div=$('cart-items');
   if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aun</div>'; $('cart-count').textContent='0 items'; $('cart-sub').textContent='$0'; calcTotal(); return; }
@@ -876,11 +881,20 @@ function prepararRemito(){
     let sub = item.cant * item.precio;
     subtotal += sub;
     let garantiaTxt = item.garantia ? `<div style="font-size:10px; color:#555; margin-top:2px;">Garantía: ${item.garantia}</div>` : '';
+    
+    // LÓGICA DEL PRECIO TACHADO
+    let precioReal = item.precioLista || item.precio;
+    let precioTxt = `$${Math.round(item.precio).toLocaleString('es-AR')}`;
+    if (item.precio < precioReal) {
+      precioTxt = `<span style="text-decoration:line-through; color:#888; font-size:10px;">$${Math.round(precioReal).toLocaleString('es-AR')}</span><br>$${Math.round(item.precio).toLocaleString('es-AR')}`;
+    }
+
     tbody.innerHTML += `
       <tr style="border-bottom: 1px solid #eee;">
         <td style="padding: 8px; text-align: center;">${item.cant}</td>
         <td style="padding: 8px;">${item.nombre}${garantiaTxt}</td>
-        <td style="padding: 8px; text-align: right;">$${Math.round(sub).toLocaleString('es-AR')}</td>
+        <td style="padding: 8px; text-align: right;">${precioTxt}</td>
+        <td style="padding: 8px; text-align: right; font-weight:bold;">$${Math.round(sub).toLocaleString('es-AR')}</td>
       </tr>
     `;
   });
@@ -913,7 +927,7 @@ async function procesarVenta(){
     }
     await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]);
     
-    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec'; 
+    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbweEiM17SagjVcuP8dL-PH_9iDFT9GeEdgUUjMOCM7COACm9D3qbVXPwi35RYjS7Y0G/exec'; 
     let pdfUrl = '';
     
     try {
