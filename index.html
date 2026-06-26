@@ -78,7 +78,7 @@
     .nav-btn.on::after { content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--blue-g); border-radius: 0 0 3px 3px; }
 
     /* =========================================
-       COMPONENTES REUTILIZABLES (Tarjetas, Botones, Inputs)
+       COMPONENTES REUTILIZABLES
     ========================================= */
     .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 10px; }
     .card-title { font-size: 10px; font-weight: 600; color: var(--text2); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 12px; }
@@ -127,7 +127,6 @@
     .tot-label { font-size: 11px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
     .tot-val { font-size: 1.5rem; font-weight: 700; letter-spacing: -.5px; }
 
-    /* Historial */
     .hist-item { padding: 9px 0; border-bottom: 1px solid var(--border2); }
     .hist-item:last-child { border-bottom: none; }
     .hist-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; gap: 8px; }
@@ -156,7 +155,6 @@
     .total-final-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
     .total-final-val { font-size: 1.8rem; font-weight: 700; letter-spacing: -.5px; color: var(--blue); }
 
-    /* Buscador */
     .search-wrap { position: relative; margin-bottom: 12px; }
     .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
     .f-in.ico { padding-left: 36px; }
@@ -183,7 +181,7 @@
     .dist-result { font-size: .95rem; font-weight: 700; margin-top: 6px; }
 
     /* =========================================
-       MODALES, TOASTS Y UTILES
+       MODALES Y TOASTS
     ========================================= */
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
     .modal-bg.on { display: flex; }
@@ -211,16 +209,14 @@
        REMITO MAYORISTA (IMPRESIÓN) BLINDADO
     ========================================= */
     @media print {
-      /* 1. Forzamos la hoja a blanco puro y matamos el modo oscuro */
       html, body { background: #ffffff !important; color: #000000 !important; }
-      /* 2. Apagamos tu sistema entero para que no deje "espacios fantasma" negros */
       #app, #login, .nav, .modal-bg, .toast { display: none !important; }
-      /* 3. Imprimimos el remito limpio */
       #remito-pro { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 0 !important; margin: 0 !important; }
       #remito-pro * { color: #000000 !important; }
+      .no-print { display: none !important; }
     }
     #remito-pro { display: none; }
-    </style>
+  </style>
 </head>
 <body>
 
@@ -435,7 +431,6 @@
     </thead>
     <tbody id="remito-items-print"></tbody>
   </table>
-  
 
   <div id="remito-descuento-container" style="text-align: right; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; display: none;">
     <span id="remito-motivo-desc" style="font-size: 12px; color: #555;"></span>: 
@@ -760,8 +755,6 @@ function selProduct(){
   currentProd=p; $('pp-nombre').textContent=p.nombre; $('pp-stock').textContent=p.stock+' u';
   $('pp-precio').textContent=fmt(p.precio); $('pp-costo').textContent=fmt(p.costo);
   
-  // Cuando elegís el producto, te precarga el precio del Excel en AMBAS casillas.
-  // Vos podés dejar el de lista como está, y bajar el precio a cobrar.
   $('v-precio').value = p.precio;
   $('v-precio-lista').value = p.precio; 
   
@@ -772,7 +765,6 @@ function addToCart(){
   if(!currentProd){ toast('Elegi un producto primero','err'); return; }
   const cant = parseFloat($('v-cant').value)||1;
   const precio = parseFloat($('v-precio').value)||currentProd.precio;
-  // Toma el precio de lista que vos tipeaste a mano, si lo dejás vacío usa el del Excel
   const precioLista = parseFloat($('v-precio-lista').value) || currentProd.precio; 
   const gar = $('v-gar').value;
   const alias = $('v-alias').value.trim();
@@ -785,6 +777,7 @@ function addToCart(){
   $('v-search').value=''; $('v-precio').value=''; $('v-precio-lista').value=''; $('v-gar').value=''; $('v-alias').value=''; $('v-cant').value='1'; 
   $('prod-prev').style.display='none'; currentProd=null; renderCart();
 }
+
 function renderCart(){
   const div=$('cart-items');
   if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aun</div>'; $('cart-count').textContent='0 items'; $('cart-sub').textContent='$0'; calcTotal(); return; }
@@ -853,7 +846,7 @@ function copiarPresupuesto(){
   navigator.clipboard.writeText(msg).then(() => { toast('✓ Presupuesto copiado a medida'); }).catch(err => { toast('Error al copiar presupuesto','err'); });
 }
 
-/* --- REMITO PRO (OPTIMIZADO Y BLINDADO) --- */
+/* --- REMITO PRO (CON TACHADO DE PRECIOS) --- */
 function prepararRemito(){
   if(!cart.length){ toast('Agregá productos al carrito primero','err'); return; }
   
@@ -908,6 +901,7 @@ function prepararRemito(){
   setTimeout(() => { remito.style.display = 'none'; }, 1000);
 }
 
+/* --- PROCESAMIENTO A GOOGLE SHEETS (COLUMNAS BLINDADAS) --- */
 async function procesarVenta(){
   if(!cart.length){ toast('Agrega productos primero','err'); return; }
   const cli=$('v-cli').value||'Cliente', metodo=$('v-metodo').value, desc=parseFloat($('v-desc-m').value)||0, descMot=$('v-desc-mot').value;
@@ -921,13 +915,38 @@ async function procesarVenta(){
     const id = '#'+fecha.getDate().toString().padStart(2,'0')+(fecha.getMonth()+1).toString().padStart(2,'0')+fecha.getHours().toString().padStart(2,'0')+fecha.getMinutes().toString().padStart(2,'0');
     const fechaStr = fecha.toLocaleDateString('es-AR')+' '+fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     
+    // TRUCO MATEMÁTICO: Prorrateo del descuento
     for(let i=0; i<cart.length; i++){
-      const item = cart[i]; const subNeto = (item.cant*item.precio) - (i===0?desc:0);
-      await append('Salidas!A:N', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', '', cli, i===0?desc:0, i===0?descMot:'-', item.garantia||'-']]);
+      const item = cart[i]; 
+      
+      const porcentajeDelTotal = sub > 0 ? (item.cant * item.precio) / sub : 0;
+      const descuentoProporcional = desc * porcentajeDelTotal;
+      const subNeto = (item.cant * item.precio) - descuentoProporcional;
+      
+      const costoTotalItem = item.costo * item.cant;
+      const gananciaItem = subNeto - costoTotalItem;
+
+      // EL TREN DE DATOS PERFECTO (Salidas!A:M) -> 13 columnas exactas
+      await append('Salidas!A:M', [[
+        item.sysName, 
+        item.sku||'-', 
+        item.cant, 
+        item.precio, 
+        subNeto, 
+        fechaStr, 
+        metodo, 
+        costoTotalItem, 
+        gananciaItem, 
+        cli, 
+        Math.round(descuentoProporcional), 
+        i===0 ? descMot : '-', 
+        item.garantia||'-'
+      ]]);
     }
+    
     await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]);
     
-    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbweEiM17SagjVcuP8dL-PH_9iDFT9GeEdgUUjMOCM7COACm9D3qbVXPwi35RYjS7Y0G/exec'; 
+    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec'; 
     let pdfUrl = '';
     
     try {
