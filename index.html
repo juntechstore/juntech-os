@@ -380,7 +380,6 @@ const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapi
 
 let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}}, cart=[], entradaCart=[], currentProd=null;
 
-// NUCLEO BLINDADO: Estas dos lineas evitan el error 'Cannot set properties of null'
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 const $ = id => document.getElementById(id);
@@ -414,7 +413,23 @@ function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.to
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
 
-/* === CARGA CENTRAL DE BASE DE DATOS === */
+/* === TRADUCTOR DE MATRIX DE GOOGLE SHEETS === */
+function parseExcelDate(val){
+  if(!val) return { s: '-', t: 0 };
+  let v = val.toString().trim();
+  if(!isNaN(v) && !v.includes('/') && !v.includes('-')) {
+    let ex = parseFloat(v);
+    let d = new Date(Math.round((ex - 25569) * 86400 * 1000));
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+    return { s: d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), t: d.getTime() };
+  } else {
+    let t = 0;
+    try { let parts = v.split(' ')[0].split('/'); if(parts.length===3) t = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`).getTime(); } catch(e){}
+    return { s: v, t: t };
+  }
+}
+
+/* === CARGA CENTRAL === */
 async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
@@ -428,22 +443,27 @@ async function cargarTodo(){
     const todasLasSalidas = sRows.concat(sRowsHist);
     const stockS = {}; let ganV = 0;
     
-    // CRM ENGINE
+    // CRM ENGINE BLINDADO
     DB.clientes = {};
     todasLasSalidas.forEach(r => { 
       if(!r[0]) return; 
-      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaStr = str(r[5]), costoT = num(r[7]), cli = str(r[9]).trim().toUpperCase(); 
+      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaRaw = r[5], costoT = num(r[7]), cli = str(r[9]).trim().toUpperCase(); 
       stockS[sysName] = (stockS[sysName]||0) + cant;
       if(subNeto > 0) ganV += (subNeto - costoT);
       
       if(cli && cli !== '-' && cli !== 'CLIENTE') {
-         if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: fechaStr, ultCompraTs: 0 };
+         if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: '', ultCompraTs: 0, historial: [] };
+         
+         let pDate = parseExcelDate(fechaRaw);
+         
          DB.clientes[cli].totalComprado += subNeto;
          DB.clientes[cli].items[sysName] = (DB.clientes[cli].items[sysName] || 0) + cant;
+         DB.clientes[cli].historial.push({ fecha: pDate.s, prod: sysName, cant: cant, total: subNeto });
          
-         let ts = 0;
-         try { const parts = fechaStr.split(' '); if(parts.length > 0) { const [day, mo, yr] = parts[0].split('/'); ts = new Date(`${yr}-${mo}-${day}T00:00:00`).getTime(); } } catch(e){}
-         if(ts > DB.clientes[cli].ultCompraTs) { DB.clientes[cli].ultCompraTs = ts; DB.clientes[cli].ultCompraStr = fechaStr; }
+         if(pDate.t > DB.clientes[cli].ultCompraTs) { 
+           DB.clientes[cli].ultCompraTs = pDate.t; 
+           DB.clientes[cli].ultCompraStr = pDate.s; 
+         }
       }
     });
 
@@ -457,7 +477,6 @@ async function cargarTodo(){
       DB.todo.push(item); if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
     
-    // LECTURA DE CUENTAS CORRIENTES
     let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:E'); } catch(e){}
     DB.saldosCC = {}; let plataEnCalle = 0;
     ccRows.forEach(r => {
@@ -471,10 +490,7 @@ async function cargarTodo(){
     let htmlCC = '';
     Object.keys(DB.saldosCC).forEach(p => {
       const saldo = DB.saldosCC[p];
-      if(saldo !== 0){
-        plataEnCalle += saldo;
-        htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
-      }
+      if(saldo !== 0){ plataEnCalle += saldo; htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`; }
     });
     setHTML('cc-lista', htmlCC || '<div class="empty">Nadie te debe plata</div>');
     setText('h-calle', fmt(plataEnCalle));
@@ -499,7 +515,6 @@ async function cargarTodo(){
       historial.push({tipo, cat:str(r[3]), motivo:str(r[4]), monto, metodo});
     });
     
-    // MATEMÁTICA DEL DEVENGADO
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
     const activosTotales = totalCaja + plataEnCalle; 
@@ -527,7 +542,7 @@ function poblarListas(){
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); if(el) el.appendChild(o.cloneNode(true)); });
 }
 
-/* === BUSCADOR CRM (RADAR) === */
+/* === BUSCADOR CRM Y DESPLEGABLE HISTORIAL === */
 let timeoutCRM;
 function buscarCliente(val) {
    clearTimeout(timeoutCRM);
@@ -547,6 +562,7 @@ function buscarCliente(val) {
              
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+             const cliId = c.replace(/[^a-zA-Z0-9]/g, ''); // ID seguro para el div
 
              html += `
                <div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
@@ -555,19 +571,44 @@ function buscarCliente(val) {
                      <span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span>
                   </div>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Total Invertido</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div>
+                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div>
                      <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div>
                   </div>
-                  <div style="font-size:11px;">
+                  <div style="font-size:11px; margin-bottom:10px;">
                      <span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br>
                      <span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)
                   </div>
+                  
+                  <button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button>
+                  <div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div>
                </div>
              `;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
    }, 300);
+}
+
+window.verHistorial = function(cliNombre, cliId) {
+   const el = $('hist-' + cliId);
+   if(!el) return;
+   
+   if(el.style.display === 'block') {
+      el.style.display = 'none';
+      return;
+   }
+   
+   const d = DB.clientes[cliNombre];
+   if(!d) return;
+   
+   let h = d.historial.slice().reverse().map(x => `
+      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border2);">
+         <span><span style="color:var(--text2)">${x.fecha.split(' ')[0]}</span> - ${x.cant}x ${x.prod}</span>
+         <b>${fmt(x.total)}</b>
+      </div>`).join('');
+      
+   el.innerHTML = h;
+   el.style.display = 'block';
 }
 
 /* === MODULO CUENTAS CORRIENTES === */
