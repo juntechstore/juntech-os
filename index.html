@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.0 - Banco</title>
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>JuntechOS v4.1 - CRM Master</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -77,6 +78,9 @@
     .pill-blue { background: #2f81f715; color: var(--blue); border: 1px solid #2f81f730; }
     .pill-cyan { background: #39d35315; color: var(--cyan); border: 1px solid #39d35330; }
     .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
+    .pill-orange { background: #f0883e15; color: var(--orange); border: 1px solid #f0883e30; }
+    .pill-red { background: #f8514915; color: var(--red); border: 1px solid #f8514930; }
+    .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .kpi { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; position: relative; overflow: hidden; }
@@ -154,7 +158,7 @@
   <div class="login-logo"><img id="logo-login" src="icon-192.png" alt="J" onerror="this.style.display='none'"></div>
   <div class="login-title">
     <h1>JUNTECH<span>OS</span></h1>
-    <p>Sistema de gestión v4.0 Banco</p>
+    <p>Sistema de gestión v4.1 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg"></p>
@@ -164,7 +168,7 @@
   <div class="hdr">
     <div class="hdr-left">
       <div class="logo-sm"><img id="logo-hdr" src="icon-192.png" alt="J" onerror="this.parentElement.style.display='none'"></div>
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.0</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.1</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -194,6 +198,12 @@
 
         <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
       </div>
+      
+      <div class="card">
+        <div class="card-title">Últimos movimientos</div>
+        <div id="home-hist"><div class="empty">Cargando...</div></div>
+      </div>
+      
       <div class="card">
         <div class="card-title">Stock</div>
         <div class="bal-row"><span class="bal-key">Total unidades</span><span class="bal-val blue" id="h-units">—</span></div>
@@ -240,7 +250,8 @@
         <div class="field"><label class="f-label">Método de pago</label>
           <select class="f-in" id="v-metodo">
             <option>TRANSFERENCIA</option><option>EFECTIVO</option><option>NX</option><option>MERCADO PAGO</option>
-            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option> </select>
+            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option> 
+          </select>
         </div>
         <div class="f-row" style="margin-bottom:8px;">
           <button class="btn btn-ghost" onclick="copiarPresupuesto()" style="border-color:var(--orange); color:var(--orange); margin-bottom:0; font-size:0.85rem;">📋 Presupuesto</button>
@@ -251,11 +262,20 @@
     </div>
 
     <div class="tab" id="tab-cc">
+      <div class="card" style="border-color:#bc8cff50; background:var(--bg)">
+        <div class="card-title" style="color:var(--purple); margin-bottom:8px">Radar de Clientes (CRM)</div>
+        <div class="search-wrap" style="margin-bottom:8px;">
+           <span class="search-ico">🔍</span>
+           <input class="f-in ico" placeholder="Escribí el nombre para analizar..." oninput="buscarCliente(this.value)">
+        </div>
+        <div id="crm-result"><div class="empty" style="padding:10px">Buscá un cliente para ver su radiografía</div></div>
+      </div>
+
       <div class="card">
         <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
         <div class="field"><label class="f-label">Tipo de Operación</label>
-          <select class="f-in" id="cc-tipo" onchange="toggleCcCaja()">
+          <select class="f-in" id="cc-tipo">
             <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
             <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
           </select>
@@ -315,7 +335,10 @@
       </div>
     </div>
 
-  </div> </div> <div class="nav" id="main-nav" style="display:none">
+  </div> 
+</div> 
+
+<div class="nav" id="main-nav" style="display:none">
   <button class="nav-btn on" onclick="goTab('home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</button>
   <button class="nav-btn" onclick="goTab('sell',this)"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Vender</button>
   <button class="nav-btn" onclick="goTab('cc',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Clientes</button>
@@ -355,32 +378,36 @@ const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercon
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}}, cart=[], entradaCart=[], currentProd=null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}}, cart=[], entradaCart=[], currentProd=null;
+
+// NUCLEO BLINDADO: Estas dos lineas evitan el error 'Cannot set properties of null'
+const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 const $ = id => document.getElementById(id);
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
 
-function toast(msg, tipo='ok'){ const t = $('toast'); t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
-function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); $('tab-'+id).classList.add('on'); el.classList.add('on'); }
+function toast(msg, tipo='ok'){ const t = $('toast'); if(!t) return; t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
+function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); const tab = $('tab-'+id); if(tab) tab.classList.add('on'); if(el) el.classList.add('on'); }
 function setBtn(id, loading, label){ const b = $(id); if(!b) return; b.disabled = loading; b.textContent = loading ? 'Procesando...' : label; }
-function evalMath(el) { if(!el.value) return; let v = el.value.toString().replace(/,/g, '.'); if(/[+\-*/]/.test(v)) { try { let res = new Function('return ' + v)(); if(!isNaN(res)) el.value = Math.round(res); } catch(e){} } }
+function evalMath(el) { if(!el || !el.value) return; let v = el.value.toString().replace(/,/g, '.'); if(/[+\-*/]/.test(v)) { try { let res = new Function('return ' + v)(); if(!isNaN(res)) el.value = Math.round(res); } catch(e){} } }
 
 function guardarToken(token, expiry){ try{ localStorage.setItem('jt_token', token); localStorage.setItem('jt_expiry', expiry); } catch(e){} }
 function tokenGuardado(){ try{ const t = localStorage.getItem('jt_token'); const e = parseInt(localStorage.getItem('jt_expiry')||'0'); if(t && e && Date.now() < e - 60000) return t; }catch(e){} return null; }
-async function entrarConToken(token){ accessToken = token; $('login').style.display='none'; $('app').classList.add('on'); $('main-nav').style.display='flex'; await cargarTodo(); }
+async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; await cargarTodo(); }
 
 function iniciarAuth(){
   const tokenExistente = tokenGuardado();
   if(tokenExistente){ entrarConToken(tokenExistente); return; }
-  $('login-msg').textContent='Conectando...';
+  setText('login-msg', 'Conectando...');
   if(typeof google==='undefined' || !google.accounts){ setTimeout(iniciarAuth, 1500); return; }
   try{
-    const tc = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: async r => { if(r.error){ $('login-msg').textContent='Error: '+r.error; return; } accessToken = r.access_token; guardarToken(r.access_token, Date.now() + 55*60*1000); await entrarConToken(r.access_token); } });
+    const tc = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: async r => { if(r.error){ setText('login-msg', 'Error: '+r.error); return; } accessToken = r.access_token; guardarToken(r.access_token, Date.now() + 55*60*1000); await entrarConToken(r.access_token); } });
     tc.requestAccessToken({prompt:''});
-  }catch(e){ $('login-msg').textContent='Error: '+e.message; }
+  }catch(e){ setText('login-msg', 'Error: '+e.message); }
 }
 window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); });
 
-async function get(range){ const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; }
+async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
 function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
@@ -389,7 +416,7 @@ function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=m
 
 /* === CARGA CENTRAL DE BASE DE DATOS === */
 async function cargarTodo(){
-  const btn=$('sync-btn'); btn.classList.add('loading'); btn.textContent='Sync';
+  const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
     const pRows = await get('Productos!A2:F');
     const pMap = {}; pRows.forEach(r => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5])}; });
@@ -397,10 +424,28 @@ async function cargarTodo(){
     const eRows = await get('Entradas!A2:D'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
 
-    const sRows = await get('Salidas!A2:H'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:H'); } catch(e) {} 
+    const sRows = await get('Salidas!A2:M'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:M'); } catch(e) {} 
+    const todasLasSalidas = sRows.concat(sRowsHist);
     const stockS = {}; let ganV = 0;
-    sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
-    sRows.concat(sRowsHist).forEach(r => { if(!r[0]) return; const n = str(r[0]); stockS[n] = (stockS[n]||0) + num(r[2]); });
+    
+    // CRM ENGINE
+    DB.clientes = {};
+    todasLasSalidas.forEach(r => { 
+      if(!r[0]) return; 
+      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaStr = str(r[5]), costoT = num(r[7]), cli = str(r[9]).trim().toUpperCase(); 
+      stockS[sysName] = (stockS[sysName]||0) + cant;
+      if(subNeto > 0) ganV += (subNeto - costoT);
+      
+      if(cli && cli !== '-' && cli !== 'CLIENTE') {
+         if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: fechaStr, ultCompraTs: 0 };
+         DB.clientes[cli].totalComprado += subNeto;
+         DB.clientes[cli].items[sysName] = (DB.clientes[cli].items[sysName] || 0) + cant;
+         
+         let ts = 0;
+         try { const parts = fechaStr.split(' '); if(parts.length > 0) { const [day, mo, yr] = parts[0].split('/'); ts = new Date(`${yr}-${mo}-${day}T00:00:00`).getTime(); } } catch(e){}
+         if(ts > DB.clientes[cli].ultCompraTs) { DB.clientes[cli].ultCompraTs = ts; DB.clientes[cli].ultCompraStr = fechaStr; }
+      }
+    });
 
     let aRows = []; try { aRows = await get('AJUSTES!A2:D'); } catch(e) {}
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
@@ -414,25 +459,25 @@ async function cargarTodo(){
     
     // LECTURA DE CUENTAS CORRIENTES
     let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:E'); } catch(e){}
-    const saldosCC = {}; let plataEnCalle = 0;
+    DB.saldosCC = {}; let plataEnCalle = 0;
     ccRows.forEach(r => {
       if(!r[1]) return;
       const persona = str(r[1]).toUpperCase(), tipo = str(r[2]).toUpperCase(), monto = num(r[3]);
-      if(!saldosCC[persona]) saldosCC[persona] = 0;
-      if(tipo === 'CARGO') saldosCC[persona] += monto;
-      if(tipo === 'ABONO') saldosCC[persona] -= monto;
+      if(!DB.saldosCC[persona]) DB.saldosCC[persona] = 0;
+      if(tipo === 'CARGO') DB.saldosCC[persona] += monto;
+      if(tipo === 'ABONO') DB.saldosCC[persona] -= monto;
     });
     
     let htmlCC = '';
-    Object.keys(saldosCC).forEach(p => {
-      const saldo = saldosCC[p];
+    Object.keys(DB.saldosCC).forEach(p => {
+      const saldo = DB.saldosCC[p];
       if(saldo !== 0){
         plataEnCalle += saldo;
         htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
       }
     });
-    $('cc-lista').innerHTML = htmlCC || '<div class="empty">Nadie te debe plata</div>';
-    $('h-calle').textContent = fmt(plataEnCalle);
+    setHTML('cc-lista', htmlCC || '<div class="empty">Nadie te debe plata</div>');
+    setText('h-calle', fmt(plataEnCalle));
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
@@ -457,60 +502,91 @@ async function cargarTodo(){
     // MATEMÁTICA DEL DEVENGADO
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
-    const activosTotales = totalCaja + plataEnCalle; // Tu capital real (Líquido + Deudas a tu favor)
+    const activosTotales = totalCaja + plataEnCalle; 
     const capJ = activosTotales - billJ - ganD;
     
-    $('h-gan').textContent = fmt(ganD); $('h-cap').textContent = fmt(capJ); $('h-fondo').textContent = fmt(fondo); $('h-joaco').textContent = fmt(billJ);
-    $('h-total').textContent = fmt(totalCaja); $('h-units').textContent = Math.round(totalU)+' u'; $('h-valor').textContent = fmt(valC);
+    setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capJ)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
+    setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
     
     let html=''; for(const k in saldos){ if(saldos[k]!==0) html += `<div class="bal-row"><span class="bal-key">${k}</span><span class="bal-val ${saldos[k]>0?'cyan':'red'}">${fmt(saldos[k])}</span></div>`; }
-    $('caja-res').innerHTML = html || '<div class="empty">Sin movimientos</div>';
+    setHTML('caja-res', html || '<div class="empty">Sin movimientos</div>');
     
     let hh=''; historial.slice(-12).reverse().forEach(m => { hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${m.tipo==='INGRESO'?'var(--cyan)':'var(--red)'}">${m.tipo==='INGRESO'?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`; });
-    $('home-hist').innerHTML = hh || '<div class="empty">Sin movimientos</div>';
+    setHTML('home-hist', hh || '<div class="empty">Sin movimientos</div>');
     
     poblarListas();
-    $('h-hora').textContent = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
-  }catch(e){ toast('Error: '+e.message,'err'); }
-  btn.classList.remove('loading'); btn.textContent='↻ Sync';
+  }catch(e){ toast('Error: '+e.message,'err'); console.error(e); }
+  if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
 }
 
 function poblarListas(){
-  const vl=$('v-lista'); vl.innerHTML=''; const el=$('e-lista'); el.innerHTML='';
-  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; vl.appendChild(o); el.appendChild(o.cloneNode(true)); });
+  const vl=$('v-lista'); const el=$('e-lista');
+  if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
+  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); if(el) el.appendChild(o.cloneNode(true)); });
+}
+
+/* === BUSCADOR CRM (RADAR) === */
+let timeoutCRM;
+function buscarCliente(val) {
+   clearTimeout(timeoutCRM);
+   timeoutCRM = setTimeout(() => {
+       if(!val || val.length < 2) { setHTML('crm-result', '<div class="empty" style="padding:10px">Escribí al menos 2 letras...</div>'); return; }
+       val = val.toUpperCase();
+       
+       let html = '';
+       for(let c in DB.clientes) {
+          if(c.includes(val)) {
+             const d = DB.clientes[c];
+             let topProd = '-', maxC = 0;
+             for(let i in d.items) { if(d.items[i] > maxC) { maxC = d.items[i]; topProd = i; } }
+             
+             let dias = '-';
+             if(d.ultCompraTs > 0) { const diff = Date.now() - d.ultCompraTs; dias = Math.floor(diff / (1000*60*60*24)); }
+             
+             const saldoCC = DB.saldosCC[c] || 0;
+             const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+
+             html += `
+               <div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                     <strong style="color:var(--blue);font-size:14px;">${c}</strong>
+                     <span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Total Invertido</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div>
+                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div>
+                  </div>
+                  <div style="font-size:11px;">
+                     <span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br>
+                     <span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)
+                  </div>
+               </div>
+             `;
+          }
+       }
+       setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
+   }, 300);
 }
 
 /* === MODULO CUENTAS CORRIENTES === */
-function toggleCcCaja() {
-  // Solo visual: si es un ABONO (te pagan) o CARGO (prestás plata), sigue habilitada la caja.
-}
-
 async function guardarCC(){
-  const per = $('cc-persona').value.trim(), tipo = $('cc-tipo').value, monto = parseFloat($('cc-monto').value)||0, met = $('cc-metodo').value, det = $('cc-detalle').value;
+  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle');
+  if(!perElem || !montoElem) return;
+  const per = perElem.value.trim(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
+  
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
   setBtn('btn-cc',true,'');
   try {
     const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    
-    // 1. Apuntamos en la Cuenta Corriente
     await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
-    
-    // 2. Nexo con la caja física (si corresponde)
     if(met !== 'NINGUNA'){
       const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO'){
-         // Vos les diste plata de tu caja
-         await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      } else {
-         // Te devolvieron la plata a tu caja
-         await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
-      }
+      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
+      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
     }
-    
-    toast('✓ Movimiento bancario guardado');
-    $('cc-persona').value=''; $('cc-monto').value=''; $('cc-detalle').value='';
-    await cargarTodo();
+    toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
 }
@@ -518,41 +594,53 @@ async function guardarCC(){
 
 /* === VENTAS === */
 function selProduct(){
-  const p=DB.todo.find(x=>x.nombre===$('v-search').value); const prev=$('prod-prev');
-  if(!p){ prev.style.display='none'; currentProd=null; return; }
-  currentProd=p; $('pp-nombre').textContent=p.nombre; $('pp-stock').textContent=p.stock+' u';
-  $('v-precio').value = p.precio; $('v-precio-lista').value = p.precio; prev.style.display='block';
+  const vSearch = $('v-search'); if(!vSearch) return;
+  const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
+  if(!p){ if(prev) prev.style.display='none'; currentProd=null; return; }
+  currentProd=p; setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u');
+  const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
+  if(vPrecio) vPrecio.value = p.precio; if(vPrecioLista) vPrecioLista.value = p.precio; 
+  if(prev) prev.style.display='block';
 }
 
 function addToCart(){
   if(!currentProd) return;
-  const cant = parseFloat($('v-cant').value)||1, precio = parseFloat($('v-precio').value)||currentProd.precio, precioLista = parseFloat($('v-precio-lista').value) || currentProd.precio;
+  const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search');
+  const cant = parseFloat(vCant ? vCant.value : 1)||1, precio = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio, precioLista = parseFloat(vPrecioLista ? vPrecioLista.value : currentProd.precio) || currentProd.precio;
   if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?')) return;
-  cart.push({nombre:$('v-alias').value.trim()||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:$('v-gar').value});
-  $('v-search').value=''; $('v-precio').value=''; $('v-precio-lista').value=''; $('v-gar').value=''; $('v-alias').value=''; $('v-cant').value='1'; $('prod-prev').style.display='none'; currentProd=null; renderCart();
+  
+  cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : '')});
+  
+  if(vSearch) vSearch.value=''; if(vPrecio) vPrecio.value=''; if(vPrecioLista) vPrecioLista.value=''; if(vGar) vGar.value=''; if(vAlias) vAlias.value=''; if(vCant) vCant.value='1'; 
+  const prev=$('prod-prev'); if(prev) prev.style.display='none'; currentProd=null; renderCart();
 }
 
 function renderCart(){
-  const div=$('cart-items'); if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aun</div>'; $('cart-count').textContent='0 items'; $('cart-sub').textContent='$0'; calcTotal(); return; }
+  const div=$('cart-items'); if(!div) return;
+  if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aun</div>'; setText('cart-count', '0 items'); setText('cart-sub', '$0'); calcTotal(); return; }
   let sub=0, html='';
-  cart.forEach((item,i) => {
-    sub+=item.cant*item.precio;
-    html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${fmt(item.cant*item.precio)}</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`;
-  });
-  div.innerHTML = html; $('cart-count').textContent = cart.length + ' items'; $('cart-sub').textContent = fmt(sub); calcTotal();
+  cart.forEach((item,i) => { sub+=item.cant*item.precio; html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${fmt(item.cant*item.precio)}</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; });
+  div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
 }
 function removeCart(i){ cart.splice(i,1); renderCart(); }
 
 function syncDesc(t){
   let sub=0; cart.forEach(i => sub += i.cant * i.precio); if(!sub) return;
-  if(t === 'm'){ $('v-desc-p').value = (((parseFloat($('v-desc-m').value)||0) / sub) * 100).toFixed(1); } 
-  else { $('v-desc-m').value = Math.round(sub * ((parseFloat($('v-desc-p').value.toString().replace(/,/g, '.')) || 0) / 100)); }
+  const vDescM = $('v-desc-m'), vDescP = $('v-desc-p');
+  if(!vDescM || !vDescP) return;
+  if(t === 'm'){ vDescP.value = (((parseFloat(vDescM.value)||0) / sub) * 100).toFixed(1); } 
+  else { vDescM.value = Math.round(sub * ((parseFloat(vDescP.value.toString().replace(/,/g, '.')) || 0) / 100)); }
   calcTotal();
 }
-function calcTotal(){ let sub=0; cart.forEach(i => sub += i.cant*i.precio); $('cart-total').textContent = fmt(sub - (parseFloat($('v-desc-m').value)||0)); }
+function calcTotal(){ 
+  let sub=0; cart.forEach(i => sub += i.cant*i.precio); 
+  const vDescM = $('v-desc-m');
+  setText('cart-total', fmt(sub - (parseFloat(vDescM ? vDescM.value : 0)||0))); 
+}
 
 function copiarPresupuesto(){
-  if(!cart.length) return; let descMonto = parseFloat($('v-desc-m').value) || 0, msg = "⚡ Presupuesto JuntechStore\n", total=0;
+  if(!cart.length) return; 
+  const vDescM = $('v-desc-m'); let descMonto = parseFloat(vDescM ? vDescM.value : 0) || 0, msg = "⚡ Presupuesto JuntechStore\n", total=0;
   cart.forEach(item => { let sub = item.cant * item.precio; total += sub; msg += `🛍️ ${item.cant}x ${item.nombre} ($${Math.round(sub).toLocaleString('es-AR')})\n`; });
   msg += `📝 Valor de Lista: $${Math.round(total).toLocaleString('es-AR')}\n`;
   if(descMonto > 0) msg += `🎁 Ahorro: -$${Math.round(descMonto).toLocaleString('es-AR')}\n`;
@@ -562,27 +650,32 @@ function copiarPresupuesto(){
 
 function prepararRemito(){
   if(!cart.length) return;
-  const desc = parseFloat($('v-desc-m').value) || 0;
-  $('remito-fecha').innerText = "Fecha: " + new Date().toLocaleDateString('es-AR');
-  $('remito-cliente').innerText = $('v-cli').value || 'Cliente';
+  const vDescM = $('v-desc-m'), vDescMot = $('v-desc-mot'), vCli = $('v-cli');
+  const desc = parseFloat(vDescM ? vDescM.value : 0) || 0;
+  setText('remito-fecha', "Fecha: " + new Date().toLocaleDateString('es-AR'));
+  setText('remito-cliente', (vCli ? vCli.value : '') || 'Cliente');
   
-  if(desc > 0){ $('remito-descuento-container').style.display='block'; $('remito-motivo-desc').innerText=$('v-desc-mot').value; $('remito-valor-desc').innerText='-$'+Math.round(desc).toLocaleString('es-AR'); } 
-  else $('remito-descuento-container').style.display='none';
+  const cont = $('remito-descuento-container');
+  if(cont) {
+    if(desc > 0){ cont.style.display='block'; setText('remito-motivo-desc', vDescMot ? vDescMot.value : ''); setText('remito-valor-desc', '-$'+Math.round(desc).toLocaleString('es-AR')); } 
+    else { cont.style.display='none'; }
+  }
 
-  let tbody = $('remito-items-print'); tbody.innerHTML = ''; let subtotal = 0;
+  const tbody = $('remito-items-print'); if(tbody) { tbody.innerHTML = ''; let subtotal = 0;
   cart.forEach(item => {
     subtotal += item.cant * item.precio;
     let precioTxt = `$${Math.round(item.precio).toLocaleString('es-AR')}`;
     if (item.precio < item.precioLista) precioTxt = `<span style="text-decoration:line-through; color:#888; font-size:10px;">$${Math.round(item.precioLista).toLocaleString('es-AR')}</span><br>$${Math.round(item.precio).toLocaleString('es-AR')}`;
     tbody.innerHTML += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px; text-align: center;">${item.cant}</td><td style="padding: 8px;">${item.nombre}</td><td style="padding: 8px; text-align: right;">${precioTxt}</td><td style="padding: 8px; text-align: right; font-weight:bold;">$${Math.round(item.cant * item.precio).toLocaleString('es-AR')}</td></tr>`;
   });
-  $('remito-total').innerText = Math.round(subtotal - desc).toLocaleString('es-AR');
-  $('remito-pro').style.display = 'block'; window.print(); setTimeout(() => { $('remito-pro').style.display = 'none'; }, 1000);
+  setText('remito-total', Math.round(subtotal - desc).toLocaleString('es-AR')); }
+  const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
 async function procesarVenta(){
   if(!cart.length) return;
-  const cli=$('v-cli').value||'Cliente', metodo=$('v-metodo').value, desc=parseFloat($('v-desc-m').value)||0, descMot=$('v-desc-mot').value;
+  const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot'), vDescP=$('v-desc-p');
+  const cli=vCli?vCli.value||'Cliente':'Cliente', metodo=vMetodo?vMetodo.value:'EFECTIVO', desc=parseFloat(vDescM?vDescM.value:0)||0, descMot=vDescMot?vDescMot.value:'';
   let sub=0; cart.forEach(i => sub+=i.cant*i.precio); const total = sub-desc;
   setBtn('btn-vender',true,'');
   
@@ -597,35 +690,32 @@ async function procesarVenta(){
       await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, subNeto - (item.costo*item.cant), cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
-    // MAGIA DE LA CUENTA CORRIENTE (B2B o Fiados)
-    if(metodo === 'CUENTA CORRIENTE'){
-      await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]);
-    } else {
-      await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]);
-    }
+    if(metodo === 'CUENTA CORRIENTE'){ await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); } 
+    else { await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); }
     
-    // Envío silencioso para crear PDF
-    fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} }).then(r=>r.json()).then(res=>{ if(res.success) $('modal-wsp').href += '%0A📄 Recibo: '+res.url; }).catch(()=>{});
+    fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} }).then(r=>r.json()).then(res=>{ if(res.success) { const wsp = $('modal-wsp'); if(wsp) wsp.href += '%0A📄 Recibo: '+res.url; } }).catch(()=>{});
 
-    $('modal-ticket').textContent = 'Ticket '+id+' - '+cli+' - '+fmt(total);
-    $('modal-wsp').href = 'https://wa.me/?text='+encodeURIComponent('Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'.');
-    $('modal-venta').classList.add('on');
+    setText('modal-ticket', 'Ticket '+id+' - '+cli+' - '+fmt(total));
+    const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text='+encodeURIComponent('Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'.');
+    const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
     
-    cart=[]; renderCart(); $('v-cli').value=''; $('v-desc-m').value=''; $('v-desc-p').value=''; $('v-desc-mot').value=''; await cargarTodo();
+    cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if(vDescP) vDescP.value=''; if(vDescMot) vDescMot.value=''; await cargarTodo();
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
-function cerrarModal(){ $('modal-venta').classList.remove('on'); }
+function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
 
-/* === CAJA Y STOCK (Las funciones se mantienen idénticas para no romper nada) === */
-async function guardarMov(){ /* (código resumido igual al anterior) */
-  const tipo=$('c-tipo').value, cat=$('c-cat').value, motivo=$('c-motivo').value, monto=parseFloat($('c-monto').value)||0, met=$('c-met').value;
+/* === CAJA Y STOCK === */
+async function guardarMov(){ 
+  const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
+  if(!mot || !mon) return;
+  const tipo=t?t.value:'', cat=c?c.value:'', motivo=mot.value, monto=parseFloat(mon.value)||0, metodo=met?met.value:'';
   if(!motivo||monto<=0) return; setBtn('btn-mov',true,'');
-  try{ await append('Caja!A:G', [['MOV-'+Math.floor(Math.random()*9999), new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), tipo, cat, motivo, monto, met]]); toast('✓ Guardado'); $('c-motivo').value=''; $('c-monto').value=''; await cargarTodo(); }catch(e){} setBtn('btn-mov',false,'Guardar');
+  try{ await append('Caja!A:G', [['MOV-'+Math.floor(Math.random()*9999), new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), tipo, cat, motivo, monto, metodo]]); toast('✓ Guardado'); mot.value=''; mon.value=''; await cargarTodo(); }catch(e){} setBtn('btn-mov',false,'Guardar');
 }
-function selEntrada(){ const p = DB.todo.find(x => x.nombre===$('e-prod').value); if(p) $('e-costo').value=p.costo; }
-function addEntrada(){ const n=$('e-prod').value, c=parseFloat($('e-cant').value)||0, co=parseFloat($('e-costo').value)||0; if(!n||c<=0) return; entradaCart.push({nombre:n,cant:c,costo:co}); $('e-prod').value=''; $('e-cant').value=''; $('e-costo').value=''; renderEntrada(); }
-function renderEntrada(){ const d=$('entrada-items'); if(!entradaCart.length){ d.innerHTML=''; $('btn-entrada').disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); $('btn-entrada').disabled=false; }
+function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
+function addEntrada(){ const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'); if(!eP||!eC||!eCo) return; const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0; if(!n||c<=0) return; entradaCart.push({nombre:n,cant:c,costo:co}); eP.value=''; eC.value=''; eCo.value=''; renderEntrada(); }
+function renderEntrada(){ const d=$('entrada-items'); if(!d) return; if(!entradaCart.length){ d.innerHTML=''; setBtn('btn-entrada',false,''); const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); const b=$('btn-entrada'); if(b) b.disabled=false; }
 function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
 async function guardarEntrada(){ if(!entradaCart.length) return; setBtn('btn-entrada',true,''); try{ const fecha = new Date().toLocaleDateString('es-AR'); for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, '-']]); entradaCart=[]; renderEntrada(); await cargarTodo(); }catch(e){} setBtn('btn-entrada',false,'Guardar'); }
 </script>
