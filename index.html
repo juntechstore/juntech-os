@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.0 - Banco</title>
+  <title>JuntechOS v4.1 - CRM Master</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -77,6 +77,7 @@
     .pill-blue { background: #2f81f715; color: var(--blue); border: 1px solid #2f81f730; }
     .pill-cyan { background: #39d35315; color: var(--cyan); border: 1px solid #39d35330; }
     .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
+    .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .kpi { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; position: relative; overflow: hidden; }
@@ -117,15 +118,6 @@
 
     .search-wrap { position: relative; margin-bottom: 12px; } .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); } .f-in.ico { padding-left: 36px; }
 
-    .prod-item { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 7px; display: flex; justify-content: space-between; gap: 10px; }
-    .prod-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; } .prod-meta { font-size: 10px; color: var(--text2); }
-    .prod-price { font-size: 1.05rem; font-weight: 700; color: var(--blue); text-align: right; } .prod-stock { font-size: 10px; text-align: right; margin-top: 2px; }
-
-    .dist-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin: 11px 0; }
-    .dist-col { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 7px; text-align: center; }
-    .dist-label { font-size: 9px; color: var(--text2); text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
-    .dist-in { width: 50px; background: var(--s3); border: 1px solid var(--border); border-radius: 6px; padding: 5px 4px; color: var(--text); font-family: var(--font); font-size: 13px; text-align: center; outline: none; }
-
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
     .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
     .modal-ico { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 22px; background: var(--s2); border: 1px solid var(--border); }
@@ -154,7 +146,7 @@
   <div class="login-logo"><img id="logo-login" src="icon-192.png" alt="J" onerror="this.style.display='none'"></div>
   <div class="login-title">
     <h1>JUNTECH<span>OS</span></h1>
-    <p>Sistema de gestión v4.0 Banco</p>
+    <p>Sistema de gestión v4.1 CRM Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg"></p>
@@ -164,7 +156,7 @@
   <div class="hdr">
     <div class="hdr-left">
       <div class="logo-sm"><img id="logo-hdr" src="icon-192.png" alt="J" onerror="this.parentElement.style.display='none'"></div>
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.0</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.1</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -173,6 +165,7 @@
   </div>
 
   <div class="scroll">
+    <!-- PESTAÑA: INICIO -->
     <div class="tab on" id="tab-home">
       <div class="kpi-grid">
         <div class="kpi blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
@@ -201,6 +194,7 @@
       </div>
     </div>
 
+    <!-- PESTAÑA: VENDER -->
     <div class="tab" id="tab-sell">
       <div class="card">
         <div class="card-title">Nueva Venta</div>
@@ -240,7 +234,8 @@
         <div class="field"><label class="f-label">Método de pago</label>
           <select class="f-in" id="v-metodo">
             <option>TRANSFERENCIA</option><option>EFECTIVO</option><option>NX</option><option>MERCADO PAGO</option>
-            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option> </select>
+            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option>
+          </select>
         </div>
         <div class="f-row" style="margin-bottom:8px;">
           <button class="btn btn-ghost" onclick="copiarPresupuesto()" style="border-color:var(--orange); color:var(--orange); margin-bottom:0; font-size:0.85rem;">📋 Presupuesto</button>
@@ -250,19 +245,31 @@
       </div>
     </div>
 
+    <!-- PESTAÑA: CLIENTES Y CC (CON RADAR CRM) -->
     <div class="tab" id="tab-cc">
+      
+      <!-- RADAR CRM (NUEVO) -->
+      <div class="card" style="border-color:#bc8cff50; background:var(--bg)">
+        <div class="card-title" style="color:var(--purple); margin-bottom:8px">Radar de Clientes (CRM)</div>
+        <div class="search-wrap" style="margin-bottom:8px;">
+           <span class="search-ico">🔍</span>
+           <input class="f-in ico" placeholder="Escribí el nombre para analizar..." oninput="buscarCliente(this.value)">
+        </div>
+        <div id="crm-result"><div class="empty" style="padding:10px">Buscá un cliente para ver su radiografía</div></div>
+      </div>
+
       <div class="card">
-        <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
+        <div class="card-title">Nuevo Movimiento CC / Préstamo</div>
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
         <div class="field"><label class="f-label">Tipo de Operación</label>
-          <select class="f-in" id="cc-tipo" onchange="toggleCcCaja()">
+          <select class="f-in" id="cc-tipo">
             <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
             <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
           </select>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
-          <div class="field" id="cc-metodo-box"><label class="f-label">Caja física afectada</label>
+          <div class="field"><label class="f-label">Caja física afectada</label>
             <select class="f-in" id="cc-metodo">
               <option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option>
               <option value="NINGUNA">NINGUNA (Solo apunte interno)</option>
@@ -272,12 +279,14 @@
         <div class="field"><label class="f-label">Detalle / Motivo</label><input class="f-in" id="cc-detalle" placeholder="Ej: Préstamo para el super"></div>
         <button class="btn btn-purple" id="btn-cc" onclick="guardarCC()">Registrar en Cuenta Corriente</button>
       </div>
+      
       <div class="card">
         <div class="card-title">Saldos Activos en la calle</div>
         <div id="cc-lista"><div class="empty">Cargando cuentas...</div></div>
       </div>
     </div>
 
+    <!-- PESTAÑA: CAJA -->
     <div class="tab" id="tab-caja">
       <div class="card">
         <div class="card-title">Registrar Movimiento de Caja</div>
@@ -298,6 +307,7 @@
       </div>
     </div>
 
+    <!-- PESTAÑA: STOCK -->
     <div class="tab" id="tab-stock">
       <div class="card">
         <div class="card-title">Entrada de Stock</div>
@@ -315,7 +325,11 @@
       </div>
     </div>
 
-  </div> </div> <div class="nav" id="main-nav" style="display:none">
+  </div> <!-- FIN SCROLL -->
+</div> <!-- FIN APP -->
+
+<!-- NAVEGACIÓN INFERIOR -->
+<div class="nav" id="main-nav" style="display:none">
   <button class="nav-btn on" onclick="goTab('home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</button>
   <button class="nav-btn" onclick="goTab('sell',this)"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Vender</button>
   <button class="nav-btn" onclick="goTab('cc',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Clientes</button>
@@ -323,6 +337,9 @@
   <button class="nav-btn" onclick="goTab('stock',this)"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock</button>
 </div>
 
+<!-- =========================================
+     REMITO MAYORISTA PARA IMPRESIÓN
+========================================= -->
 <div id="remito-pro" style="background: white !important; color: black !important; padding: 40px; font-family: sans-serif;">
   <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px;">
     <img src="https://juntechstore.github.io/juntech-os/icon-512.png" style="width: 80px; height: 80px; border-radius: 10px;">
@@ -350,12 +367,15 @@
 <div class="modal-bg" id="modal-venta"><div class="modal-box"><div class="modal-ico">✅</div><div class="modal-title">¡Exito!</div><div class="modal-sub">Operación registrada en Google Sheets</div><div class="modal-id" id="modal-ticket">—</div><a id="modal-wsp" href="#" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;border-radius:8px;padding:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px">📲 WhatsApp al cliente</a><button class="btn btn-ghost" onclick="cerrarModal()">Cerrar</button></div></div>
 <div class="toast" id="toast"></div>
 
+<!-- =========================================
+     JAVASCRIPT MOTOR (CLEAN CODE)
+========================================= -->
 <script>
 const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercontent.com';
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}}, cart=[], entradaCart=[], currentProd=null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}}, cart=[], entradaCart=[], currentProd=null;
 const $ = id => document.getElementById(id);
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
 
@@ -397,10 +417,42 @@ async function cargarTodo(){
     const eRows = await get('Entradas!A2:D'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
 
-    const sRows = await get('Salidas!A2:H'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:H'); } catch(e) {} 
+    const sRows = await get('Salidas!A2:M'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:M'); } catch(e) {} 
+    const todasLasSalidas = sRows.concat(sRowsHist);
     const stockS = {}; let ganV = 0;
-    sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
-    sRows.concat(sRowsHist).forEach(r => { if(!r[0]) return; const n = str(r[0]); stockS[n] = (stockS[n]||0) + num(r[2]); });
+    
+    // ANALISIS DE CRM (LECTURA DE CLIENTES EN LA HISTORIA)
+    const clientesMap = {};
+    
+    todasLasSalidas.forEach(r => { 
+      if(!r[0]) return; 
+      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaStr = str(r[5]), costoT = num(r[7]), cli = str(r[9]).trim().toUpperCase(); 
+      
+      stockS[sysName] = (stockS[sysName]||0) + cant;
+      if(subNeto > 0) ganV += (subNeto - costoT);
+
+      // ARMADO DE RADIOGRAFIA DE CLIENTE
+      if(cli && cli !== '-' && cli !== 'CLIENTE') {
+         if(!clientesMap[cli]) clientesMap[cli] = { totalComprado: 0, items: {}, ultCompraStr: fechaStr, ultCompraTs: 0 };
+         clientesMap[cli].totalComprado += subNeto;
+         clientesMap[cli].items[sysName] = (clientesMap[cli].items[sysName] || 0) + cant;
+         
+         let ts = 0;
+         try {
+            const parts = fechaStr.split(' ');
+            if(parts.length > 0) {
+               const [day, mo, yr] = parts[0].split('/');
+               ts = new Date(`${yr}-${mo}-${day}T00:00:00`).getTime();
+            }
+         } catch(e){}
+         if(ts > clientesMap[cli].ultCompraTs) {
+            clientesMap[cli].ultCompraTs = ts;
+            clientesMap[cli].ultCompraStr = fechaStr;
+         }
+      }
+    });
+    
+    DB.clientes = clientesMap; // Guardamos el CRM en memoria
 
     let aRows = []; try { aRows = await get('AJUSTES!A2:D'); } catch(e) {}
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
@@ -414,18 +466,18 @@ async function cargarTodo(){
     
     // LECTURA DE CUENTAS CORRIENTES
     let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:E'); } catch(e){}
-    const saldosCC = {}; let plataEnCalle = 0;
+    DB.saldosCC = {}; let plataEnCalle = 0;
     ccRows.forEach(r => {
       if(!r[1]) return;
       const persona = str(r[1]).toUpperCase(), tipo = str(r[2]).toUpperCase(), monto = num(r[3]);
-      if(!saldosCC[persona]) saldosCC[persona] = 0;
-      if(tipo === 'CARGO') saldosCC[persona] += monto;
-      if(tipo === 'ABONO') saldosCC[persona] -= monto;
+      if(!DB.saldosCC[persona]) DB.saldosCC[persona] = 0;
+      if(tipo === 'CARGO') DB.saldosCC[persona] += monto;
+      if(tipo === 'ABONO') DB.saldosCC[persona] -= monto;
     });
     
     let htmlCC = '';
-    Object.keys(saldosCC).forEach(p => {
-      const saldo = saldosCC[p];
+    Object.keys(DB.saldosCC).forEach(p => {
+      const saldo = DB.saldosCC[p];
       if(saldo !== 0){
         plataEnCalle += saldo;
         htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
@@ -457,7 +509,7 @@ async function cargarTodo(){
     // MATEMÁTICA DEL DEVENGADO
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
-    const activosTotales = totalCaja + plataEnCalle; // Tu capital real (Líquido + Deudas a tu favor)
+    const activosTotales = totalCaja + plataEnCalle; 
     const capJ = activosTotales - billJ - ganD;
     
     $('h-gan').textContent = fmt(ganD); $('h-cap').textContent = fmt(capJ); $('h-fondo').textContent = fmt(fondo); $('h-joaco').textContent = fmt(billJ);
@@ -472,7 +524,7 @@ async function cargarTodo(){
     poblarListas();
     $('h-hora').textContent = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     toast('✓ Datos actualizados');
-  }catch(e){ toast('Error: '+e.message,'err'); }
+  }catch(e){ toast('Error: '+e.message,'err'); console.error(e); }
   btn.classList.remove('loading'); btn.textContent='↻ Sync';
 }
 
@@ -481,36 +533,70 @@ function poblarListas(){
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; vl.appendChild(o); el.appendChild(o.cloneNode(true)); });
 }
 
-/* === MODULO CUENTAS CORRIENTES === */
-function toggleCcCaja() {
-  // Solo visual: si es un ABONO (te pagan) o CARGO (prestás plata), sigue habilitada la caja.
+/* === BUSCADOR CRM (RADAR) === */
+let timeoutCRM;
+function buscarCliente(val) {
+   clearTimeout(timeoutCRM);
+   timeoutCRM = setTimeout(() => {
+       const res = $('crm-result');
+       if(!val || val.length < 2) { res.innerHTML = '<div class="empty" style="padding:10px">Escribí al menos 2 letras...</div>'; return; }
+       val = val.toUpperCase();
+       
+       let html = '';
+       for(let c in DB.clientes) {
+          if(c.includes(val)) {
+             const d = DB.clientes[c];
+             
+             // Producto estrella
+             let topProd = '-', maxC = 0;
+             for(let i in d.items) { if(d.items[i] > maxC) { maxC = d.items[i]; topProd = i; } }
+             
+             // Termómetro de Inactividad
+             let dias = '-';
+             if(d.ultCompraTs > 0) {
+                const diff = Date.now() - d.ultCompraTs;
+                dias = Math.floor(diff / (1000*60*60*24));
+             }
+             
+             const saldoCC = DB.saldosCC[c] || 0;
+             const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+
+             html += `
+               <div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                     <strong style="color:var(--blue);font-size:14px;">${c}</strong>
+                     <span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Total Invertido</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div>
+                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div>
+                  </div>
+                  <div style="font-size:11px;">
+                     <span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br>
+                     <span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)
+                  </div>
+               </div>
+             `;
+          }
+       }
+       res.innerHTML = html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>';
+   }, 300);
 }
 
+/* === MODULO CUENTAS CORRIENTES === */
 async function guardarCC(){
   const per = $('cc-persona').value.trim(), tipo = $('cc-tipo').value, monto = parseFloat($('cc-monto').value)||0, met = $('cc-metodo').value, det = $('cc-detalle').value;
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
   setBtn('btn-cc',true,'');
   try {
     const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    
-    // 1. Apuntamos en la Cuenta Corriente
     await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
-    
-    // 2. Nexo con la caja física (si corresponde)
     if(met !== 'NINGUNA'){
       const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO'){
-         // Vos les diste plata de tu caja
-         await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      } else {
-         // Te devolvieron la plata a tu caja
-         await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
-      }
+      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
+      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
     }
-    
-    toast('✓ Movimiento bancario guardado');
-    $('cc-persona').value=''; $('cc-monto').value=''; $('cc-detalle').value='';
-    await cargarTodo();
+    toast('✓ Movimiento bancario guardado'); $('cc-persona').value=''; $('cc-monto').value=''; $('cc-detalle').value=''; await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
 }
@@ -604,7 +690,6 @@ async function procesarVenta(){
       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]);
     }
     
-    // Envío silencioso para crear PDF
     fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} }).then(r=>r.json()).then(res=>{ if(res.success) $('modal-wsp').href += '%0A📄 Recibo: '+res.url; }).catch(()=>{});
 
     $('modal-ticket').textContent = 'Ticket '+id+' - '+cli+' - '+fmt(total);
@@ -617,8 +702,8 @@ async function procesarVenta(){
 }
 function cerrarModal(){ $('modal-venta').classList.remove('on'); }
 
-/* === CAJA Y STOCK (Las funciones se mantienen idénticas para no romper nada) === */
-async function guardarMov(){ /* (código resumido igual al anterior) */
+/* === CAJA Y STOCK === */
+async function guardarMov(){ 
   const tipo=$('c-tipo').value, cat=$('c-cat').value, motivo=$('c-motivo').value, monto=parseFloat($('c-monto').value)||0, met=$('c-met').value;
   if(!motivo||monto<=0) return; setBtn('btn-mov',true,'');
   try{ await append('Caja!A:G', [['MOV-'+Math.floor(Math.random()*9999), new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), tipo, cat, motivo, monto, met]]); toast('✓ Guardado'); $('c-motivo').value=''; $('c-monto').value=''; await cargarTodo(); }catch(e){} setBtn('btn-mov',false,'Guardar');
