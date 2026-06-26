@@ -413,7 +413,7 @@ function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.to
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
 
-/* === TRADUCTOR DE MATRIX DE GOOGLE SHEETS === */
+/* === TRADUCTOR DE FECHAS SERIALES DE GOOGLE SHEETS === */
 function parseExcelDate(val){
   if(!val) return { s: '-', t: 0 };
   let v = val.toString().trim();
@@ -429,7 +429,7 @@ function parseExcelDate(val){
   }
 }
 
-/* === CARGA CENTRAL === */
+/* === CARGA CENTRAL DE BASE DE DATOS === */
 async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
@@ -441,15 +441,19 @@ async function cargarTodo(){
 
     const sRows = await get('Salidas!A2:M'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:M'); } catch(e) {} 
     const todasLasSalidas = sRows.concat(sRowsHist);
-    const stockS = {}; let ganV = 0;
+    const stockS = {}; 
     
-    // CRM ENGINE BLINDADO
+    // FIJACIÓN METRICA HISTORIAL BLINDADA: ganV se calcula SOLO en sRows activas (v4.0)
+    let ganV = 0;
+    sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
+    
+    todasLasSalidas.forEach(r => { if(!r[0]) return; stockS[str(r[0])] = (stockS[str(r[0])]||0) + num(r[2]); });
+
+    // CRM ENGINE CON TRADUCTOR DE FECHAS DE LA MATRIX
     DB.clientes = {};
     todasLasSalidas.forEach(r => { 
       if(!r[0]) return; 
-      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaRaw = r[5], costoT = num(r[7]), cli = str(r[9]).trim().toUpperCase(); 
-      stockS[sysName] = (stockS[sysName]||0) + cant;
-      if(subNeto > 0) ganV += (subNeto - costoT);
+      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaRaw = r[5], cli = str(r[9]).trim().toUpperCase(); 
       
       if(cli && cli !== '-' && cli !== 'CLIENTE') {
          if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: '', ultCompraTs: 0, historial: [] };
@@ -562,7 +566,7 @@ function buscarCliente(val) {
              
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
-             const cliId = c.replace(/[^a-zA-Z0-9]/g, ''); // ID seguro para el div
+             const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
 
              html += `
                <div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
@@ -592,12 +596,7 @@ function buscarCliente(val) {
 window.verHistorial = function(cliNombre, cliId) {
    const el = $('hist-' + cliId);
    if(!el) return;
-   
-   if(el.style.display === 'block') {
-      el.style.display = 'none';
-      return;
-   }
-   
+   if(el.style.display === 'block') { el.style.display = 'none'; return; }
    const d = DB.clientes[cliNombre];
    if(!d) return;
    
@@ -609,7 +608,7 @@ window.verHistorial = function(cliNombre, cliId) {
       
    el.innerHTML = h;
    el.style.display = 'block';
-}
+};
 
 /* === MODULO CUENTAS CORRIENTES === */
 async function guardarCC(){
@@ -658,9 +657,16 @@ function addToCart(){
 
 function renderCart(){
   const div=$('cart-items'); if(!div) return;
-  if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aun</div>'; setText('cart-count', '0 items'); setText('cart-sub', '$0'); calcTotal(); return; }
+  if(!cart.length){ div.innerHTML='<div class="empty">Sin productos aún</div>'; setText('cart-count', '0 items'); setText('cart-sub', '$0'); calcTotal(); return; }
   let sub=0, html='';
-  cart.forEach((item,i) => { sub+=item.cant*item.precio; html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${fmt(item.cant*item.precio)}</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; });
+  cart.forEach((item,i) => { 
+    sub+=item.cant*item.precio; 
+    let pTxt = fmt(item.precio);
+    if(item.precio < item.precioLista) {
+      pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
+    }
+    html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; 
+  });
   div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
 }
 function removeCart(i){ cart.splice(i,1); renderCart(); }
@@ -713,6 +719,7 @@ function prepararRemito(){
   const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
+/* === ASINCRONÍA ASOCIADA: CREACIÓN DE TICKET + ENVÍO WA BLINDADO === */
 async function procesarVenta(){
   if(!cart.length) return;
   const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot'), vDescP=$('v-desc-p');
@@ -728,16 +735,28 @@ async function procesarVenta(){
       const item = cart[i]; 
       const descuentoProporcional = sub > 0 ? desc * ((item.cant * item.precio) / sub) : 0;
       const subNeto = (item.cant * item.precio) - descuentoProporcional;
-      await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, subNeto - (item.costo*item.cant), cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
+      
+      // COLUMNA I EN BLANCO ('') PARA DEJAR QUE TU ARRAYFORMULA DE EXCEL OPERE LIBREMENTE
+      await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
     if(metodo === 'CUENTA CORRIENTE'){ await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); } 
     else { await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); }
     
-    fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} }).then(r=>r.json()).then(res=>{ if(res.success) { const wsp = $('modal-wsp'); if(wsp) wsp.href += '%0A📄 Recibo: '+res.url; } }).catch(()=>{});
-
     setText('modal-ticket', 'Ticket '+id+' - '+cli+' - '+fmt(total));
-    const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text='+encodeURIComponent('Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'.');
+    let msgWsp = 'Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'.';
+    
+    // BLOQUEADOR ASÍNCRONO SECUENCIAL: Espera a que Sheets retorne el link real
+    try {
+      toast('Generando comprobante digital...', 'ok');
+      const resFetch = await fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} });
+      const resData = await resFetch.json();
+      if(resData.success && resData.url) {
+         msgWsp += '%0A%0A📄 Podés ver y descargar tu recibo acá:%0A' + resData.url;
+      }
+    } catch(err) { console.error('Error Apps Script PDF:', err); }
+
+    const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text=' + encodeURIComponent(msgWsp).replace(/%250A/g, '%0A');
     const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
     
     cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if(vDescP) vDescP.value=''; if(vDescMot) vDescMot.value=''; await cargarTodo();
