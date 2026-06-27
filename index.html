@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.2 - Ultimate Edition</title>
+  <title>JuntechOS v4.2.1 - Hotfix Edition</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -37,9 +37,12 @@
     .tab { display: none; } .tab.on { display: block; animation: fu .18s ease; }
     @keyframes fu { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* PARCHE DE CONTROL: CORRECCIÓN DE SVG EN NAV BAR */
     .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--s1); border-top: 1px solid var(--border); display: flex; z-index: 50; padding-bottom: env(safe-area-inset-bottom,0px); }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 4px 7px; cursor: pointer; color: var(--text3); font-size: 9px; text-transform: uppercase; font-weight: 500; border: none; background: none; font-family: var(--font); }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 6px; cursor: pointer; color: var(--text3); font-size: 10px; text-transform: uppercase; font-weight: 500; border: none; background: none; font-family: var(--font); }
     .nav-btn.on { color: var(--blue); }
+    .nav-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-btn.on svg { stroke: var(--blue); }
 
     .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 10px; }
     .card-title { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; margin-bottom: 12px; }
@@ -129,7 +132,7 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.1</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -300,11 +303,21 @@
 </div> 
 
 <div class="nav" id="main-nav" style="display:none">
-  <button class="nav-btn on" onclick="goTab('home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</button>
-  <button class="nav-btn" onclick="goTab('sell',this)"><svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Vender</button>
-  <button class="nav-btn" onclick="goTab('cc',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Clientes</button>
-  <button class="nav-btn" onclick="goTab('caja',this)"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja</button>
-  <button class="nav-btn" onclick="goTab('stock',this)"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock</button>
+  <button class="nav-btn on" onclick="goTab('home',this)">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
+  </button>
+  <button class="nav-btn" onclick="goTab('sell',this)">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Vender
+  </button>
+  <button class="nav-btn" onclick="goTab('cc',this)">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Clientes
+  </button>
+  <button class="nav-btn" onclick="goTab('caja',this)">
+    <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Caja
+  </button>
+  <button class="nav-btn" onclick="goTab('stock',this)">
+    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock
+  </button>
 </div>
 
 <div id="remito-pro" style="background: white !important; color: black !important; padding: 40px; font-family: sans-serif;">
@@ -335,7 +348,7 @@ const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercon
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}}, cart=[], entradaCart=[], currentProd=null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null;
 
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -486,14 +499,10 @@ async function cargarTodo(){
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
 }
 
-/* === FILTRO INTELIGENTE: SÓLO PRODUCTOS CON STOCK DISPONIBLE === */
 function poblarListas(){
   const vl=$('v-lista'); const el=$('e-lista');
   if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
-  
-  // Vender: Solo los que tienen stock > 0
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
-  // Stock general: Todos para entrada
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
 }
 
@@ -626,21 +635,20 @@ function prepararRemito(){
   const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
-/* === PROCESAR VENTA DE ALTA GAMA CON PAGO MIXTO AUTOMATIZADO === */
+/* === PROCESAR VENTA HOTFIX: REPARADOS LOS ERRORES DE PAGO MIXTO === */
 async function procesarVenta(){
   if(!cart.length) return;
-  const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot'), vDescP=$('v-desc-p');
+  const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot');
   const cli=vCli?vCli.value||'Cliente':'Cliente', metodo=vMetodo?vMetodo.value:'EFECTIVO', desc=parseFloat(vDescM?vDescM.value:0)||0, descMot=vDescMot?vDescMot.value:'';
   let sub=0; cart.forEach(i => sub+=i.cant*i.precio); const total = sub-desc;
   
-  // LOGICA ESTRATEGICA: Si elige Pago Mixto, pedimos el monto líquido
-  let montoMano = 0;
+  let montoEfectivo = 0;
   if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
      let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan en EFECTIVO/TRANSFERENCIA ahora mismo?`);
-     if(promptMonto === null) return; // Cancela la operación
-     montoMono = parseFloat(promptMaso)||0;
-     if(montoMonto <= 0 || m_monto > total) { toast('Monto inválido','err'); return; }
-     montoMano = Math.round(montoMonto);
+     if(promptMano === null) return; // Si cancela el cuadro de diálogo, frena la ejecución
+     montoEfectivo = parseFloat(promptMano)||0;
+     if(montoEfectivo <= 0 || montoEfectivo > total) { toast('Monto líquido inválido','err'); return; }
+     montoEfectivo = Math.round(montoEfectivo);
   }
 
   setBtn('btn-vender',true,'');
@@ -656,15 +664,15 @@ async function procesarVenta(){
       await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
-    // RUTA DE INYECCIÓN DE PAGO SEGÚN MÉTODO
+    // REINYECCIÓN AUTOMÁTICA CORREGIDA SIN TYPOS
     if(metodo === 'CUENTA CORRIENTE'){ 
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
-       const deudaCalle = total - montoMonto;
-       // Grabamos la parte en efectivo líquido en la caja
-       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoMonto, 'EFECTIVO']]);
-       // Grabamos el remanente en la Cuenta Corriente
-       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudRemanente, 'Resto Ticket Venta '+id]]);
+       const deudaCalle = total - montoEfectivo;
+       // Inyecta el efectivo real ingresado en caja física
+       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega líquida Ticket '+id+' - '+cli, montoEfectivo, 'EFECTIVO']]);
+       // Inyecta el resto de la deuda financiera en la Cuenta Corriente del cliente
+       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudaCalle, 'Remanente Ticket Venta '+id]]);
     } else { 
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); 
     }
@@ -682,7 +690,7 @@ async function procesarVenta(){
     const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text=' + encodeURIComponent(msgWsp).replace(/%250A/g, '%0A');
     const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
     
-    cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if(vDescP) vDescP.value=''; if(vDescMot) vDescMot.value=''; await cargarTodo();
+    cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if($('v-desc-p')) $('v-desc-p').value=''; if(vDescMot) vDescMot.value=''; await cargarTodo();
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
