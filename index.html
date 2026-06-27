@@ -635,7 +635,7 @@ function prepararRemito(){
   const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
-/* === PROCESAR VENTA HOTFIX: REPARADOS LOS ERRORES DE PAGO MIXTO === */
+/* === PROCESAR VENTA DE ALTA GAMA (MIXTO CORREGIDO) === */
 async function procesarVenta(){
   if(!cart.length) return;
   const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot');
@@ -643,12 +643,25 @@ async function procesarVenta(){
   let sub=0; cart.forEach(i => sub+=i.cant*i.precio); const total = sub-desc;
   
   let montoEfectivo = 0;
+  let metodoLiquido = 'EFECTIVO'; // Por defecto
+  
+  // LOGICA ESTRATEGICA: Pago Mixto Inteligente
   if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
-     let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan en EFECTIVO/TRANSFERENCIA ahora mismo?`);
-     if(promptMano === null) return; // Si cancela el cuadro de diálogo, frena la ejecución
+     let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan AHORA MISMO? (solo números)`);
+     if(promptMano === null) return; // Si cancela, frena todo
      montoEfectivo = parseFloat(promptMano)||0;
      if(montoEfectivo <= 0 || montoEfectivo > total) { toast('Monto líquido inválido','err'); return; }
      montoEfectivo = Math.round(montoEfectivo);
+     
+     // Preguntamos a qué caja va la guita
+     let promptMetodo = prompt(`¿A dónde entraron esos ${fmt(montoEfectivo)}?\nEscribí: EFECTIVO, MP, TRANSF o NX`);
+     if(promptMetodo === null) return;
+     promptMetodo = promptMetodo.toUpperCase();
+     
+     if(promptMetodo.includes('MP') || promptMetodo.includes('MERCADO')) metodoLiquido = 'MERCADO PAGO';
+     else if(promptMetodo.includes('TRANS')) metodoLiquido = 'TRANSFERENCIA';
+     else if(promptMetodo.includes('NX')) metodoLiquido = 'NX';
+     else metodoLiquido = 'EFECTIVO'; // Si pone cualquier cosa, va a billete físico
   }
 
   setBtn('btn-vender',true,'');
@@ -664,14 +677,14 @@ async function procesarVenta(){
       await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
-    // REINYECCIÓN AUTOMÁTICA CORREGIDA SIN TYPOS
+    // DISTRIBUCIÓN DE CAJAS
     if(metodo === 'CUENTA CORRIENTE'){ 
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
        const deudaCalle = total - montoEfectivo;
-       // Inyecta el efectivo real ingresado en caja física
-       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega líquida Ticket '+id+' - '+cli, montoEfectivo, 'EFECTIVO']]);
-       // Inyecta el resto de la deuda financiera en la Cuenta Corriente del cliente
+       // Inyecta el monto a la caja que le dijiste en el prompt
+       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoEfectivo, metodoLiquido]]);
+       // Y manda la diferencia a la Cuenta Corriente
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudaCalle, 'Remanente Ticket Venta '+id]]);
     } else { 
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); 
