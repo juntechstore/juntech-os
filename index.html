@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.1 - CRM Master</title>
+  <title>JuntechOS v4.2 - Ultimate Edition</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -26,61 +26,39 @@
     ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     #login { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; z-index: 999; padding: 40px 30px; }
-    .login-logo { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px var(--border), 0 0 24px #2f81f720; background: var(--s2); display: flex; align-items: center; justify-content: center; }
-    .login-logo img { width: 100%; height: 100%; object-fit: cover; }
-    .login-title { text-align: center; }
-    .login-title h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -1px; margin-bottom: 4px; }
-    .login-title h1 span { color: var(--blue); }
-    .login-title p { font-size: 11px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
-    .login-btn { background: var(--blue-g); color: #fff; border: none; padding: 14px 0; border-radius: var(--r); font-family: var(--font); font-weight: 600; font-size: .95rem; cursor: pointer; transition: all .2s; width: 100%; max-width: 260px; box-shadow: 0 4px 14px #2f81f730; }
-    .login-btn:active { transform: scale(.97); }
-    #login-msg { font-size: 12px; color: var(--text2); min-height: 16px; }
-
+    .login-btn { background: var(--blue-g); color: #fff; border: none; padding: 14px 0; border-radius: var(--r); font-family: var(--font); font-weight: 600; font-size: .95rem; cursor: pointer; width: 100%; max-width: 260px; box-shadow: 0 4px 14px #2f81f730; }
+    
     #app { display: none; height: 100%; flex-direction: column; } #app.on { display: flex; }
-    .hdr { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 52px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 10; }
-    .hdr-left { display: flex; align-items: center; gap: 10px; }
-    .logo-sm { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: var(--s2); border: 1px solid var(--border); flex-shrink: 0; }
-    .logo-sm img { width: 100%; height: 100%; object-fit: cover; }
-    .brand-name { font-size: 1rem; font-weight: 700; letter-spacing: -.3px; } .brand-name span { color: var(--blue); }
-    .brand-ver { font-size: 10px; color: var(--text3); margin-left: 2px; }
-    .hdr-right { display: flex; align-items: center; gap: 8px; }
-    .dot-on { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 5px var(--cyan); display: none; }
-    .sync-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text2); padding: 5px 11px; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 500; }
-    .sync-btn.loading { opacity: .5; pointer-events: none; }
+    .hdr { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 52px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .brand-name { font-size: 1rem; font-weight: 700; } .brand-name span { color: var(--blue); }
+    .sync-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text2); padding: 5px 11px; border-radius: 7px; cursor: pointer; font-size: 11px; }
     
     .scroll { flex: 1; overflow-y: auto; padding: 14px; padding-bottom: 88px; }
     .tab { display: none; } .tab.on { display: block; animation: fu .18s ease; }
     @keyframes fu { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
     .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--s1); border-top: 1px solid var(--border); display: flex; z-index: 50; padding-bottom: env(safe-area-inset-bottom,0px); }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 4px 7px; cursor: pointer; color: var(--text3); font-size: 9px; text-transform: uppercase; font-weight: 500; border: none; background: none; font-family: var(--font); position: relative; }
-    .nav-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
-    .nav-btn.on { color: var(--blue); } .nav-btn.on::after { content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--blue-g); border-radius: 0 0 3px 3px; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 4px 7px; cursor: pointer; color: var(--text3); font-size: 9px; text-transform: uppercase; font-weight: 500; border: none; background: none; font-family: var(--font); }
+    .nav-btn.on { color: var(--blue); }
 
     .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 10px; }
-    .card-title { font-size: 10px; font-weight: 600; color: var(--text2); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 12px; }
+    .card-title { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; margin-bottom: 12px; }
     
     .btn { width: 100%; padding: 13px; border-radius: 8px; font-family: var(--font); font-weight: 600; font-size: .9rem; cursor: pointer; border: none; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 7px; }
-    .btn:active { transform: scale(.97); } .btn:disabled { opacity: .4; pointer-events: none; }
     .btn-blue { background: var(--blue-g); color: #fff; } .btn-red { background: var(--red-g); color: #fff; }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
     .btn-white { background: var(--text); color: #07090d; font-weight: 700; }
-    .btn-orange { background: linear-gradient(135deg,#f0883e,#e3672a); color: #fff; }
     .btn-purple { background: linear-gradient(135deg,#bc8cff,#8a4fff); color: #fff; }
 
     .field { margin-bottom: 11px; }
     .f-label { display: block; font-size: 10px; color: var(--text2); text-transform: uppercase; font-weight: 500; margin-bottom: 5px; }
-    .f-in { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; color: var(--text); font-family: var(--font); font-size: 14px; outline: none; -webkit-appearance: none; }
-    .f-in:focus { border-color: var(--blue); background: var(--s1); } select.f-in option { background: var(--s2); }
+    .f-in { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; color: var(--text); font-family: var(--font); font-size: 14px; outline: none; }
     .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
     .pill-blue { background: #2f81f715; color: var(--blue); border: 1px solid #2f81f730; }
     .pill-cyan { background: #39d35315; color: var(--cyan); border: 1px solid #39d35330; }
     .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
-    .pill-orange { background: #f0883e15; color: var(--orange); border: 1px solid #f0883e30; }
-    .pill-red { background: #f8514915; color: var(--red); border: 1px solid #f8514930; }
-    .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .kpi { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; position: relative; overflow: hidden; }
@@ -95,7 +73,7 @@
     .bal-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border2); font-size: 13px; }
     .bal-row:last-child { border-bottom: none; }
     .bal-key { color: var(--text2); } .bal-val { font-weight: 600; }
-    .bal-val.blue { color: var(--blue); } .bal-val.red { color: var(--red); } .bal-val.cyan { color: var(--cyan); } .bal-val.orange { color: var(--orange); } .bal-val.purple { color: var(--purple); }
+    .bal-val.blue { color: var(--blue); } .bal-val.red { color: var(--red); } .bal-val.cyan { color: var(--cyan); } .bal-val.purple { color: var(--purple); }
     
     .tot-row { display: flex; justify-content: space-between; align-items: baseline; padding-top: 11px; margin-top: 3px; border-top: 1px solid var(--border); }
     .tot-label { font-size: 11px; color: var(--text2); font-weight: 500; text-transform: uppercase; }
@@ -121,33 +99,18 @@
 
     .search-wrap { position: relative; margin-bottom: 12px; } .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); } .f-in.ico { padding-left: 36px; }
 
-    .prod-item { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 7px; display: flex; justify-content: space-between; gap: 10px; }
-    .prod-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; } .prod-meta { font-size: 10px; color: var(--text2); }
-    .prod-price { font-size: 1.05rem; font-weight: 700; color: var(--blue); text-align: right; } .prod-stock { font-size: 10px; text-align: right; margin-top: 2px; }
-
-    .dist-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin: 11px 0; }
-    .dist-col { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 7px; text-align: center; }
-    .dist-label { font-size: 9px; color: var(--text2); text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
-    .dist-in { width: 50px; background: var(--s3); border: 1px solid var(--border); border-radius: 6px; padding: 5px 4px; color: var(--text); font-family: var(--font); font-size: 13px; text-align: center; outline: none; }
-
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
     .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
-    .modal-ico { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 22px; background: var(--s2); border: 1px solid var(--border); }
-    .modal-title { font-size: 1.3rem; font-weight: 700; color: var(--blue); margin-bottom: 3px; } .modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 13px; }
     .modal-id { font-size: 11px; background: var(--s2); border-radius: 7px; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); color: var(--text2); }
     
     .toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; font-size: 12px; font-weight: 500; z-index: 300; opacity: 0; transition: all .25s; pointer-events: none; }
     .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); } .toast.ok { border-color: #2f81f750; color: var(--blue); } .toast.err { border-color: #f8514950; color: var(--red); }
     
-    .loader { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 24px; color: var(--text2); } .l-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); animation: ld .8s infinite; } .l-dot:nth-child(2) { animation-delay: .16s; } .l-dot:nth-child(3) { animation-delay: .32s; } @keyframes ld { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-    
-    .empty { text-align: center; padding: 24px; color: var(--text3); font-size: 12px; }
-
     @media print {
       html, body { background: #ffffff !important; color: #000000 !important; }
       #app, #login, .nav, .modal-bg, .toast { display: none !important; }
       #remito-pro { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 0 !important; margin: 0 !important; }
-      #remito-pro * { color: #000000 !important; } .no-print { display: none !important; }
+      #remito-pro * { color: #000000 !important; }
     }
     #remito-pro { display: none; }
   </style>
@@ -155,10 +118,9 @@
 <body>
 
 <div id="login">
-  <div class="login-logo"><img id="logo-login" src="icon-192.png" alt="J" onerror="this.style.display='none'"></div>
   <div class="login-title">
-    <h1>JUNTECH<span>OS</span></h1>
-    <p>Sistema de gestión v4.1 Master</p>
+    <h1>HTML5<span>OS</span></h1>
+    <p>JuntechOS v4.2 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg"></p>
@@ -167,8 +129,7 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div class="logo-sm"><img id="logo-hdr" src="icon-192.png" alt="J" onerror="this.parentElement.style.display='none'"></div>
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -189,13 +150,12 @@
           <span class="card-title" style="margin:0">Balances Financieros</span>
           <span class="pill pill-cyan" id="h-hora">—</span>
         </div>
-        <div id="caja-res"><div class="loader"><div class="l-dot"></div><div class="l-dot"></div><div class="l-dot"></div></div></div>
+        <div id="caja-res"></div>
         
         <div class="bal-row" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:5px;">
            <span class="bal-key" style="color:var(--purple); font-weight:600;">Cuentas Corrientes (En la calle)</span>
            <span class="bal-val purple" id="h-calle">—</span>
         </div>
-
         <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
       </div>
       
@@ -216,7 +176,7 @@
         <div class="card-title">Nueva Venta</div>
         <div class="field"><label class="f-label">Cliente</label><input class="f-in" id="v-cli" placeholder="Nombre del cliente" type="text" autocomplete="off"></div>
         <div class="field">
-          <label class="f-label">Buscar Producto</label>
+          <label class="f-label">Buscar Producto (Solo en Stock)</label>
           <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="v-search" list="v-lista" placeholder="Escribí el nombre..." onchange="selProduct()" autocomplete="off"><datalist id="v-lista"></datalist></div>
         </div>
         <div class="prod-prev" id="prod-prev">
@@ -228,6 +188,7 @@
           <div class="field"><label class="f-label">Precio a cobrar</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 3000" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Precio de Lista (Tachado)</label><input class="f-in" id="v-precio-lista" type="text" placeholder="Opcional. Ej: 5000" onchange="evalMath(this)"></div>
+        <div class="field"><label class="f-label">Nombre en Ticket (Opcional)</label><input class="f-in" id="v-alias" placeholder="Dejar vacío para nombre original de stock"></div>
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
       </div>
@@ -240,8 +201,8 @@
           <div class="total-line"><span>Subtotal</span><span id="cart-sub">$0</span></div>
           <div style="margin:8px 0">
             <div class="f-row">
-              <input class="f-in" id="v-desc-m" type="text" placeholder="$ Desc (ej: 500+200)" onchange="evalMath(this); syncDesc('m')">
-              <input class="f-in" id="v-desc-p" type="text" placeholder="% Desc (ej: 25+10)" onchange="syncDesc('p')">
+              <input class="f-in" id="v-desc-m" type="text" placeholder="$ Desc" onchange="evalMath(this); syncDesc('m')">
+              <input class="f-in" id="v-desc-p" type="text" placeholder="% Desc" onchange="syncDesc('p')">
             </div>
             <input class="f-in" id="v-desc-mot" placeholder="Motivo del descuento" style="margin-top:7px">
           </div>
@@ -250,7 +211,8 @@
         <div class="field"><label class="f-label">Método de pago</label>
           <select class="f-in" id="v-metodo">
             <option>TRANSFERENCIA</option><option>EFECTIVO</option><option>NX</option><option>MERCADO PAGO</option>
-            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option> 
+            <option style="color:var(--purple); font-weight:bold;">CUENTA CORRIENTE</option>
+            <option style="color:var(--orange); font-weight:bold;">PAGO MIXTO (Efectivo/CC)</option>
           </select>
         </div>
         <div class="f-row" style="margin-bottom:8px;">
@@ -334,7 +296,6 @@
         <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
       </div>
     </div>
-
   </div> 
 </div> 
 
@@ -364,10 +325,6 @@
     <span id="remito-motivo-desc" style="font-size: 12px; color: #555;"></span>: <span id="remito-valor-desc" style="font-weight: bold;"></span>
   </div>
   <div style="text-align: right; font-size: 24px; font-weight: 900; margin-top: 10px;">TOTAL: $<span id="remito-total">0</span></div>
-  <div style="margin-top: 40px; border: 1px solid #000; padding: 15px; font-size: 11px;">
-    <strong>CONDICIONES DE GARANTÍA:</strong> Los productos tienen garantía por falla de fábrica. No cubre mal uso, golpes o humedad. Reclamos dentro de los 30 días.
-  </div>
-  <div style="margin-top: 40px; text-align: center;"><div style="width: 200px; margin: 0 auto; border-top: 1px solid #000; padding-top: 5px; font-size: 12px;">Firma y Sello JuntechStore</div></div>
 </div>
 
 <div class="modal-bg" id="modal-venta"><div class="modal-box"><div class="modal-ico">✅</div><div class="modal-title">¡Exito!</div><div class="modal-sub">Operación registrada en Google Sheets</div><div class="modal-id" id="modal-ticket">—</div><a id="modal-wsp" href="#" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;border-radius:8px;padding:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px">📲 WhatsApp al cliente</a><button class="btn btn-ghost" onclick="cerrarModal()">Cerrar</button></div></div>
@@ -413,7 +370,6 @@ function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.to
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
 
-/* === TRADUCTOR DE FECHAS SERIALES DE GOOGLE SHEETS === */
 function parseExcelDate(val){
   if(!val) return { s: '-', t: 0 };
   let v = val.toString().trim();
@@ -429,7 +385,6 @@ function parseExcelDate(val){
   }
 }
 
-/* === CARGA CENTRAL DE BASE DE DATOS === */
 async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
@@ -443,33 +398,9 @@ async function cargarTodo(){
     const todasLasSalidas = sRows.concat(sRowsHist);
     const stockS = {}; 
     
-    // FIJACIÓN METRICA HISTORIAL BLINDADA: ganV se calcula SOLO en sRows activas (v4.0)
     let ganV = 0;
     sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
-    
     todasLasSalidas.forEach(r => { if(!r[0]) return; stockS[str(r[0])] = (stockS[str(r[0])]||0) + num(r[2]); });
-
-    // CRM ENGINE CON TRADUCTOR DE FECHAS DE LA MATRIX
-    DB.clientes = {};
-    todasLasSalidas.forEach(r => { 
-      if(!r[0]) return; 
-      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaRaw = r[5], cli = str(r[9]).trim().toUpperCase(); 
-      
-      if(cli && cli !== '-' && cli !== 'CLIENTE') {
-         if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: '', ultCompraTs: 0, historial: [] };
-         
-         let pDate = parseExcelDate(fechaRaw);
-         
-         DB.clientes[cli].totalComprado += subNeto;
-         DB.clientes[cli].items[sysName] = (DB.clientes[cli].items[sysName] || 0) + cant;
-         DB.clientes[cli].historial.push({ fecha: pDate.s, prod: sysName, cant: cant, total: subNeto });
-         
-         if(pDate.t > DB.clientes[cli].ultCompraTs) { 
-           DB.clientes[cli].ultCompraTs = pDate.t; 
-           DB.clientes[cli].ultCompraStr = pDate.s; 
-         }
-      }
-    });
 
     let aRows = []; try { aRows = await get('AJUSTES!A2:D'); } catch(e) {}
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
@@ -478,7 +409,22 @@ async function cargarTodo(){
     Object.keys(pMap).forEach(n => {
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
       const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock};
-      DB.todo.push(item); if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
+      DB.todo.push(item); 
+      if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
+    });
+
+    DB.clientes = {};
+    todasLasSalidas.forEach(r => { 
+      if(!r[0]) return; 
+      const sysName = str(r[0]), cant = num(r[2]), subNeto = num(r[4]), fechaRaw = r[5], cli = str(r[9]).trim().toUpperCase(); 
+      if(cli && cli !== '-' && cli !== 'CLIENTE') {
+         if(!DB.clientes[cli]) DB.clientes[cli] = { totalComprado: 0, items: {}, ultCompraStr: '', ultCompraTs: 0, historial: [] };
+         let pDate = parseExcelDate(fechaRaw);
+         DB.clientes[cli].totalComprado += subNeto;
+         DB.clientes[cli].items[sysName] = (DB.clientes[cli].items[sysName] || 0) + cant;
+         DB.clientes[cli].historial.push({ fecha: pDate.s, prod: sysName, cant: cant, total: subNeto });
+         if(pDate.t > DB.clientes[cli].ultCompraTs) { DB.clientes[cli].ultCompraTs = pDate.t; DB.clientes[cli].ultCompraStr = pDate.s; }
+      }
     });
     
     let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:E'); } catch(e){}
@@ -536,57 +482,38 @@ async function cargarTodo(){
     poblarListas();
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
-  }catch(e){ toast('Error: '+e.message,'err'); console.error(e); }
+  }catch(e){ toast('Error: '+e.message,'err'); }
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
 }
 
+/* === FILTRO INTELIGENTE: SÓLO PRODUCTOS CON STOCK DISPONIBLE === */
 function poblarListas(){
   const vl=$('v-lista'); const el=$('e-lista');
   if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
-  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); if(el) el.appendChild(o.cloneNode(true)); });
+  
+  // Vender: Solo los que tienen stock > 0
+  DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
+  // Stock general: Todos para entrada
+  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
 }
 
-/* === BUSCADOR CRM Y DESPLEGABLE HISTORIAL === */
-let timeoutCRM;
 function buscarCliente(val) {
    clearTimeout(timeoutCRM);
    timeoutCRM = setTimeout(() => {
        if(!val || val.length < 2) { setHTML('crm-result', '<div class="empty" style="padding:10px">Escribí al menos 2 letras...</div>'); return; }
        val = val.toUpperCase();
-       
        let html = '';
        for(let c in DB.clientes) {
           if(c.includes(val)) {
              const d = DB.clientes[c];
              let topProd = '-', maxC = 0;
              for(let i in d.items) { if(d.items[i] > maxC) { maxC = d.items[i]; topProd = i; } }
-             
              let dias = '-';
              if(d.ultCompraTs > 0) { const diff = Date.now() - d.ultCompraTs; dias = Math.floor(diff / (1000*60*60*24)); }
-             
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-
-             html += `
-               <div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                     <strong style="color:var(--blue);font-size:14px;">${c}</strong>
-                     <span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span>
-                  </div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div>
-                     <div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div>
-                  </div>
-                  <div style="font-size:11px; margin-bottom:10px;">
-                     <span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br>
-                     <span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)
-                  </div>
-                  
-                  <button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button>
-                  <div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div>
-               </div>
-             `;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
@@ -594,28 +521,16 @@ function buscarCliente(val) {
 }
 
 window.verHistorial = function(cliNombre, cliId) {
-   const el = $('hist-' + cliId);
-   if(!el) return;
+   const el = $('hist-' + cliId); if(!el) return;
    if(el.style.display === 'block') { el.style.display = 'none'; return; }
-   const d = DB.clientes[cliNombre];
-   if(!d) return;
-   
-   let h = d.historial.slice().reverse().map(x => `
-      <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border2);">
-         <span><span style="color:var(--text2)">${x.fecha.split(' ')[0]}</span> - ${x.cant}x ${x.prod}</span>
-         <b>${fmt(x.total)}</b>
-      </div>`).join('');
-      
-   el.innerHTML = h;
-   el.style.display = 'block';
+   const d = DB.clientes[cliNombre]; if(!d) return;
+   let h = d.historial.slice().reverse().map(x => `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border2);"><span><span style="color:var(--text2)">${x.fecha.split(' ')[0]}</span> - ${x.cant}x ${x.prod}</span><b>${fmt(x.total)}</b></div>`).join('');
+   el.innerHTML = h; el.style.display = 'block';
 };
 
-/* === MODULO CUENTAS CORRIENTES === */
 async function guardarCC(){
-  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle');
-  if(!perElem || !montoElem) return;
+  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
   const per = perElem.value.trim(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
-  
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
   setBtn('btn-cc',true,'');
   try {
@@ -631,8 +546,6 @@ async function guardarCC(){
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
 }
 
-
-/* === VENTAS === */
 function selProduct(){
   const vSearch = $('v-search'); if(!vSearch) return;
   const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
@@ -647,7 +560,7 @@ function addToCart(){
   if(!currentProd) return;
   const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search');
   const cant = parseFloat(vCant ? vCant.value : 1)||1, precio = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio, precioLista = parseFloat(vPrecioLista ? vPrecioLista.value : currentProd.precio) || currentProd.precio;
-  if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). _Agregar igual?')) return;
+  if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). ¿Agregar igual?')) return;
   
   cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : '')});
   
@@ -662,9 +575,7 @@ function renderCart(){
   cart.forEach((item,i) => { 
     sub+=item.cant*item.precio; 
     let pTxt = fmt(item.precio);
-    if(item.precio < item.precioLista) {
-      pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
-    }
+    if(item.precio < item.precioLista) pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
     html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; 
   });
   div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
@@ -679,11 +590,7 @@ function syncDesc(t){
   else { vDescM.value = Math.round(sub * ((parseFloat(vDescP.value.toString().replace(/,/g, '.')) || 0) / 100)); }
   calcTotal();
 }
-function calcTotal(){ 
-  let sub=0; cart.forEach(i => sub += i.cant*i.precio); 
-  const vDescM = $('v-desc-m');
-  setText('cart-total', fmt(sub - (parseFloat(vDescM ? vDescM.value : 0)||0))); 
-}
+function calcTotal(){ let sub=0; cart.forEach(i => sub += i.cant*i.precio); const vDescM = $('v-desc-m'); setText('cart-total', fmt(sub - (parseFloat(vDescM ? vDescM.value : 0)||0))); }
 
 function copiarPresupuesto(){
   if(!cart.length) return; 
@@ -719,12 +626,23 @@ function prepararRemito(){
   const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
-/* === ASINCRONÍA ASOCIADA: CREACIÓN DE TICKET + ENVÍO WA BLINDADO === */
+/* === PROCESAR VENTA DE ALTA GAMA CON PAGO MIXTO AUTOMATIZADO === */
 async function procesarVenta(){
   if(!cart.length) return;
   const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot'), vDescP=$('v-desc-p');
   const cli=vCli?vCli.value||'Cliente':'Cliente', metodo=vMetodo?vMetodo.value:'EFECTIVO', desc=parseFloat(vDescM?vDescM.value:0)||0, descMot=vDescMot?vDescMot.value:'';
   let sub=0; cart.forEach(i => sub+=i.cant*i.precio); const total = sub-desc;
+  
+  // LOGICA ESTRATEGICA: Si elige Pago Mixto, pedimos el monto líquido
+  let montoMano = 0;
+  if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
+     let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan en EFECTIVO/TRANSFERENCIA ahora mismo?`);
+     if(promptMonto === null) return; // Cancela la operación
+     montoMono = parseFloat(promptMaso)||0;
+     if(montoMonto <= 0 || m_monto > total) { toast('Monto inválido','err'); return; }
+     montoMano = Math.round(montoMonto);
+  }
+
   setBtn('btn-vender',true,'');
   
   try{
@@ -735,26 +653,31 @@ async function procesarVenta(){
       const item = cart[i]; 
       const descuentoProporcional = sub > 0 ? desc * ((item.cant * item.precio) / sub) : 0;
       const subNeto = (item.cant * item.precio) - descuentoProporcional;
-      
-      // COLUMNA I EN BLANCO ('') PARA DEJAR QUE TU ARRAYFORMULA DE EXCEL OPERE LIBREMENTE
       await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
-    if(metodo === 'CUENTA CORRIENTE'){ await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); } 
-    else { await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); }
+    // RUTA DE INYECCIÓN DE PAGO SEGÚN MÉTODO
+    if(metodo === 'CUENTA CORRIENTE'){ 
+       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
+    } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
+       const deudaCalle = total - montoMonto;
+       // Grabamos la parte en efectivo líquido en la caja
+       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoMonto, 'EFECTIVO']]);
+       // Grabamos el remanente en la Cuenta Corriente
+       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudRemanente, 'Resto Ticket Venta '+id]]);
+    } else { 
+       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); 
+    }
     
     setText('modal-ticket', 'Ticket '+id+' - '+cli+' - '+fmt(total));
     let msgWsp = 'Hola '+cli+'! Gracias por tu compra en Juntech Store. Ticket: '+id+' | Total: '+fmt(total)+'.';
     
-    // BLOQUEADOR ASÍNCRONO SECUENCIAL: Espera a que Sheets retorne el link real
     try {
       toast('Generando comprobante digital...', 'ok');
       const resFetch = await fetch('https://script.google.com/macros/s/AKfycbzCnd0k6dYPUxshE259DQzswMftqJlGfXSlxZQaTcG14uZmY5PSeiCvzxkJIFKvcttpjg/exec', { method: 'POST', body: JSON.stringify({ idVenta: id, cliente: cli, descuento: desc, motivoDesc: descMot, items: cart }), headers: {'Content-Type': 'text/plain;charset=utf-8'} });
       const resData = await resFetch.json();
-      if(resData.success && resData.url) {
-         msgWsp += '%0A%0A📄 Podés ver y descargar tu recibo acá:%0A' + resData.url;
-      }
-    } catch(err) { console.error('Error Apps Script PDF:', err); }
+      if(resData.success && resData.url) msgWsp += '%0A%0A📄 Podés ver y descargar tu recibo acá:%0A' + resData.url;
+    } catch(err) {}
 
     const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text=' + encodeURIComponent(msgWsp).replace(/%250A/g, '%0A');
     const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
@@ -775,7 +698,7 @@ async function guardarMov(){
 }
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
 function addEntrada(){ const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'); if(!eP||!eC||!eCo) return; const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0; if(!n||c<=0) return; entradaCart.push({nombre:n,cant:c,costo:co}); eP.value=''; eC.value=''; eCo.value=''; renderEntrada(); }
-function renderEntrada(){ const d=$('entrada-items'); if(!d) return; if(!entradaCart.length){ d.innerHTML=''; setBtn('btn-entrada',false,''); const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); const b=$('btn-entrada'); if(b) b.disabled=false; }
+function renderEntrada(){ const d=$('entrada-items'); if(!d) return; if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); const b=$('btn-entrada'); if(b) b.disabled=false; }
 function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
 async function guardarEntrada(){ if(!entradaCart.length) return; setBtn('btn-entrada',true,''); try{ const fecha = new Date().toLocaleDateString('es-AR'); for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, '-']]); entradaCart=[]; renderEntrada(); await cargarTodo(); }catch(e){} setBtn('btn-entrada',false,'Guardar'); }
 </script>
