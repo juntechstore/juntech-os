@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.2.2 - Master Stable</title>
+  <title>JuntechOS v4.2.3 - Stable</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -122,16 +122,16 @@
 <div id="login">
   <div class="login-title">
     <h1>HTML5<span>OS</span></h1>
-    <p>JuntechOS v4.2 Master</p>
+    <p>JuntechOS v4.2.3 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
-  <p id="login-msg"></p>
+  <p id="login-msg" style="margin-top:10px; font-size:12px; color:var(--text2);"></p>
 </div>
 
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.2</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.3</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -382,7 +382,7 @@ async function entrarConToken(token){ accessToken = token; const l = $('login'),
 function iniciarAuth(){
   const tokenExistente = tokenGuardado();
   if(tokenExistente){ entrarConToken(tokenExistente); return; }
-  setText('login-msg', 'Conectando...');
+  setText('login-msg', 'Cargando Google...');
   if(typeof google==='undefined' || !google.accounts){ setTimeout(iniciarAuth, 1500); return; }
   try{
     const tc = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: async r => { if(r.error){ setText('login-msg', 'Error: '+r.error); return; } accessToken = r.access_token; guardarToken(r.access_token, Date.now() + 55*60*1000); await entrarConToken(r.access_token); } });
@@ -474,7 +474,6 @@ async function cargarTodo(){
       if(saldo !== 0){
         if(saldo > 0) deudasACobrar += saldo;
         else deudasAPagar += saldo;
-
         htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
       }
     });
@@ -483,7 +482,7 @@ async function cargarTodo(){
     setText('h-cc-cobrar', fmt(deudasACobrar));
     setText('h-cc-pagar', fmt(deudasAPagar));
     
-    let plataEnCalle = deudasACobrar + deudasAPagar;
+    plataEnCalle = deudasACobrar + deudasAPagar;
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
@@ -519,7 +518,7 @@ async function cargarTodo(){
     let hh=''; historial.slice(-12).reverse().forEach(m => { hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${m.tipo==='INGRESO'?'var(--cyan)':'var(--red)'}">${m.tipo==='INGRESO'?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`; });
     setHTML('home-hist', hh || '<div class="empty">Sin movimientos</div>');
     
-    // CORRECCIÓN CLAVE: El bloque del directorio se ejecuta obligatoriamente adentro de cargarTodo
+    // CARGA DE DIRECTORIO ORDENADA
     let dRows = []; try { dRows = await get('Directorio!A2:D'); } catch(e){}
     DB.directorio = dRows.map(r => str(r[0]).toUpperCase()).filter(n => n);
     Object.keys(DB.clientes).forEach(c => { if(!DB.directorio.includes(c)) DB.directorio.push(c); });
@@ -669,11 +668,13 @@ function prepararRemito(){
   const desc = parseFloat(vDescM ? vDescM.value : 0) || 0;
   setText('remito-fecha', "Fecha: " + new Date().toLocaleDateString('es-AR'));
   setText('remito-cliente', (vCli ? vCli.value : '') || 'Cliente');
+  
   const cont = $('remito-descuento-container');
   if(cont) {
     if(desc > 0){ cont.style.display='block'; setText('remito-motivo-desc', vDescMot ? vDescMot.value : ''); setText('remito-valor-desc', '-$'+Math.round(desc).toLocaleString('es-AR')); } 
     else { cont.style.display='none'; }
   }
+
   const tbody = $('remito-items-print'); if(tbody) { tbody.innerHTML = ''; let subtotal = 0;
   cart.forEach(item => {
     subtotal += item.cant * item.precio;
@@ -726,7 +727,7 @@ async function procesarVenta(){
     if(metodo === 'CUENTA CORRIENTE'){ 
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
-       const deudCalle = total - montoEfectivo; // CORRECCIÓN CLAVE: Nombre de variable unificado
+       const deudCalle = total - montoEfectivo; 
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoEfectivo, metodoLiquido]]);
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudCalle, 'Remanente Ticket Venta '+id]]);
     } else { 
@@ -750,7 +751,7 @@ async function procesarVenta(){
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
-function cerrarModal(){ const m = padd('modal-venta'); if(m) m.classList.remove('on'); }
+function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
 
 async function guardarMov(){ 
   const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
