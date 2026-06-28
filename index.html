@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v4.2.1 - Hotfix Edition</title>
+  <title>JuntechOS v4.2.2 - Master Stable</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -37,7 +37,6 @@
     .tab { display: none; } .tab.on { display: block; animation: fu .18s ease; }
     @keyframes fu { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* PARCHE DE CONTROL: CORRECCIÓN DE SVG EN NAV BAR */
     .nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--s1); border-top: 1px solid var(--border); display: flex; z-index: 50; padding-bottom: env(safe-area-inset-bottom,0px); }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 6px; cursor: pointer; color: var(--text3); font-size: 10px; text-transform: uppercase; font-weight: 500; border: none; background: none; font-family: var(--font); }
     .nav-btn.on { color: var(--blue); }
@@ -132,7 +131,7 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.2</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -156,13 +155,13 @@
         <div id="caja-res"></div>
         
         <div class="bal-row" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:5px;">
-   <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar (Clientes te deben)</span>
-   <span class="bal-val blue" id="h-cc-cobrar">—</span>
-</div>
-<div class="bal-row">
-   <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés al mundo)</span>
-   <span class="bal-val red" id="h-cc-pagar">—</span>
-</div>
+           <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar (Clientes te deben)</span>
+           <span class="bal-val blue" id="h-cc-cobrar">—</span>
+        </div>
+        <div class="bal-row">
+           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés al mundo)</span>
+           <span class="bal-val red" id="h-cc-pagar">—</span>
+        </div>
         <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
       </div>
       
@@ -181,11 +180,11 @@
     <div class="tab" id="tab-sell">
       <div class="card">
         <div class="card-title">Nueva Venta</div>
-<div class="field">
-  <label class="f-label">Cliente / Empresa</label>
-  <input class="f-in" id="v-cli" list="cli-lista" placeholder="Escribí para buscar..." type="text" autocomplete="off" style="text-transform: uppercase;">
-  <datalist id="cli-lista"></datalist>
-</div>
+        <div class="field">
+          <label class="f-label">Cliente / Empresa</label>
+          <input class="f-in" id="v-cli" list="cli-lista" placeholder="Escribí para buscar..." type="text" autocomplete="off" style="text-transform: uppercase;">
+          <datalist id="cli-lista"></datalist>
+        </div>
         <div class="field">
           <label class="f-label">Buscar Producto (Solo en Stock)</label>
           <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="v-search" list="v-lista" placeholder="Escribí el nombre..." onchange="selProduct()" autocomplete="off"><datalist id="v-lista"></datalist></div>
@@ -243,15 +242,15 @@
         </div>
         <div id="crm-result"><div class="empty" style="padding:10px">Buscá un cliente para ver su radiografía</div></div>
       </div>
-<div class="card">
-  <div class="card-title" style="color:var(--cyan)">Agendar Nuevo Contacto</div>
-  <div class="field"><label class="f-label">Nombre / Empresa</label><input class="f-in" id="dir-nom" placeholder="Ej: Importador Chino" style="text-transform: uppercase;"></div>
-  <div class="f-row">
-    <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="dir-tipo"><option>CLIENTE</option><option>PROVEEDOR</option></select></div>
-    <div class="field"><label class="f-label">Teléfono</label><input class="f-in" id="dir-tel" placeholder="Opcional"></div>
-  </div>
-  <button class="btn btn-ghost" id="btn-dir" onclick="guardarContacto()" style="border-color:var(--cyan); color:var(--cyan)">+ Guardar en Agenda</button>
-</div>
+      <div class="card">
+        <div class="card-title" style="color:var(--cyan)">Agendar Nuevo Contacto</div>
+        <div class="field"><label class="f-label">Nombre / Empresa</label><input class="f-in" id="dir-nom" placeholder="Ej: Importador Chino" style="text-transform: uppercase;"></div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="dir-tipo"><option>CLIENTE</option><option>PROVEEDOR</option></select></div>
+          <div class="field"><label class="f-label">Teléfono</label><input class="f-in" id="dir-tel" placeholder="Opcional"></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-dir" onclick="guardarContacto()" style="border-color:var(--cyan); color:var(--cyan)">+ Guardar en Agenda</button>
+      </div>
       <div class="card">
         <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
@@ -466,14 +465,13 @@ async function cargarTodo(){
       if(tipo === 'ABONO') DB.saldosCC[persona] -= monto;
     });
       
-  let htmlCC = '';
+    let htmlCC = '';
     let deudasACobrar = 0;
     let deudasAPagar = 0;
 
     Object.keys(DB.saldosCC).forEach(p => {
       const saldo = DB.saldosCC[p];
       if(saldo !== 0){
-        // Clasificamos según el signo del saldo
         if(saldo > 0) deudasACobrar += saldo;
         else deudasAPagar += saldo;
 
@@ -481,14 +479,10 @@ async function cargarTodo(){
       }
     });
     
-    // Inyectamos la lista en la pestaña Clientes
     setHTML('cc-lista', htmlCC || '<div class="empty">Sin cuentas activas</div>');
-    
-    // Inyectamos los dos renglones separados e independientes en la pantalla de INICIO
     setText('h-cc-cobrar', fmt(deudasACobrar));
     setText('h-cc-pagar', fmt(deudasAPagar));
     
-    // El total de plata en la calle para la matemática del Capital Real se mantiene intacto internamente
     let plataEnCalle = deudasACobrar + deudasAPagar;
 
     const cRows = await get('Caja!A2:G');
@@ -525,16 +519,9 @@ async function cargarTodo(){
     let hh=''; historial.slice(-12).reverse().forEach(m => { hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${m.tipo==='INGRESO'?'var(--cyan)':'var(--red)'}">${m.tipo==='INGRESO'?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`; });
     setHTML('home-hist', hh || '<div class="empty">Sin movimientos</div>');
     
-    poblarListas();
-    setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
-    toast('✓ Datos actualizados');
-  }catch(e){ toast('Error: '+e.message,'err'); }
-  if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
-  // LECTURA DEL DIRECTORIO (Contactos sin ventas y Clientes históricos)
+    // CORRECCIÓN CLAVE: El bloque del directorio se ejecuta obligatoriamente adentro de cargarTodo
     let dRows = []; try { dRows = await get('Directorio!A2:D'); } catch(e){}
     DB.directorio = dRows.map(r => str(r[0]).toUpperCase()).filter(n => n);
-    
-    // Sumamos también a los que ya te compraron alguna vez por si no estaban agendados
     Object.keys(DB.clientes).forEach(c => { if(!DB.directorio.includes(c)) DB.directorio.push(c); });
     
     const cliLista = $('cli-lista');
@@ -542,6 +529,12 @@ async function cargarTodo(){
        cliLista.innerHTML = '';
        DB.directorio.forEach(c => { const o = document.createElement('option'); o.value = c; cliLista.appendChild(o); });
     }
+
+    poblarListas();
+    setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    toast('✓ Datos actualizados');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+  if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
 }
 
 function poblarListas(){
@@ -584,7 +577,7 @@ window.verHistorial = function(cliNombre, cliId) {
 
 async function guardarCC(){
   const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
-  const per = perElem.value.trim(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
+  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
   setBtn('btn-cc',true,'');
   try {
@@ -599,7 +592,7 @@ async function guardarCC(){
   } catch(e) { toast('Error: '+e.message,'err'); }
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
 }
-/* === GUARDAR CONTACTO EN DIRECTORIO === */
+
 async function guardarContacto(){
   const nom = $('dir-nom').value.trim().toUpperCase(), tipo = $('dir-tipo').value, tel = $('dir-tel').value;
   if(!nom) { toast('Falta el nombre de la persona o empresa', 'err'); return; }
@@ -613,6 +606,7 @@ async function guardarContacto(){
   } catch(e) { toast('Error al agendar: '+e.message, 'err'); }
   setBtn('btn-dir', false, '+ Guardar en Agenda');
 }
+
 function selProduct(){
   const vSearch = $('v-search'); if(!vSearch) return;
   const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
@@ -675,13 +669,11 @@ function prepararRemito(){
   const desc = parseFloat(vDescM ? vDescM.value : 0) || 0;
   setText('remito-fecha', "Fecha: " + new Date().toLocaleDateString('es-AR'));
   setText('remito-cliente', (vCli ? vCli.value : '') || 'Cliente');
-  
   const cont = $('remito-descuento-container');
   if(cont) {
     if(desc > 0){ cont.style.display='block'; setText('remito-motivo-desc', vDescMot ? vDescMot.value : ''); setText('remito-valor-desc', '-$'+Math.round(desc).toLocaleString('es-AR')); } 
     else { cont.style.display='none'; }
   }
-
   const tbody = $('remito-items-print'); if(tbody) { tbody.innerHTML = ''; let subtotal = 0;
   cart.forEach(item => {
     subtotal += item.cant * item.precio;
@@ -693,33 +685,29 @@ function prepararRemito(){
   const rPro = $('remito-pro'); if(rPro) { rPro.style.display = 'block'; window.print(); setTimeout(() => { rPro.style.display = 'none'; }, 1000); }
 }
 
-/* === PROCESAR VENTA DE ALTA GAMA (MIXTO CORREGIDO) === */
 async function procesarVenta(){
   if(!cart.length) return;
   const vCli=$('v-cli'), vMetodo=$('v-metodo'), vDescM=$('v-desc-m'), vDescMot=$('v-desc-mot');
-  const cli=vCli?vCli.value||'Cliente':'Cliente', metodo=vMetodo?vMetodo.value:'EFECTIVO', desc=parseFloat(vDescM?vDescM.value:0)||0, descMot=vDescMot?vDescMot.value:'';
+  const cli=vCli?vCli.value.trim().toUpperCase()||'CLIENTE':'CLIENTE', metodo=vMetodo?vMetodo.value:'EFECTIVO', desc=parseFloat(vDescM?vDescM.value:0)||0, descMot=vDescMot?vDescMot.value:'';
   let sub=0; cart.forEach(i => sub+=i.cant*i.precio); const total = sub-desc;
   
   let montoEfectivo = 0;
-  let metodoLiquido = 'EFECTIVO'; // Por defecto
+  let metodoLiquido = 'EFECTIVO';
   
-  // LOGICA ESTRATEGICA: Pago Mixto Inteligente
   if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
      let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan AHORA MISMO? (solo números)`);
-     if(promptMano === null) return; // Si cancela, frena todo
+     if(promptMano === null) return;
      montoEfectivo = parseFloat(promptMano)||0;
      if(montoEfectivo <= 0 || montoEfectivo > total) { toast('Monto líquido inválido','err'); return; }
      montoEfectivo = Math.round(montoEfectivo);
      
-     // Preguntamos a qué caja va la guita
      let promptMetodo = prompt(`¿A dónde entraron esos ${fmt(montoEfectivo)}?\nEscribí: EFECTIVO, MP, TRANSF o NX`);
      if(promptMetodo === null) return;
      promptMetodo = promptMetodo.toUpperCase();
-     
      if(promptMetodo.includes('MP') || promptMetodo.includes('MERCADO')) metodoLiquido = 'MERCADO PAGO';
      else if(promptMetodo.includes('TRANS')) metodoLiquido = 'TRANSFERENCIA';
      else if(promptMetodo.includes('NX')) metodoLiquido = 'NX';
-     else metodoLiquido = 'EFECTIVO'; // Si pone cualquier cosa, va a billete físico
+     else metodoLiquido = 'EFECTIVO';
   }
 
   setBtn('btn-vender',true,'');
@@ -735,15 +723,12 @@ async function procesarVenta(){
       await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
     }
     
-    // DISTRIBUCIÓN DE CAJAS
     if(metodo === 'CUENTA CORRIENTE'){ 
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
-       const deudaCalle = total - montoEfectivo;
-       // Inyecta el monto a la caja que le dijiste en el prompt
+       const deudCalle = total - montoEfectivo; // CORRECCIÓN CLAVE: Nombre de variable unificado
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoEfectivo, metodoLiquido]]);
-       // Y manda la diferencia a la Cuenta Corriente
-       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudaCalle, 'Remanente Ticket Venta '+id]]);
+       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudCalle, 'Remanente Ticket Venta '+id]]);
     } else { 
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); 
     }
@@ -765,9 +750,8 @@ async function procesarVenta(){
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
-function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
+function cerrarModal(){ const m = padd('modal-venta'); if(m) m.classList.remove('on'); }
 
-/* === CAJA Y STOCK === */
 async function guardarMov(){ 
   const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
   if(!mot || !mon) return;
