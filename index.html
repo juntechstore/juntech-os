@@ -306,6 +306,19 @@
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number"></div>
           <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
+        <div class="card">
+        <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
+        <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Accesorios"></div>
+          <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="n-prov" placeholder="Ej: Pedro Donati"></div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Costo Unitario ($)</label><input class="f-in" id="n-costo" type="number" placeholder="0"></div>
+          <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="number" placeholder="0"></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
+      </div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
       <div class="card">
@@ -765,6 +778,34 @@ function addEntrada(){ const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'); i
 function renderEntrada(){ const d=$('entrada-items'); if(!d) return; if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); const b=$('btn-entrada'); if(b) b.disabled=false; }
 function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
 async function guardarEntrada(){ if(!entradaCart.length) return; setBtn('btn-entrada',true,''); try{ const fecha = new Date().toLocaleDateString('es-AR'); for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, '-']]); entradaCart=[]; renderEntrada(); await cargarTodo(); }catch(e){} setBtn('btn-entrada',false,'Guardar'); }
+
+  // --- CREACION DE PRODUCTO NUEVO (DIRECTO A SHEETS) ---
+async function crearProductoDB(){
+  const nom = $('n-nom').value.trim().toUpperCase(), cat = $('n-cat').value.trim(), prov = $('n-prov').value.trim();
+  const costo = parseFloat($('n-costo').value)||0, precio = parseFloat($('n-precio').value)||0;
+  
+  if(!nom || precio <= 0) { toast('Falta el nombre o el precio de venta', 'err'); return; }
+  
+  // Generamos un SKU automático para que la BD no quede vacía en esa celda
+  const sku = 'JNT-' + Math.floor(Math.random()*9999); 
+  
+  setBtn('btn-crear-prod', true, '');
+  try {
+    // Inyectamos en el orden exacto de tu CSV: SKU, Nombre, Proveedor, Categoría, Costo, Precio
+    await append('Productos!A:F', [[sku, nom, prov, cat, costo, precio]]);
+    toast('✓ Producto creado y agregado al catálogo');
+    
+    // Limpiamos los inputs para la próxima carga
+    $('n-nom').value = ''; $('n-cat').value = ''; $('n-prov').value = ''; $('n-costo').value = ''; $('n-precio').value = '';
+    
+    // Forzamos un sync para que el producto ya aparezca en los buscadores
+    await cargarTodo();
+  } catch(e) {
+    toast('Error al crear producto: '+e.message, 'err');
+  }
+  setBtn('btn-crear-prod', false, '✨ Guardar en Base de Datos');
+}
+
 </script>
 </body>
 </html>
