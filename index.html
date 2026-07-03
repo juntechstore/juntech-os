@@ -298,18 +298,20 @@
       </div>
     </div>
 
-    <div class="tab" id="tab-stock">
+   <div class="tab" id="tab-stock">
+      
       <div class="card">
         <div class="card-title">Entrada de Stock</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
         <div class="f-row">
-          <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number"></div>
+          <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
           <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
-       <div class="card">
+
+      <div class="card">
         <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
         <div class="f-row">
@@ -322,13 +324,13 @@
         </div>
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
       </div>
-        <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
-      </div>
+
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista</span><span class="pill pill-muted" id="entrada-count">0</span></div>
         <div id="entrada-items"></div>
         <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
       </div>
+
     </div>
   </div> 
 </div> 
