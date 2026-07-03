@@ -306,6 +306,9 @@
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number"></div>
           <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
+        <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
+        <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
+      </div>
        <div class="card">
         <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
@@ -774,11 +777,37 @@ async function guardarMov(){
   try{ await append('Caja!A:G', [['MOV-'+Math.floor(Math.random()*9999), new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), tipo, cat, motivo, monto, metodo]]); toast('✓ Guardado'); mot.value=''; mon.value=''; await cargarTodo(); }catch(e){} setBtn('btn-mov',false,'Guardar');
 }
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
-function addEntrada(){ const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'); if(!eP||!eC||!eCo) return; const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0; if(!n||c<=0) return; entradaCart.push({nombre:n,cant:c,costo:co}); eP.value=''; eC.value=''; eCo.value=''; renderEntrada(); }
-function renderEntrada(){ const d=$('entrada-items'); if(!d) return; if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><span>${i.cant}x ${i.nombre}</span><span>${fmt(i.costo)}/u</span><button onclick="delEntrada(${idx})">✕</button></div>`).join(''); const b=$('btn-entrada'); if(b) b.disabled=false; }
-function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
-async function guardarEntrada(){ if(!entradaCart.length) return; setBtn('btn-entrada',true,''); try{ const fecha = new Date().toLocaleDateString('es-AR'); for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, '-']]); entradaCart=[]; renderEntrada(); await cargarTodo(); }catch(e){} setBtn('btn-entrada',false,'Guardar'); }
 
+function addEntrada(){ 
+  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'); 
+  if(!eP||!eC||!eCo) return; 
+  const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
+  if(!n||c<=0) return; 
+  entradaCart.push({nombre:n, cant:c, costo:co, prov:prov}); 
+  eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
+  renderEntrada(); 
+}
+
+function renderEntrada(){ 
+  const d=$('entrada-items'); if(!d) return; 
+  if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } 
+  d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span></div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`).join(''); 
+  const b=$('btn-entrada'); if(b) b.disabled=false; 
+}
+
+function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
+
+async function guardarEntrada(){ 
+  if(!entradaCart.length) return; 
+  setBtn('btn-entrada',true,''); 
+  try{ 
+    const fecha = new Date().toLocaleDateString('es-AR'); 
+    // Inyectamos el proveedor (i.prov) en la columna G del Sheets
+    for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, i.prov]]); 
+    entradaCart=[]; renderEntrada(); await cargarTodo(); 
+  }catch(e){} 
+  setBtn('btn-entrada',false,'Guardar stock'); 
+}
   // --- CREACION DE PRODUCTO NUEVO (DIRECTO A SHEETS) ---
 async function crearProductoDB(){
   const nom = $('n-nom').value.trim().toUpperCase(), cat = $('n-cat').value.trim(), prov = $('n-prov').value.trim();
