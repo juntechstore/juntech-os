@@ -306,7 +306,7 @@
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number"></div>
           <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
-        <div class="card">
+       <div class="card">
         <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
         <div class="f-row">
@@ -314,8 +314,8 @@
           <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="n-prov" placeholder="Ej: Pedro Donati"></div>
         </div>
         <div class="f-row">
-          <div class="field"><label class="f-label">Costo Unitario ($)</label><input class="f-in" id="n-costo" type="number" placeholder="0"></div>
-          <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="number" placeholder="0"></div>
+          <div class="field"><label class="f-label">Costo Unitario ($)</label><input class="f-in" id="n-costo" type="text" placeholder="Ej: 2000+500/10" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: 5000*1.5" onchange="evalMath(this)"></div>
         </div>
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
       </div>
