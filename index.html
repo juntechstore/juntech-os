@@ -787,8 +787,11 @@ async function crearProductoDB(){
   if(!nom || precio <= 0) { toast('Falta el nombre o el precio de venta', 'err'); return; }
   
   // Generamos un SKU automático para que la BD no quede vacía en esa celda
-  const sku = 'JNT-' + Math.floor(Math.random()*9999); 
-  
+let maxSku = 0;
+  if(DB.todo && DB.todo.length > 0){
+    DB.todo.forEach(p => { let num = parseInt(p.sku.replace(/\D/g, ''), 10); if(!isNaN(num) && num > maxSku) maxSku = num; });
+  }
+  const sku = String(maxSku + 1).padStart(3, '0');  
   setBtn('btn-crear-prod', true, '');
   try {
     // Inyectamos en el orden exacto de tu CSV: SKU, Nombre, Proveedor, Categoría, Costo, Precio
