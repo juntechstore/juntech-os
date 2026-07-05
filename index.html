@@ -413,6 +413,8 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
+async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
+  
 function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
@@ -436,7 +438,7 @@ async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
     const pRows = await get('Productos!A2:F');
-    const pMap = {}; pRows.forEach(r => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5])}; });
+const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2}; });
 
     const eRows = await get('Entradas!A2:D'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
@@ -453,9 +455,9 @@ async function cargarTodo(){
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
 
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
-    Object.keys(pMap).forEach(n => {
-      const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-      const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock};
+Object.keys(pMap).forEach(n => {
+  const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
+  const item = {nombre:n, sku:pMap[n].sku, costo:pMap[n].costo, precio:pMap[n].precio, stock, fila:pMap[n].fila};
       DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
@@ -805,10 +807,18 @@ async function guardarEntrada(){
   setBtn('btn-entrada',true,''); 
   try{ 
     const fecha = new Date().toLocaleDateString('es-AR'); 
-    // Inyectamos el proveedor (i.prov) en la columna G del Sheets
-    for(const i of entradaCart) await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, i.prov]]); 
+    for(const i of entradaCart) {
+       // 1. Guardamos el historial en la pestaña Entradas
+       await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, i.prov]]); 
+       
+       // 2. Buscamos el producto, si el costo cambió, sobreescribimos la celda maestra (Columna E)
+       const prodDB = DB.todo.find(p => p.nombre === i.nombre);
+       if(prodDB && prodDB.fila && i.costo > 0 && i.costo !== prodDB.costo) {
+           await updateCell(`Productos!E${prodDB.fila}:E${prodDB.fila}`, [[i.costo]]);
+       }
+    }
     entradaCart=[]; renderEntrada(); await cargarTodo(); 
-  }catch(e){} 
+  }catch(e){ toast('Error: '+e.message, 'err'); } 
   setBtn('btn-entrada',false,'Guardar stock'); 
 }
   // --- CREACION DE PRODUCTO NUEVO (DIRECTO A SHEETS) ---
