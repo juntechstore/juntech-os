@@ -487,8 +487,7 @@ async function cargarTodo(){
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
     Object.keys(pMap).forEach(n => {
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-      const item = {nombre:n, sku:pMap[n].sku, costo:pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};
-      DB.todo.push(item); 
+const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
