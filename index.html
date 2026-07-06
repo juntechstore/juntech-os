@@ -347,16 +347,16 @@
 
       <div class="card">
         <div class="card-title">Catálogo Completo y Exportación</div>
-        <button class="btn btn-white" onclick="exportarStockCopiar()" style="margin-bottom:12px; background:var(--s2); border:1px solid var(--s3);">📋 Copiar Stock (WhatsApp)</button>
+        <div class="f-row" style="margin-bottom:8px">
+          <button class="btn btn-ghost" onclick="seleccionarConStock()" style="border-color:var(--cyan); color:var(--cyan); margin:0; font-size:11px; padding:8px;">✅ Sel. c/Stock</button>
+          <button class="btn btn-ghost" onclick="deseleccionarTodo()" style="border-color:var(--text3); color:var(--text2); margin:0; font-size:11px; padding:8px;">❌ Limpiar Todo</button>
+        </div>
+        <button class="btn btn-white" onclick="exportarStockCopiar()" style="margin-bottom:12px; background:var(--s2); border:1px solid var(--s3);">📋 Copiar Seleccionados</button>
         <div class="search-wrap" style="margin-bottom:8px;">
-           <span class="search-ico">🔍</span><input class="f-in ico" id="s-search" placeholder="Buscar en catálogo..." oninput="renderCatalogo()">
+           <span class="search-ico">🔍</span><input class="f-in ico" id="s-search" placeholder="Buscar en catálogo..." oninput="filtrarCatalogo()">
         </div>
         <div id="cat-lista" style="max-height:400px; overflow-y:auto; font-size:12px;"></div>
       </div>
-
-    </div>
-  </div> 
-</div> 
 
 <div class="nav" id="main-nav" style="display:none">
   <button class="nav-btn on" onclick="goTab('home',this)">
@@ -434,7 +434,7 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
-async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
+async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadszzheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
 function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
 function str(v){ return v ? v.toString().trim() : ''; }
@@ -598,33 +598,63 @@ function poblarListas(){
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
 }
 
+// --- LÓGICA DE CATÁLOGO Y SELECCIÓN ---
 function renderCatalogo(){
-   const txt = ($('s-search')?$('s-search').value||'':'').toUpperCase();
    const div = $('cat-lista'); if(!div) return;
    let html = '';
-   DB.todo.filter(p => p.nombre.includes(txt) || p.sku.includes(txt)).forEach(p => {
+   DB.todo.forEach(p => {
        let dot = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
-       html += `<div style="padding:10px 0; border-bottom:1px solid var(--border2); display:flex; justify-content:space-between; align-items:center;">
-         <div><div style="font-weight:600;font-size:12px;">${dot} ${p.nombre}</div>
-         <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div></div>
+       html += `<div class="cat-item" data-name="${p.nombre}" data-sku="${p.sku}" data-stock="${p.stock}" style="padding:10px 0; border-bottom:1px solid var(--border2); display:flex; justify-content:space-between; align-items:center;">
+         <div style="display:flex; align-items:center; gap:10px;">
+           <input type="checkbox" class="cat-chk" value="${p.nombre}" style="width:18px;height:18px;accent-color:var(--blue);">
+           <div><div style="font-weight:600;font-size:12px;">${dot} ${p.nombre}</div>
+           <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div></div>
+         </div>
          <div style="text-align:right;"><div style="font-weight:700;color:var(--blue);">${fmt(p.precio)}</div><div style="font-size:11px;color:var(--text2)">${p.stock} u.</div></div>
        </div>`;
    });
    div.innerHTML = html;
 }
 
-function exportarStockCopiar() {
-  if(!DB.todo || DB.todo.length === 0) { toast('No hay datos', 'err'); return; }
-  let txt = `📦 *INVENTARIO ACTUAL - JUNTECH STORE* 📦\n⚡ _Actualizado al instante_\n----------------------------------------\n`;
-  DB.todo.forEach(p => {
-    let ind = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
-    let det = p.stock > 0 ? `${p.stock} u.` : 'SIN STOCK';
-    txt += `${ind} *${p.nombre}*\n      └ SKU: ${p.sku} | ${det} | Sugerido: ${fmt(p.precio)}\n`;
-  });
-  txt += `----------------------------------------\nTotal de ítems: ${DB.todo.length}\n`;
-  navigator.clipboard.writeText(txt).then(() => toast('✓ Stock copiado')).catch(() => toast('Error al copiar', 'err'));
+function filtrarCatalogo() {
+   const txt = ($('s-search')?$('s-search').value||'':'').toUpperCase();
+   document.querySelectorAll('.cat-item').forEach(el => {
+      if(el.dataset.name.includes(txt) || el.dataset.sku.includes(txt)) el.style.display = 'flex';
+      else el.style.display = 'none';
+   });
 }
 
+function seleccionarConStock() {
+   document.querySelectorAll('.cat-item').forEach(el => {
+      const chk = el.querySelector('.cat-chk');
+      if(chk) chk.checked = parseInt(el.dataset.stock) > 0;
+   });
+}
+
+function deseleccionarTodo() {
+   document.querySelectorAll('.cat-chk').forEach(chk => chk.checked = false);
+}
+
+// --- EXPORTACIÓN INTELIGENTE ---
+function exportarStockCopiar() {
+  const seleccionados = Array.from(document.querySelectorAll('.cat-chk:checked')).map(chk => chk.value);
+  if(seleccionados.length === 0) { toast('Seleccioná al menos un producto de la lista', 'err'); return; }
+  
+  let txt = `📦 *INVENTARIO ACTUAL - JUNTECH STORE* 📦\n⚡ _Actualizado al instante_\n----------------------------------------\n`;
+  let count = 0;
+  
+  DB.todo.forEach(p => {
+    if(seleccionados.includes(p.nombre)) {
+        let ind = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
+        let det = p.stock > 0 ? `${p.stock} u.` : 'SIN STOCK';
+        txt += `${ind} *${p.nombre}*\n      └ SKU: ${p.sku} | ${det} | Sugerido: ${fmt(p.precio)}\n`;
+        count++;
+    }
+  });
+  
+  txt += `----------------------------------------\nTotal de ítems filtrados: ${count}\n`;
+  navigator.clipboard.writeText(txt).then(() => toast(`✓ Stock copiado (${count} ítems)`)).catch(() => toast('Error al copiar', 'err'));
+}
 function buscarCliente(val) {
    clearTimeout(timeoutCRM);
    timeoutCRM = setTimeout(() => {
