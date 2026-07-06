@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v5.0 - Master ERP</title>
+  <title>JuntechOS v5.1 - Master ERP</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -125,7 +125,7 @@
 <div id="login">
   <div class="login-title">
     <h1>HTML5<span>OS</span></h1>
-    <p>JuntechOS v5.0 Master</p>
+    <p>JuntechOS v5.1 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg" style="margin-top:10px; font-size:12px; color:var(--text2);"></p>
@@ -134,7 +134,7 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v5.0</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v5.1</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -358,6 +358,10 @@
         <div id="cat-lista" style="max-height:400px; overflow-y:auto; font-size:12px;"></div>
       </div>
 
+    </div>
+  </div> 
+</div> 
+
 <div class="nav" id="main-nav" style="display:none">
   <button class="nav-btn on" onclick="goTab('home',this)">
     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
@@ -434,7 +438,7 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
-async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadszzheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
+async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
 function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
 function str(v){ return v ? v.toString().trim() : ''; }
@@ -655,6 +659,7 @@ function exportarStockCopiar() {
   txt += `----------------------------------------\nTotal de ítems filtrados: ${count}\n`;
   navigator.clipboard.writeText(txt).then(() => toast(`✓ Stock copiado (${count} ítems)`)).catch(() => toast('Error al copiar', 'err'));
 }
+
 function buscarCliente(val) {
    clearTimeout(timeoutCRM);
    timeoutCRM = setTimeout(() => {
