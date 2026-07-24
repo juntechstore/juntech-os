@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v5.1 - Master ERP</title>
+  <title>JuntechOS v5.2 - Master ERP Multimoneda</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -125,7 +125,7 @@
 <div id="login">
   <div class="login-title">
     <h1>HTML5<span>OS</span></h1>
-    <p>JuntechOS v5.1 Master</p>
+    <p>JuntechOS v5.2 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg" style="margin-top:10px; font-size:12px; color:var(--text2);"></p>
@@ -134,7 +134,7 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v5.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v5.2</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
@@ -144,6 +144,32 @@
 
   <div class="scroll">
     <div class="tab on" id="tab-home">
+      <!-- BARRA DE COTIZACIÓN Y TC MAESTRO -->
+      <div class="card" style="border-left: 4px solid var(--orange); background: var(--s2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="card-title" style="color:var(--orange); margin:0;">Cotizaciones en Vivo</span>
+          <button class="sync-btn" onclick="actualizarDolares()" style="font-size:10px;">🔄 Sync Dólar</button>
+        </div>
+        <div class="f-row" style="grid-template-columns: 1fr 1fr 1fr; gap:6px; text-align:center;">
+          <div style="background:var(--s1); padding:6px; border-radius:6px;">
+            <div style="font-size:9px; color:var(--text2);">CRIPTO (USDT)</div>
+            <b style="font-size:12px; color:var(--cyan);" id="d-usdt">Loading...</b>
+          </div>
+          <div style="background:var(--s1); padding:6px; border-radius:6px;">
+            <div style="font-size:9px; color:var(--text2);">BLUE</div>
+            <b style="font-size:12px; color:var(--blue);" id="d-blue">Loading...</b>
+          </div>
+          <div style="background:var(--s1); padding:6px; border-radius:6px;">
+            <div style="font-size:9px; color:var(--text2);">OFICIAL</div>
+            <b style="font-size:12px; color:var(--text2);" id="d-oficial">Loading...</b>
+          </div>
+        </div>
+        <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+          <label class="f-label" style="margin:0; white-space:nowrap;">TC Operativo del día ($):</label>
+          <input class="f-in" id="tc-maestro" type="text" placeholder="Ej: 1500" onchange="evalMath(this)" style="padding:6px 10px; font-weight:bold; color:var(--orange);">
+        </div>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
         <div class="kpi cyan"><div class="kpi-label">Capital Real</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
@@ -265,7 +291,16 @@
           </select>
         </div>
         <div class="f-row">
-          <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
+          <div class="field"><label class="f-label">Moneda</label>
+            <select class="f-in" id="cc-moneda" onchange="toggleTC('cc')">
+              <option value="ARS">ARS ($)</option>
+              <option value="USD">USD (u$s)</option>
+            </select>
+          </div>
+          <div class="field"><label class="f-label">Monto (Original)</label><input class="f-in" id="cc-monto" type="number" placeholder="Ej: 100 o 50000"></div>
+        </div>
+        <div class="f-row">
+          <div class="field" id="box-tc-cc" style="display:none;"><label class="f-label" style="color:var(--purple)">TC Acordado ($)</label><input class="f-in" id="cc-tc" type="text" placeholder="Ej: 1500" onchange="evalMath(this)"></div>
           <div class="field" id="cc-metodo-box"><label class="f-label">Caja física afectada</label>
             <select class="f-in" id="cc-metodo">
               <option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option>
@@ -319,7 +354,16 @@
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
-          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Moneda Costo</label>
+            <select class="f-in" id="e-moneda" onchange="toggleTC('e')">
+              <option value="ARS">ARS ($)</option>
+              <option value="USD">USD (u$s)</option>
+            </select>
+          </div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" placeholder="Ej: 10 o 15000" onchange="evalMath(this)"></div>
+          <div class="field" id="box-tc-e" style="display:none;"><label class="f-label" style="color:var(--orange)">TC Proveedor ($)</label><input class="f-in" id="e-tc" type="text" placeholder="Ej: 1500" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
@@ -409,6 +453,7 @@ const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
 let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[]}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null;
+let COTS = { usdt: 0, blue: 0, oficial: 0 };
   
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -434,7 +479,44 @@ function iniciarAuth(){
     tc.requestAccessToken({prompt:''});
   }catch(e){ setText('login-msg', 'Error: '+e.message); }
 }
-window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); });
+window.addEventListener('load', ()=>{ 
+  if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); 
+  setTimeout(actualizarDolares, 1200);
+});
+
+async function actualizarDolares() {
+  try {
+    toast('Consultando DólarApi...');
+    const res = await fetch('https://dolarapi.com/v1/dolares');
+    const data = await res.json();
+    
+    const usdtData = data.find(d => d.casa === 'cripto') || {};
+    const blueData = data.find(d => d.casa === 'blue') || {};
+    const oficialData = data.find(d => d.casa === 'oficial') || {};
+
+    COTS.usdt = usdtData.venta || 0;
+    COTS.blue = blueData.venta || 0;
+    COTS.oficial = oficialData.venta || 0;
+
+    setText('d-usdt', COTS.usdt ? '$' + COTS.usdt : 'N/D');
+    setText('d-blue', COTS.blue ? '$' + COTS.blue : 'N/D');
+    setText('d-oficial', COTS.oficial ? '$' + COTS.oficial : 'N/D');
+
+    const tcIn = $('tc-maestro');
+    if (tcIn && !tcIn.value && COTS.usdt) tcIn.value = COTS.usdt;
+    toast('Cotizaciones al día');
+  } catch (e) { toast('Error leyendo cotizaciones', 'err'); }
+}
+
+function toggleTC(mod) {
+  const mon = $(mod + '-moneda').value;
+  const box = $('box-tc-' + mod);
+  const tcInput = $(mod + '-tc');
+  if (box) box.style.display = (mon === 'USD') ? 'block' : 'none';
+  if (mon === 'USD' && tcInput && !tcInput.value) {
+    tcInput.value = $('tc-maestro').value || COTS.usdt || COTS.blue || 0;
+  }
+}
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
@@ -692,17 +774,31 @@ window.verHistorial = function(cliNombre, cliId) {
 };
 
 async function guardarCC(){
-  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
-  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
+  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'), monElem = $('cc-moneda'), tcElem = $('cc-tc'); 
+  if(!perElem || !montoElem) return;
+  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value;
+  let monto = parseFloat(montoElem.value)||0;
+  const met = $('cc-metodo').value;
+  let det = detElem.value;
+  
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
+  
+  if(monElem && monElem.value === 'USD') {
+    const tcAcordado = parseFloat(tcElem.value) || parseFloat($('tc-maestro').value) || 1;
+    const montoARS = Math.round(monto * tcAcordado);
+    det = `[u$s ${monto} | TC: $${tcAcordado}] ` + (det || 'Operación en verdes');
+    monto = montoARS;
+  }
+
   setBtn('btn-cc',true,'');
   try {
     const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
     if(met !== 'NINGUNA'){
       const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
+      const motCaja = (monElem && monElem.value === 'USD') ? `[USD TC: $${tcElem ? tcElem.value : ''}] ` : '';
+      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', motCaja+'Préstamo a '+per, monto, met]]);
+      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', motCaja+'Pago de '+per, monto, met]]);
     }
     toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
@@ -904,11 +1000,21 @@ async function guardarMov(){
 
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
 function addEntrada(){ 
-  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'); 
+  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'), eMon=$('e-moneda'), eTc=$('e-tc'); 
   if(!eP||!eC||!eCo) return; 
-  const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
+  const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0;
+  const prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
   if(!n||c<=0) return; 
-  entradaCart.push({nombre:n, cant:c, costo:co, prov:prov}); 
+  
+  let costoFinal = co;
+  let provTag = prov;
+  if(eMon && eMon.value === 'USD') {
+    const tcAplicado = parseFloat(eTc.value) || parseFloat($('tc-maestro').value) || 1;
+    costoFinal = Math.round(co * tcAplicado);
+    provTag = `[u$s ${co} | TC: $${tcAplicado}] ` + prov;
+  }
+
+  entradaCart.push({nombre:n, cant:c, costo:costoFinal, prov:provTag}); 
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
   renderEntrada(); 
 }
