@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v5.2 - Master ERP Multimoneda</title>
+  <title>JuntechOS v5.2 - Master ERP</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -649,19 +649,21 @@ async function cargarTodo(){
 
     const formatBalInicio = (totARS, totUSD, puroARS) => {
        if(Math.abs(totARS) < 1 && Math.abs(totUSD) < 0.05) return '—';
+       if(Math.abs(totUSD) < 0.05) return fmt(totARS); // Si no hay dólares, muestra limpio sin duplicar
+       
        let txt = fmt(totARS);
-       let partes = [];
-       if(Math.abs(totUSD) >= 0.05) partes.push(`u$s ${Math.abs(totUSD)}`);
+       let partes = [`u$s ${Math.abs(totUSD)}`];
        if(Math.abs(puroARS) >= 1) partes.push(fmt(Math.abs(puroARS)));
-       if(partes.length > 0) txt += ` [${partes.join(' + ')}]`;
-       return txt;
+       return `${txt} [${partes.join(' + ')}]`;
     };
 
     setHTML('cc-lista', htmlCC || '<div class="empty">Sin cuentas activas</div>');
     setText('h-cc-cobrar', formatBalInicio(totalACobrarARS, deudasACobrarUSD, deudasACobrarARS));
     setText('h-cc-pagar', formatBalInicio(totalAPagarARS, deudasAPagarUSD, deudasAPagarARS));
     
-    plataEnCalle = totalACobrarARS + totalAPagarARS;
+    // REGLA DE ORO JUNTECH: Tu plata en calle es SOLO lo que los clientes te deben a vos (A Cobrar). 
+    // Tus deudas y préstamos externos (A Pagar) NO se restan de tus activos ni te comen el Capital Real!
+    plataEnCalle = totalACobrarARS;
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
@@ -683,7 +685,7 @@ async function cargarTodo(){
       historial.push({tipo, cat:str(r[3]), motivo:str(r[4]), monto, metodo});
     });
     
-    // --- LÓGICA MAESTRA INTOCABLE DE CAPITAL Y FINANZAS ---
+    // --- LÓGICA MAESTRA INTOCABLE DE TU CÓDIGO BASE ---
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
     const activosTotales = totalCaja + plataEnCalle; 
