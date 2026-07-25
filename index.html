@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     :root {
@@ -140,6 +139,17 @@
     </div>
   </div>
 
+  <div id="dolar-bar" style="display:flex; justify-content:space-between; align-items:center; background:var(--s2); padding:6px 16px; font-size:11px; color:var(--text2); border-bottom:1px solid var(--border);">
+    <div style="font-weight:600">💵 Dólar: <span id="usd-val" style="color:var(--cyan)">Cargando...</span></div>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <span>TC Base:</span>
+      <select id="usd-tipo" onchange="cambiarCotizacion()" style="background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:10px; padding:2px;">
+        <option value="blue">Blue</option><option value="cripto">Cripto</option><option value="custom">Manual</option>
+      </select>
+      <input type="number" id="usd-custom" onchange="cambiarCotizacion()" style="display:none; width:60px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:10px; padding:2px;" placeholder="Ej: 1250">
+    </div>
+  </div>
+
   <div class="scroll">
     <div class="tab on" id="tab-home">
       <div class="kpi-grid">
@@ -262,7 +272,12 @@
           </select>
         </div>
         <div class="f-row">
-          <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
+          <div class="field"><label class="f-label">Monto</label>
+            <div style="display:flex; gap:5px;">
+              <select id="cc-moneda" class="f-in" style="width:75px; padding:11px 5px;"><option value="ARS">ARS</option><option value="USD">USD</option></select>
+              <input class="f-in" id="cc-monto" type="number" placeholder="0">
+            </div>
+          </div>
           <div class="field" id="cc-metodo-box"><label class="f-label">Caja física afectada</label>
             <select class="f-in" id="cc-metodo">
               <option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option>
@@ -306,7 +321,12 @@
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
-          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Costo unitario</label>
+            <div style="display:flex; gap:5px;">
+              <select id="e-moneda" class="f-in" style="width:75px; padding:11px 5px;"><option value="ARS">ARS</option><option value="USD">USD</option></select>
+              <input class="f-in" id="e-costo" type="text" onchange="evalMath(this)">
+            </div>
+          </div>
         </div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
@@ -387,7 +407,58 @@ let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 const $ = id => document.getElementById(id);
-const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
+
+// --- MOTOR BIMONETARIO ---
+window.dolares = { blue: 1000, cripto: 1000, custom: 1000 };
+window.cotizacionActiva = 1000;
+
+async function fetchDolar() {
+  try {
+    const res = await fetch('https://dolarapi.com/v1/dolares');
+    const data = await res.json();
+    const blue = data.find(d => d.casa === 'blue');
+    const cripto = data.find(d => d.casa === 'cripto');
+    if(blue) window.dolares.blue = blue.venta;
+    if(cripto) window.dolares.cripto = cripto.venta;
+    cambiarCotizacion();
+  } catch(e) { console.error(e); }
+}
+
+function cambiarCotizacion() {
+  const tipo = $('usd-tipo').value;
+  const customInp = $('usd-custom');
+  if (tipo === 'custom') {
+    customInp.style.display = 'block';
+    window.cotizacionActiva = parseFloat(customInp.value) || window.dolares.blue;
+  } else {
+    customInp.style.display = 'none';
+    window.cotizacionActiva = window.dolares[tipo];
+    customInp.value = window.cotizacionActiva;
+  }
+  const uVal = $('usd-val'); if(uVal) uVal.innerText = '$' + window.cotizacionActiva;
+  if (DB && DB.todo && DB.todo.length > 0) cargarTodo();
+}
+
+window.addEventListener('load', ()=>{ 
+  fetchDolar();
+  if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); 
+});
+
+function num(v){ 
+  if(!v) return 0; 
+  if(typeof v==='number') return v; 
+  let s = v.toString().trim(); 
+  let match = s.match(/\[u\$s\s*([0-9.,]+)\]/i);
+  if(match) return parseFloat(match[1].replace(',','.')) * (window.cotizacionActiva || 1000);
+  s = s.replace(/[$\s]/g,''); 
+  if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); 
+  else if(s.includes(',')) s = s.replace(',','.'); 
+  return parseFloat(s)||0; 
+}
+
+const fmt = n => '$' + Math.round(num(n)||0).toLocaleString('es-AR');
+function str(v){ return v ? v.toString().trim() : ''; }
+// --- FIN MOTOR BIMONETARIO ---
 
 function toast(msg, tipo='ok'){ const t = $('toast'); if(!t) return; t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
 function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); const tab = $('tab-'+id); if(tab) tab.classList.add('on'); if(el) el.classList.add('on'); }
@@ -408,15 +479,11 @@ function iniciarAuth(){
     tc.requestAccessToken({prompt:''});
   }catch(e){ setText('login-msg', 'Error: '+e.message); }
 }
-window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); });
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
-
 async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
   
-function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
-function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
 
 function parseExcelDate(val){
@@ -597,16 +664,23 @@ window.verHistorial = function(cliNombre, cliId) {
 
 async function guardarCC(){
   const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
-  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
-  if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
+  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, met = $('cc-metodo').value, det = detElem.value;
+  const isUSD = $('cc-moneda') && $('cc-moneda').value === 'USD';
+  let valInput = parseFloat(montoElem.value)||0;
+  
+  // Acá inyectamos la vacuna: si es USD, se guarda el string crudo [u$s X]
+  const monto = isUSD ? `[u$s ${valInput}]` : valInput;
+  
+  if(!per || valInput<=0){ toast('Falta persona o monto','err'); return; }
   setBtn('btn-cc',true,'');
   try {
     const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
     if(met !== 'NINGUNA'){
       const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
+      const montoParaCaja = num(monto); // La caja física registra ARS congelados de hoy
+      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, montoParaCaja, met]]);
+      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, montoParaCaja, met]]);
     }
     toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
@@ -786,7 +860,12 @@ function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p =
 function addEntrada(){ 
   const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'); 
   if(!eP||!eC||!eCo) return; 
-  const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
+  const n=eP.value, c=parseFloat(eC.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
+  
+  let coVal = parseFloat(eCo.value)||0;
+  const isUSD = $('e-moneda') && $('e-moneda').value === 'USD';
+  const co = isUSD ? `[u$s ${coVal}]` : coVal;
+  
   if(!n||c<=0) return; 
   entradaCart.push({nombre:n, cant:c, costo:co, prov:prov}); 
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
@@ -808,12 +887,12 @@ async function guardarEntrada(){
   try{ 
     const fecha = new Date().toLocaleDateString('es-AR'); 
     for(const i of entradaCart) {
-       // 1. Guardamos el historial en la pestaña Entradas
-       await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, i.prov]]); 
+       // i.cant * num(i.costo) procesa el total en ARS para la tabla Entradas
+       await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant * num(i.costo), fecha, i.prov]]); 
        
-       // 2. Buscamos el producto, si el costo cambió, sobreescribimos la celda maestra (Columna E)
        const prodDB = DB.todo.find(p => p.nombre === i.nombre);
-       if(prodDB && prodDB.fila && i.costo > 0 && i.costo !== prodDB.costo) {
+       if(prodDB && prodDB.fila && num(i.costo) > 0 && i.costo !== prodDB.costo) {
+           // Escribe el string [u$s X] en la base de datos de Productos, pegando el costo al dólar para siempre
            await updateCell(`Productos!E${prodDB.fila}:E${prodDB.fila}`, [[i.costo]]);
        }
     }
@@ -821,7 +900,7 @@ async function guardarEntrada(){
   }catch(e){ toast('Error: '+e.message, 'err'); } 
   setBtn('btn-entrada',false,'Guardar stock'); 
 }
-  // --- CREACION DE PRODUCTO NUEVO (DIRECTO A SHEETS) ---
+
 async function crearProductoDB(){
   const nom = $('n-nom').value.trim().toUpperCase(), cat = $('n-cat').value.trim(), prov = $('n-prov').value.trim();
   const costo = parseFloat($('n-costo').value)||0, precio = parseFloat($('n-precio').value)||0;
@@ -829,7 +908,7 @@ async function crearProductoDB(){
   if(!nom || precio <= 0) { toast('Falta el nombre o el precio de venta', 'err'); return; }
   
   // Generamos un SKU automático para que la BD no quede vacía en esa celda
-let maxSku = 0;
+  let maxSku = 0;
   if(DB.todo && DB.todo.length > 0){
     DB.todo.forEach(p => { let num = parseInt(p.sku.replace(/\D/g, ''), 10); if(!isNaN(num) && num > maxSku) maxSku = num; });
   }
