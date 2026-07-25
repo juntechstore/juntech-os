@@ -308,7 +308,8 @@
         </div>
         <div class="field fx-rate-row" id="cc-rate-row">
           <label class="f-label">Cotización a aplicar (la que negociaste)</label>
-          <input class="f-in" id="cc-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50">
+          <input class="f-in" id="cc-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewCC()">
+          <div class="usd-tag" id="cc-rate-preview" style="margin-top:5px"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label" id="cc-monto-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
@@ -359,7 +360,8 @@
         </div>
         <div class="field fx-rate-row" id="e-rate-row">
           <label class="f-label">Cotización a aplicar (la que negociaste)</label>
-          <input class="f-in" id="e-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50">
+          <input class="f-in" id="e-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewEntrada()">
+          <div class="usd-tag" id="e-rate-preview" style="margin-top:5px"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
@@ -469,6 +471,31 @@ function elegirCotizacion(tipo){
 }
 
 function setManualTC(v){ COTIZ.manual = parseFloat(v.toString().replace(',','.'))||0; if(COTIZ.elegida==='manual' && !COTIZ.manual) elegirCotizacion('blue'); }
+
+// Umbral de seguridad: nunca hubo (ni va a haber en el futuro cercano) una cotización real ARS/USD por debajo de esto.
+// Si alguien tipea algo menor, es casi seguro un error de tipeo o un "atajo" tipo poner 1 — y eso rompe el valor en pesos
+// que alimenta el Capital y el A Cobrar/A Pagar. Por eso frenamos con confirmación antes de guardar.
+const TC_MIN_SEGURO = 100;
+
+function previewCC(){
+  const montoElem = $('cc-monto'), rateElem = $('cc-rate-val'), prev = $('cc-rate-preview');
+  if(!montoElem || !rateElem || !prev) return;
+  const usd = parseFloat(montoElem.value)||0, tc = parseFloat(rateElem.value)||0;
+  if(usd>0 && tc>0){
+    prev.textContent = `≈ ${fmt(usd*tc)} pesos reales — esto es lo que se va a registrar en tus cuentas`;
+    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
+  } else prev.textContent = '';
+}
+
+function previewEntrada(){
+  const cantElem = $('e-cant'), costoElem = $('e-costo'), rateElem = $('e-rate-val'), prev = $('e-rate-preview');
+  if(!costoElem || !rateElem || !prev) return;
+  const cant = parseFloat(cantElem ? cantElem.value : 1)||1, usd = parseFloat(costoElem.value)||0, tc = parseFloat(rateElem.value)||0;
+  if(usd>0 && tc>0){
+    prev.textContent = `≈ ${fmt(usd*tc)}/u — ${fmt(usd*tc*cant)} en total (pesos reales)`;
+    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
+  } else prev.textContent = '';
+}
 
 function setMonedaEntrada(m){
   monedaEntradaActual = m;
@@ -620,8 +647,14 @@ Object.keys(pMap).forEach(n => {
         else deudasAPagar += saldo;
         const usd = DB.saldosUSD[p] || 0;
         const tcHoy = getTCActual();
-        const usdLinea = (Math.abs(usd) > 0.009 && tcHoy) ? `<div class="usd-tag" style="text-align:right">u$s ${usd.toFixed(2)} ≈ ${fmt(Math.abs(usd)*tcHoy)} hoy</div>` : '';
-        htmlCC += `<div class="bal-row" style="align-items:flex-start"><span class="bal-key">${p}</span><span style="text-align:right"><span class="bal-val ${saldo>0?'blue':'red'}" style="display:block">${fmt(saldo)}</span>${usdLinea}</span></div>`;
+        if(Math.abs(usd) > 0.009){
+          // Deuda dolarizada: el número que importa es el de dólares (nace y muere en dólares).
+          // El registro en pesos queda como referencia interna chica, solo para quien quiera auditar el detalle.
+          const colorUSD = usd>0 ? 'blue' : 'red';
+          htmlCC += `<div class="bal-row" style="align-items:flex-start"><span class="bal-key">${p}</span><span style="text-align:right"><span class="bal-val ${colorUSD}" style="display:block">u$s ${Math.abs(usd).toFixed(2)}</span><span style="font-size:10px;color:var(--text2);margin-top:2px;display:block">${tcHoy?('≈ '+fmt(Math.abs(usd)*tcHoy)+' hoy'):''} · reg. interno ${fmt(saldo)}</span></span></div>`;
+        } else {
+          htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
+        }
       }
     });
     
@@ -705,8 +738,14 @@ function buscarCliente(val) {
              if(d.ultCompraTs > 0) { const diff = Date.now() - d.ultCompraTs; dias = Math.floor(diff / (1000*60*60*24)); }
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+             const usdCC = DB.saldosUSD[c] || 0;
+             const esDolarizado = Math.abs(usdCC) > 0.009;
+             const tcHoyCRM = getTCActual();
+             const bloqueDeuda = esDolarizado
+               ? `<div style="font-weight:700;font-size:1.1rem; color:var(--${usdCC>0?'blue':'red'})">u$s ${Math.abs(usdCC).toFixed(2)}</div><div style="font-size:10px;color:var(--text2);margin-top:1px">${tcHoyCRM?('≈ '+fmt(Math.abs(usdCC)*tcHoyCRM)+' hoy'):''} · reg. interno ${fmt(saldoCC)}</div>`
+               : `<div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div>`;
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div>${Math.abs(DB.saldosUSD[c]||0)>0.009?`<div class="usd-tag">u$s ${(DB.saldosUSD[c]||0).toFixed(2)}</div>`:''}</div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div>${bloqueDeuda}</div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
@@ -733,6 +772,10 @@ async function guardarCC(){
   if(monedaCCActual === 'USD'){
     const tc = parseFloat($('cc-rate-val') ? $('cc-rate-val').value : 0) || getTCActual();
     if(!tc){ toast('Falta la cotización a aplicar','err'); return; }
+    if(tc < TC_MIN_SEGURO){
+      const pesosResultantes = Math.round(montoInput*tc);
+      if(!confirm(`⚠️ $${tc} por dólar es una cotización rarísima.\n\nEsto va a registrar un movimiento de ${fmt(pesosResultantes)} pesos REALES en tus cuentas (afecta el Capital y el A Cobrar/A Pagar).\n\n¿Estás segurísimo de que ese es el tipo de cambio correcto?`)) return;
+    }
     monto = Math.round(montoInput * tc * 100)/100;
     detFinal = `[U$S ${montoInput}@${tc}] ${det}`.trim();
   }
@@ -746,7 +789,7 @@ async function guardarCC(){
       if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
       else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
     }
-    toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; setMonedaCC('ARS'); const rInp=$('cc-rate-val'); if(rInp) rInp.value='';
+    toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; setMonedaCC('ARS'); const rInp=$('cc-rate-val'); if(rInp) rInp.value=''; const prevCC=$('cc-rate-preview'); if(prevCC) prevCC.textContent='';
     await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
@@ -931,11 +974,15 @@ function addEntrada(){
   if(monedaEntradaActual === 'USD'){
     tc = parseFloat($('e-rate-val') ? $('e-rate-val').value : 0) || getTCActual();
     if(!tc){ toast('Falta la cotización a aplicar','err'); return; }
+    if(tc < TC_MIN_SEGURO){
+      const pesosResultantes = Math.round(coInput*tc*c);
+      if(!confirm(`⚠️ $${tc} por dólar es una cotización rarísima.\n\nEsto va a registrar un costo de ${fmt(pesosResultantes)} pesos REALES en tu stock (afecta el Capital).\n\n¿Estás segurísimo de que ese es el tipo de cambio correcto?`)) return;
+    }
     moneda='USD'; montoOriginal=coInput; costoPesos = Math.round(coInput * tc * 100)/100;
   }
   entradaCart.push({nombre:n, cant:c, costo:costoPesos, prov:prov, moneda:moneda, montoOriginal:montoOriginal, tc:tc}); 
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
-  setMonedaEntrada('ARS'); const rInp=$('e-rate-val'); if(rInp) rInp.value='';
+  setMonedaEntrada('ARS'); const rInp=$('e-rate-val'); if(rInp) rInp.value=''; const prevE=$('e-rate-preview'); if(prevE) prevE.textContent='';
   renderEntrada(); 
 }
 
