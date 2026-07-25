@@ -684,7 +684,9 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
-    const activosTotales = totalCaja + plataEnCalle; 
+    
+    // BLINDAJE DE CAPITAL: La plata en calle (deudas/fiados) NO toca ni altera el capital del negocio
+    const activosTotales = totalCaja; 
     const capJ = activosTotales - billJ - ganD;
     
     setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capJ)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
