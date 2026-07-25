@@ -166,7 +166,7 @@
         </div>
         <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
           <label class="f-label" style="margin:0; white-space:nowrap;">TC Operativo del día ($):</label>
-          <input class="f-in" id="tc-maestro" type="text" placeholder="Ej: 1500" onchange="evalMath(this)" style="padding:6px 10px; font-weight:bold; color:var(--orange);">
+          <input class="f-in" id="tc-maestro" type="text" placeholder="Ej: 1500" onchange="evalMath(this); cargarTodo();" style="padding:6px 10px; font-weight:bold; color:var(--orange);">
         </div>
       </div>
 
@@ -503,7 +503,8 @@ async function actualizarDolares() {
 
     const tcIn = $('tc-maestro');
     if (tcIn && !tcIn.value && COTS.usdt) tcIn.value = COTS.usdt;
-    toast('Cotizaciones al día');
+    toast('✓ Cotizaciones al día');
+    if(DB.todo && DB.todo.length > 0) cargarTodo();
   } catch (e) { toast('Error leyendo cotizaciones', 'err'); }
 }
 
@@ -618,9 +619,9 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     Object.keys(DB.clientes).forEach(c => { DB.clientes[c].historial.sort((a,b) => a.ts - b.ts); });
       
     let htmlCC = '';
-    let deudasACobrar = 0;
-    let deudasAPagar = 0;
-    const tcVivo = parseFloat($('tc-maestro') ? $('tc-maestro').value : 0) || COTS.usdt || COTS.blue || 1;
+    let deudasACobrarARS = 0, deudasACobrarUSD = 0;
+    let deudasAPagarARS = 0, deudasAPagarUSD = 0;
+    const tcVivo = parseFloat($('tc-maestro') ? $('tc-maestro').value : 0) || COTS.usdt || COTS.blue || 1400;
 
     Object.keys(DB.saldosCC).forEach(p => {
       let saldoARS = DB.saldosCC[p];
@@ -631,21 +632,35 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
          if(Math.abs(saldoUSD) < 0.05) return; 
          
          saldoARS = Math.round(saldoUSD * tcVivo);
-         if(saldoARS > 0) deudasACobrar += saldoARS;
-         else deudasAPagar += saldoARS;
+         if(saldoUSD > 0) deudasACobrarUSD += saldoUSD;
+         else deudasAPagarUSD += saldoUSD;
+         
          htmlCC += `<div class="bal-row"><span class="bal-key">${p} <small style="color:var(--cyan); font-weight:bold;">[u$s ${saldoUSD}]</small></span><span class="bal-val ${saldoARS>0?'blue':'red'}">${fmt(saldoARS)} <small style="color:var(--text2); font-size:10px;">(al TC vivo)</small></span></div>`;
       } else if(Math.abs(saldoARS) > 0.5) {
-         if(saldoARS > 0) deudasACobrar += saldoARS;
-         else deudasAPagar += saldoARS;
+         if(saldoARS > 0) deudasACobrarARS += saldoARS;
+         else deudasAPagarARS += saldoARS;
          htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldoARS>0?'blue':'red'}">${fmt(saldoARS)}</span></div>`;
       }
     });
     
+    const totalACobrarARS = deudasACobrarARS + Math.round(deudasACobrarUSD * tcVivo);
+    const totalAPagarARS = deudasAPagarARS + Math.round(deudasAPagarUSD * tcVivo);
+
+    const formatBalInicio = (totARS, totUSD, puroARS) => {
+       if(Math.abs(totARS) < 1 && Math.abs(totUSD) < 0.05) return '—';
+       let txt = fmt(totARS);
+       let partes = [];
+       if(Math.abs(totUSD) >= 0.05) partes.push(`u$s ${Math.abs(totUSD)}`);
+       if(Math.abs(puroARS) >= 1) partes.push(fmt(Math.abs(puroARS)));
+       if(partes.length > 0) txt += ` [${partes.join(' + ')}]`;
+       return txt;
+    };
+
     setHTML('cc-lista', htmlCC || '<div class="empty">Sin cuentas activas</div>');
-    setText('h-cc-cobrar', fmt(deudasACobrar));
-    setText('h-cc-pagar', fmt(deudasAPagar));
+    setText('h-cc-cobrar', formatBalInicio(totalACobrarARS, deudasACobrarUSD, deudasACobrarARS));
+    setText('h-cc-pagar', formatBalInicio(totalAPagarARS, deudasAPagarUSD, deudasAPagarARS));
     
-    plataEnCalle = deudasACobrar + deudasAPagar;
+    plataEnCalle = totalACobrarARS + totalAPagarARS;
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
