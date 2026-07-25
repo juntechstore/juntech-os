@@ -569,7 +569,8 @@ async function cargarTodo(){
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
     Object.keys(pMap).forEach(n => {
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};      DB.todo.push(item); 
+      const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};      
+      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
@@ -682,11 +683,10 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       historial.push({tipo, cat:str(r[3]), motivo:str(r[4]), monto, metodo});
     });
     
+    // --- LÓGICA MAESTRA INTOCABLE DE CAPITAL Y FINANZAS ---
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
-    
-    // BLINDAJE DE CAPITAL: La plata en calle (deudas/fiados) NO toca ni altera el capital del negocio
-    const activosTotales = totalCaja; 
+    const activosTotales = totalCaja + plataEnCalle; 
     const capJ = activosTotales - billJ - ganD;
     
     setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capJ)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
