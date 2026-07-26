@@ -571,7 +571,25 @@ async function append(range,values){ await fetch(`https://sheets.googleapis.com/
 
 async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
   
-function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
+function num(v){
+  if(!v) return 0;
+  if(typeof v==='number') return v;
+  let s = v.toString().trim().replace(/[$\s]/g,'');
+  if(s.includes(',') && s.includes('.')) {
+    // Formato ARG con ambos: 1.234,56 -> el punto es separador de miles, la coma es el decimal
+    s = s.replace(/\./g,'').replace(',', '.');
+  } else if(s.includes(',')) {
+    // Solo coma: es el separador decimal (ARG): 1234,56 -> 1234.56
+    s = s.replace(',', '.');
+  } else if(s.includes('.')) {
+    // Solo punto: si TODOS los grupos después de cada punto son de 3 dígitos (ej: 4.500 o 1.234.567),
+    // es separador de miles y hay que sacarlo. Si es un solo punto con 1 o 2 dígitos (ej: 4.5), es decimal real.
+    const partes = s.split('.');
+    const esMiles = partes.length > 1 && partes.slice(1).every(p => p.length === 3);
+    if(esMiles) s = s.replace(/\./g, '');
+  }
+  return parseFloat(s)||0;
+}
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
 
