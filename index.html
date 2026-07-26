@@ -631,7 +631,11 @@ const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
 Object.keys(pMap).forEach(n => {
   const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-  const item = {nombre:n, sku:pMap[n].sku, costo:pMap[n].costo, precio:pMap[n].precio, stock, fila:pMap[n].fila};
+  // El costo real de un producto es el de su ÚLTIMA compra (Entradas) — si nunca se cargó
+  // ninguna entrada para ese producto, recién ahí se usa el costo fijo de Productos como respaldo.
+  // (costoR ya se calculaba más arriba, pero no se estaba usando — ese era el bug real.)
+  const costoReal = costoR[n] !== undefined ? costoR[n] : pMap[n].costo;
+  const item = {nombre:n, sku:pMap[n].sku, costo:costoReal, precio:pMap[n].precio, stock, fila:pMap[n].fila};
       DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
