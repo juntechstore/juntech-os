@@ -569,6 +569,7 @@ const setHTML = (id, html) => { const el = document.getElementById(id); if(el) e
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 const $ = id => document.getElementById(id);
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
+const fmtUSD = n => 'u$s ' + (n||0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
 function toast(msg, tipo='ok'){ const t = $('toast'); if(!t) return; t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
 function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); const tab = $('tab-'+id); if(tab) tab.classList.add('on'); if(el) el.classList.add('on'); }
@@ -612,6 +613,48 @@ function parseExcelDate(val){
     try { let parts = v.split(' ')[0].split('/'); if(parts.length===3) t = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`).getTime(); } catch(e){}
     return { s: v, t: t };
   }
+}
+
+async function cargarPasivosPersonales() {
+  try {
+    const rows = await get('PasivosPersonales!A2:H');
+    const deudas = {};
+    rows.forEach(r => {
+      const id = str(r[1]); // Col B: ID
+      if (!id) return;
+      
+      // Si la deuda no existe en nuestro objeto, la inicializamos con los datos maestros de la primera transacción que encontremos
+      if (!deudas[id]) {
+        deudas[id] = { 
+          saldo: 0, 
+          moneda: str(r[5]),   // Col F: Moneda
+          concepto: str(r[4]), // Col E: Concepto
+          persona: str(r[3])  // Col D: Persona
+        };
+      }
+      // Sumamos el monto de la transacción actual al saldo. Pagos deben ser negativos.
+      deudas[id].saldo += num(r[6]); // Col G: Monto
+    });
+    renderPasivosPersonales(deudas);
+  } catch(e) {
+    console.error("Error cargando pasivos personales:", e);
+    setHTML('pp-lista', '<div class="empty err" style="font-size:12px;">Error al cargar deudas personales.</div>');
+  }
+}
+
+function renderPasivosPersonales(deudas) {
+  let html = '';
+  Object.keys(deudas).forEach(id => {
+    const d = deudas[id];
+    // Mostramos la deuda solo si el saldo es significativamente diferente de cero
+    if (Math.abs(d.saldo) > 0.01) {
+      const formattedSaldo = d.moneda === 'USD' ? fmtUSD(d.saldo) : fmt(d.saldo);
+      // Si el saldo es positivo, es una deuda (pasivo, color rojo). Si es negativo, es un crédito a tu favor (activo, color cyan).
+      const color = d.saldo > 0 ? 'red' : 'cyan';
+      html += `<div class="bal-row"><span class="bal-key">${d.concepto} (${d.persona})</span><span class="bal-val ${color}">${formattedSaldo}</span></div>`;
+    }
+  });
+  setHTML('pp-lista', html || '<div class="empty" style="font-size: 12px;">No hay deudas personales registradas.</div>');
 }
 
 async function cargarTodo(){
@@ -743,6 +786,9 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
 
     poblarListas();
     renderCatalogo(); // Rellena el catálogo de Stock
+    
+    await cargarPasivosPersonales();
+
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
@@ -1120,4 +1166,24 @@ async function crearProductoDB(){
 }
 </script>
 </body>
-</html>
+</html>```
+
+---
+### **Reporte de Implementación (Paso 5)**
+
+*   **¿Qué funciones nuevas agregaste?**
+    1.  **`cargarPasivosPersonales()`**: Se agregó esta función asíncrona. Su responsabilidad es leer la hoja `PasivosPersonales`, procesar las transacciones para calcular los saldos de cada deuda agrupando por el ID (columna B), y luego pasar estos datos a la función de renderizado.
+    2.  **`renderPasivosPersonales(deudas)`**: Se agregó esta función para manejar la lógica de la interfaz. Recibe los saldos calculados, genera el HTML para la lista de deudas activas con el formato y color correctos, y lo inyecta en el `div#pp-lista`.
+    3.  **`fmtUSD(n)`**: Se añadió esta pequeña función de utilidad para formatear consistentemente los montos en dólares (ej: `u$s 170.00`), manteniéndola separada de la función `fmt()` existente para pesos.
+
+*   **¿Qué función existente fue modificada?**
+    *   Se modificó la función **`cargarTodo()`**.
+
+*   **Exactamente qué línea se agregó dentro de esa función:**
+    *   Se agregó la línea `await cargarPasivosPersonales();` en la **línea 782** del script, justo antes de la línea que actualiza la hora y muestra el toast de éxito.
+
+*   **¿Por qué el resto del ERP debería seguir funcionando exactamente igual?**
+    *   **Aislamiento de Datos y Lógica:** Las nuevas funciones leen de una hoja (`PasivosPersonales`) que es ignorada por el resto del sistema y solo escriben en un `div` (`#pp-lista`) que no existía previamente. No hay ninguna variable compartida que sea modificada.
+    *   **Ejecución No Bloqueante y en Secuencia:** La nueva llamada a `await cargarPasivosPersonales()` se ejecuta al final del bloque `try` de `cargarTodo()`. Esto significa que todos los cálculos críticos del negocio (Capital, Ganancias, Saldos de Caja, Cuentas Corrientes comerciales, etc.) ya se han completado y sus resultados han sido almacenados. La ejecución de este nuevo módulo no tiene forma de alterar retroactivamente esos cálculos. Es un paso final, aditivo y totalmente independiente.
+
+El sistema ahora es capaz de leer y visualizar el estado de las deudas personales sin afectar en lo más mínimo la contabilidad principal del negocio.
