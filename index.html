@@ -104,6 +104,25 @@
 
     .search-wrap { position: relative; margin-bottom: 12px; } .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); } .f-in.ico { padding-left: 36px; }
 
+    /* ===== BIMONETARIO: barra de cotizaciones y toggles ARS/USD ===== */
+    .fx-bar { display: flex; gap: 7px; overflow-x: auto; padding: 9px 14px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .fx-bar::-webkit-scrollbar { display: none; }
+    .fx-chip { flex-shrink: 0; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; min-width: 64px; text-align: center; cursor: pointer; }
+    .fx-chip.on { border-color: var(--purple); background: #bc8cff15; }
+    .fx-chip-label { font-size: 9px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
+    .fx-chip-val { font-size: 12.5px; font-weight: 700; color: var(--text); margin-top: 1px; }
+    .fx-manual-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
+    .fx-manual-wrap span { font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .fx-manual-wrap input { width: 54px; background: transparent; border: none; color: var(--text); font-size: 12.5px; font-weight: 700; text-align: left; outline: none; font-family: var(--font); }
+    .fx-refresh { min-width: auto !important; padding: 5px 12px !important; }
+    .curr-toggle { display: flex; gap: 8px; margin-bottom: 11px; }
+    .curr-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--s2); color: var(--text2); font-family: var(--font); font-weight: 600; font-size: .85rem; cursor: pointer; }
+    .curr-btn.on { border-color: var(--purple); color: var(--purple); background: #bc8cff15; }
+    .fx-rate-row { display: none; }
+    .fx-rate-row.on { display: block; }
+    .usd-tag { font-size: 10px; color: var(--purple); font-weight: 600; margin-top: 2px; display: block; }
+    /* =================================================================== */
+
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
     .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
     .modal-id { font-size: 11px; background: var(--s2); border-radius: 7px; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); color: var(--text2); }
@@ -139,6 +158,28 @@
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
       <button class="sync-btn" id="sync-btn" onclick="cargarTodo()">↻ Sync</button>
+    </div>
+  </div>
+
+  <div class="fx-bar" id="fx-bar">
+    <div class="fx-chip on" id="fx-chip-blue" onclick="elegirCotizacion('blue')">
+      <div class="fx-chip-label">Blue</div>
+      <div class="fx-chip-val" id="fx-val-blue">—</div>
+    </div>
+    <div class="fx-chip" id="fx-chip-cripto" onclick="elegirCotizacion('cripto')">
+      <div class="fx-chip-label">Cripto</div>
+      <div class="fx-chip-val" id="fx-val-cripto">—</div>
+    </div>
+    <div class="fx-chip" id="fx-chip-oficial" onclick="elegirCotizacion('oficial')">
+      <div class="fx-chip-label">Oficial</div>
+      <div class="fx-chip-val" id="fx-val-oficial">—</div>
+    </div>
+    <div class="fx-chip" id="fx-chip-manual" onclick="elegirCotizacion('manual')">
+      <div class="fx-chip-label">Manual</div>
+      <div class="fx-manual-wrap"><span>$</span><input id="fx-manual-input" type="text" value="" placeholder="0" onclick="event.stopPropagation()" onchange="setManualTC(this.value)"></div>
+    </div>
+    <div class="fx-chip fx-refresh" onclick="cargarCotizaciones()" title="Actualizar cotizaciones">
+      <div class="fx-chip-val">↻</div>
     </div>
   </div>
 
@@ -259,10 +300,20 @@
         <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
         <div class="field"><label class="f-label">Tipo de Operación</label>
-          <select class="f-in" id="cc-tipo">
+          <select class="f-in" id="cc-tipo" onchange="actualizarContextoCC()">
             <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
             <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
           </select>
+        </div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="cc-curr-ars" onclick="setMonedaCC('ARS')">$ Pesos</button>
+          <button type="button" class="curr-btn" id="cc-curr-usd" onclick="setMonedaCC('USD')">u$s Dólares</button>
+        </div>
+        <div class="field fx-rate-row" id="cc-rate-row">
+          <label class="f-label" id="cc-rate-label">Cotización que estás pactando ahora</label>
+          <input class="f-in" id="cc-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewCC()">
+          <div style="font-size:10px;color:var(--text2);margin-top:5px" id="cc-rate-hint"></div>
+          <div class="usd-tag" id="cc-rate-preview" style="margin-top:5px"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
@@ -280,7 +331,16 @@
         <div class="card-title">Saldos Activos en la calle</div>
         <div id="cc-lista"><div class="empty">Cargando cuentas...</div></div>
       </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--orange)">Pasivos Personales (Deudas y Préstamos Externos)</div>
+        <div id="pp-lista" style="padding: 10px 0;"><div class="empty" style="font-size: 12px;">Todavía no existen deudas personales.</div></div>
+        <div class="f-row" style="gap: 8px; margin-top: 10px;">
+          <button class="btn btn-ghost" style="margin:0; border-color: var(--orange); color: var(--orange);">+ Nueva Deuda</button>
+          <button class="btn btn-ghost" style="margin:0;">✓ Registrar Pago</button>
+        </div>
+      </div>
     </div>
+
 
     <div class="tab" id="tab-caja">
       <div class="card" style="border-left: 4px solid var(--blue)">
@@ -312,25 +372,28 @@
       </div>
     </div>
 
-    <div class="tab" id="tab-stock">
+   <div class="tab" id="tab-stock">
       
       <div class="card">
         <div class="card-title">Entrada de Stock (Compra)</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="e-curr-ars" onclick="setMonedaEntrada('ARS')">$ Pesos</button>
+          <button type="button" class="curr-btn" id="e-curr-usd" onclick="setMonedaEntrada('USD')">u$s Dólares</button>
+        </div>
+        <div class="field fx-rate-row" id="e-rate-row">
+          <label class="f-label">Cotización a aplicar (la que negociaste)</label>
+          <input class="f-in" id="e-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewEntrada()">
+          <div class="usd-tag" id="e-rate-preview" style="margin-top:5px"></div>
+        </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
-          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label" id="e-costo-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista de Entrada</span><span class="pill pill-muted" id="entrada-count">0</span></div>
-        <div id="entrada-items"></div>
-        <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
-      </div>
-      
       <div class="card">
         <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
@@ -343,6 +406,12 @@
           <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: 5000*1.5" onchange="evalMath(this)"></div>
         </div>
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista de Entrada</span><span class="pill pill-muted" id="entrada-count">0</span></div>
+        <div id="entrada-items"></div>
+        <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
       </div>
 
       <div class="card">
@@ -409,6 +478,92 @@ const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
 let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[]}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null;
+
+// ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
+let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
+let monedaEntradaActual = 'ARS';
+let monedaCCActual = 'ARS';
+const TC_MIN_SEGURO = 100;
+
+function getTCActual(){ return COTIZ[COTIZ.elegida] || COTIZ.blue || COTIZ.manual || 0; }
+
+async function cargarCotizaciones(){
+  try{
+    const r = await fetch('https://dolarapi.com/v1/dolares');
+    const data = await r.json();
+    const blue = data.find(d=>d.casa==='blue'), cripto = data.find(d=>d.casa==='cripto'), oficial = data.find(d=>d.casa==='oficial');
+    if(blue) COTIZ.blue = blue.venta; if(cripto) COTIZ.cripto = cripto.venta; if(oficial) COTIZ.oficial = oficial.venta;
+    setText('fx-val-blue', COTIZ.blue ? '$'+Math.round(COTIZ.blue).toLocaleString('es-AR') : '—');
+    setText('fx-val-cripto', COTIZ.cripto ? '$'+Math.round(COTIZ.cripto).toLocaleString('es-AR') : '—');
+    setText('fx-val-oficial', COTIZ.oficial ? '$'+Math.round(COTIZ.oficial).toLocaleString('es-AR') : '—');
+    const mInp = $('fx-manual-input');
+    if(mInp && !mInp.value){ mInp.value = Math.round(COTIZ.blue||0); COTIZ.manual = COTIZ.blue; }
+  }catch(e){ /* si falla la API no rompe nada: quedan las últimas cotizaciones cargadas */ }
+}
+
+function elegirCotizacion(tipo){
+  COTIZ.elegida = tipo;
+  document.querySelectorAll('.fx-chip').forEach(c=>c.classList.remove('on'));
+  const chip = $('fx-chip-'+tipo); if(chip) chip.classList.add('on');
+}
+
+function setManualTC(v){ COTIZ.manual = parseFloat(v.toString().replace(',','.'))||0; if(COTIZ.elegida==='manual' && !COTIZ.manual) elegirCotizacion('blue'); }
+
+function previewCC(){
+  const montoElem = $('cc-monto'), rateElem = $('cc-rate-val'), prev = $('cc-rate-preview');
+  if(!montoElem || !rateElem || !prev) return;
+  const usd = parseFloat(montoElem.value)||0, tc = parseFloat(rateElem.value)||0;
+  if(usd>0 && tc>0){
+    prev.textContent = `≈ ${fmt(usd*tc)} pesos reales — esto es lo que se va a registrar en tus cuentas`;
+    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
+  } else prev.textContent = '';
+}
+
+function previewEntrada(){
+  const cantElem = $('e-cant'), costoElem = $('e-costo'), rateElem = $('e-rate-val'), prev = $('e-rate-preview');
+  if(!costoElem || !rateElem || !prev) return;
+  const cant = parseFloat(cantElem ? cantElem.value : 1)||1, usd = parseFloat(costoElem.value)||0, tc = parseFloat(rateElem.value)||0;
+  if(usd>0 && tc>0){
+    prev.textContent = `≈ ${fmt(usd*tc)}/u — ${fmt(usd*tc*cant)} en total (pesos reales)`;
+    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
+  } else prev.textContent = '';
+}
+
+function setMonedaEntrada(m){
+  monedaEntradaActual = m;
+  const bA=$('e-curr-ars'), bU=$('e-curr-usd'), row=$('e-rate-row'), lbl=$('e-costo-label'), rateInp=$('e-rate-val');
+  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
+  if(row) row.classList.toggle('on', m==='USD');
+  if(lbl) lbl.textContent = m==='USD' ? 'Costo unitario (u$s)' : 'Costo unitario';
+  if(m==='USD' && rateInp && !rateInp.value) rateInp.value = getTCActual() || '';
+}
+
+function setMonedaCC(m){
+  monedaCCActual = m;
+  const bA=$('cc-curr-ars'), bU=$('cc-curr-usd'), row=$('cc-rate-row'), lbl=$('cc-monto-label');
+  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
+  if(row) row.classList.toggle('on', m==='USD');
+  if(lbl) lbl.textContent = m==='USD' ? 'Monto u$s' : 'Monto $';
+  if(m==='USD') actualizarContextoCC();
+}
+
+function actualizarContextoCC(){
+  if(monedaCCActual !== 'USD') return;
+  const tipo = $('cc-tipo') ? $('cc-tipo').value : 'CARGO';
+  const lbl = $('cc-rate-label'), rateInp = $('cc-rate-val'), hint = $('cc-rate-hint');
+  const tcHoy = getTCActual();
+  if(tipo === 'ABONO'){
+    if(lbl) lbl.textContent = 'Cotización de HOY para esta devolución';
+    if(rateInp) rateInp.value = tcHoy || '';
+    if(hint) hint.textContent = 'Nunca uses la cotización del día del préstamo — usá siempre la de hoy, aunque haya subido.';
+  } else {
+    if(lbl) lbl.textContent = 'Cotización que estás pactando ahora';
+    if(rateInp && !rateInp.value) rateInp.value = tcHoy || '';
+    if(hint) hint.textContent = 'Esta es la cotización de ESTE préstamo puntual, no afecta a futuras devoluciones.';
+  }
+  previewCC();
+}
+// ================================================================================================
   
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -422,7 +577,7 @@ function evalMath(el) { if(!el || !el.value) return; let v = el.value.toString()
 
 function guardarToken(token, expiry){ try{ localStorage.setItem('jt_token', token); localStorage.setItem('jt_expiry', expiry); } catch(e){} }
 function tokenGuardado(){ try{ const t = localStorage.getItem('jt_token'); const e = parseInt(localStorage.getItem('jt_expiry')||'0'); if(t && e && Date.now() < e - 60000) return t; }catch(e){} return null; }
-async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; await cargarTodo(); }
+async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; cargarCotizaciones(); await cargarTodo(); }
 
 function iniciarAuth(){
   const tokenExistente = tokenGuardado();
@@ -675,7 +830,7 @@ function buscarCliente(val) {
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
