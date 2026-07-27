@@ -197,12 +197,20 @@
         <div id="caja-res"></div>
         
         <div class="bal-row" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:5px;">
-           <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar (Clientes te deben)</span>
+           <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar en pesos ($)</span>
            <span class="bal-val blue" id="h-cc-cobrar">—</span>
         </div>
+        <div class="bal-row" id="h-cc-cobrar-usd-row" style="display:none">
+           <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar en dólares (u$s)</span>
+           <span class="bal-val blue" id="h-cc-cobrar-usd">—</span>
+        </div>
         <div class="bal-row">
-           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés al mundo)</span>
+           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar en pesos ($)</span>
            <span class="bal-val red" id="h-cc-pagar">—</span>
+        </div>
+        <div class="bal-row" id="h-cc-pagar-usd-row" style="display:none">
+           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar en dólares (u$s)</span>
+           <span class="bal-val red" id="h-cc-pagar-usd">—</span>
         </div>
         <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
       </div>
@@ -685,6 +693,9 @@ Object.keys(pMap).forEach(n => {
     let htmlCC = '';
     let deudasACobrar = 0;
     let deudasAPagar = 0;
+    // Totales SOLO para mostrar en el home, separados por moneda real — nunca mezclados ni convertidos.
+    // No alimentan el Capital (eso lo sigue haciendo deudasACobrar/deudasAPagar de arriba, sin cambios).
+    let cobrarARSpuro = 0, pagarARSpuro = 0, cobrarUSDpuro = 0, pagarUSDpuro = 0;
 
     Object.keys(DB.saldosCC).forEach(p => {
       const saldo = DB.saldosCC[p]; // el de siempre: peso histórico real, esto es lo que alimenta el Capital
@@ -694,21 +705,27 @@ Object.keys(pMap).forEach(n => {
         const usd = DB.saldosUSD[p] || 0;
         const tcHoy = getTCActual();
         if(Math.abs(usd) > 0.009){
-          // Solo para mostrar en pantalla: el saldo real en dólares, convertido a la cotización de hoy.
-          // Esto es 100% informativo, no cambia ni un peso de lo que ya se sumó arriba.
+          // Cuenta dolarizada: no se mezcla con los totales en pesos del home, va aparte en dólares puros.
+          if(usd > 0) cobrarUSDpuro += usd; else pagarUSDpuro += usd;
           const colorUSD = usd>0 ? 'blue' : 'red';
           htmlCC += `<div class="bal-row" style="align-items:flex-start"><span class="bal-key">${p}</span><span style="text-align:right"><span class="bal-val ${colorUSD}" style="display:block">u$s ${Math.abs(usd).toFixed(2)}</span><span style="font-size:10px;color:var(--text2);margin-top:2px;display:block">${tcHoy?('≈ '+fmt(Math.abs(usd)*tcHoy)+' hoy'):''}</span></span></div>`;
         } else {
+          if(saldo > 0) cobrarARSpuro += saldo; else pagarARSpuro += saldo;
           htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
         }
       }
     });
     
     setHTML('cc-lista', htmlCC || '<div class="empty">Sin cuentas activas</div>');
-    setText('h-cc-cobrar', fmt(deudasACobrar));
-    setText('h-cc-pagar', fmt(deudasAPagar));
+    setText('h-cc-cobrar', fmt(cobrarARSpuro));
+    setText('h-cc-pagar', fmt(pagarARSpuro));
+    const rowCU = $('h-cc-cobrar-usd-row'), rowPU = $('h-cc-pagar-usd-row');
+    if(Math.abs(cobrarUSDpuro) > 0.009){ if(rowCU) rowCU.style.display='flex'; setText('h-cc-cobrar-usd', 'u$s '+cobrarUSDpuro.toFixed(2)); }
+    else if(rowCU) rowCU.style.display='none';
+    if(Math.abs(pagarUSDpuro) > 0.009){ if(rowPU) rowPU.style.display='flex'; setText('h-cc-pagar-usd', 'u$s '+Math.abs(pagarUSDpuro).toFixed(2)); }
+    else if(rowPU) rowPU.style.display='none';
     
-    plataEnCalle = deudasACobrar + deudasAPagar;
+    plataEnCalle = deudasACobrar + deudasAPagar; // el Capital sigue leyendo esto, sin cambios
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
