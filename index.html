@@ -6,10 +6,11 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v5.1 - Master ERP</title>
+  <title>JuntechOS v4.2.3 - Stable</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -60,10 +61,7 @@
     .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
     .pill-blue { background: #2f81f715; color: var(--blue); border: 1px solid #2f81f730; }
     .pill-cyan { background: #39d35315; color: var(--cyan); border: 1px solid #39d35330; }
-    .pill-orange { background: #f0883e15; color: var(--orange); border: 1px solid #f0883e30; }
-    .pill-red { background: #f8514915; color: var(--red); border: 1px solid #f8514930; }
     .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
-    .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
     .kpi { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; position: relative; overflow: hidden; }
@@ -104,25 +102,6 @@
 
     .search-wrap { position: relative; margin-bottom: 12px; } .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); } .f-in.ico { padding-left: 36px; }
 
-    /* ===== BIMONETARIO: barra de cotizaciones y toggles ARS/USD ===== */
-    .fx-bar { display: flex; gap: 7px; overflow-x: auto; padding: 9px 14px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .fx-bar::-webkit-scrollbar { display: none; }
-    .fx-chip { flex-shrink: 0; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; min-width: 64px; text-align: center; cursor: pointer; }
-    .fx-chip.on { border-color: var(--purple); background: #bc8cff15; }
-    .fx-chip-label { font-size: 9px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
-    .fx-chip-val { font-size: 12.5px; font-weight: 700; color: var(--text); margin-top: 1px; }
-    .fx-manual-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
-    .fx-manual-wrap span { font-size: 12.5px; font-weight: 700; color: var(--text); }
-    .fx-manual-wrap input { width: 54px; background: transparent; border: none; color: var(--text); font-size: 12.5px; font-weight: 700; text-align: left; outline: none; font-family: var(--font); }
-    .fx-refresh { min-width: auto !important; padding: 5px 12px !important; }
-    .curr-toggle { display: flex; gap: 8px; margin-bottom: 11px; }
-    .curr-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--s2); color: var(--text2); font-family: var(--font); font-weight: 600; font-size: .85rem; cursor: pointer; }
-    .curr-btn.on { border-color: var(--purple); color: var(--purple); background: #bc8cff15; }
-    .fx-rate-row { display: none; }
-    .fx-rate-row.on { display: block; }
-    .usd-tag { font-size: 10px; color: var(--purple); font-weight: 600; margin-top: 2px; display: block; }
-    /* =================================================================== */
-
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
     .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
     .modal-id { font-size: 11px; background: var(--s2); border-radius: 7px; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); color: var(--text2); }
@@ -144,7 +123,7 @@
 <div id="login">
   <div class="login-title">
     <h1>HTML5<span>OS</span></h1>
-    <p>JuntechOS v5.1 Master</p>
+    <p>JuntechOS v4.2.3 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg" style="margin-top:10px; font-size:12px; color:var(--text2);"></p>
@@ -153,33 +132,11 @@
 <div id="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v5.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver">v4.2.3</span></div>
     </div>
     <div class="hdr-right">
       <div class="dot-on" id="dot-on"></div>
       <button class="sync-btn" id="sync-btn" onclick="cargarTodo()">↻ Sync</button>
-    </div>
-  </div>
-
-  <div class="fx-bar" id="fx-bar">
-    <div class="fx-chip on" id="fx-chip-blue" onclick="elegirCotizacion('blue')">
-      <div class="fx-chip-label">Blue</div>
-      <div class="fx-chip-val" id="fx-val-blue">—</div>
-    </div>
-    <div class="fx-chip" id="fx-chip-cripto" onclick="elegirCotizacion('cripto')">
-      <div class="fx-chip-label">Cripto</div>
-      <div class="fx-chip-val" id="fx-val-cripto">—</div>
-    </div>
-    <div class="fx-chip" id="fx-chip-oficial" onclick="elegirCotizacion('oficial')">
-      <div class="fx-chip-label">Oficial</div>
-      <div class="fx-chip-val" id="fx-val-oficial">—</div>
-    </div>
-    <div class="fx-chip" id="fx-chip-manual" onclick="elegirCotizacion('manual')">
-      <div class="fx-chip-label">Manual</div>
-      <div class="fx-manual-wrap"><span>$</span><input id="fx-manual-input" type="text" value="" placeholder="0" onclick="event.stopPropagation()" onchange="setManualTC(this.value)"></div>
-    </div>
-    <div class="fx-chip fx-refresh" onclick="cargarCotizaciones()" title="Actualizar cotizaciones">
-      <div class="fx-chip-val">↻</div>
     </div>
   </div>
 
@@ -210,12 +167,12 @@
       </div>
       
       <div class="card">
-        <div class="card-title">Últimos movimientos de Caja</div>
+        <div class="card-title">Últimos movimientos</div>
         <div id="home-hist"><div class="empty">Cargando...</div></div>
       </div>
       
       <div class="card">
-        <div class="card-title">Resumen de Stock</div>
+        <div class="card-title">Stock</div>
         <div class="bal-row"><span class="bal-key">Total unidades</span><span class="bal-val blue" id="h-units">—</span></div>
         <div class="bal-row"><span class="bal-key">Valor al costo</span><span class="bal-val" id="h-valor">—</span></div>
       </div>
@@ -236,7 +193,6 @@
         <div class="prod-prev" id="prod-prev">
           <div class="pp-top"><span class="pp-name" id="pp-nombre">—</span><span class="pill pill-blue" id="pp-stock">—</span></div>
           <div class="pp-meta"><span>Precio: <b id="pp-precio">—</b></span><span>Costo: <b id="pp-costo">—</b></span></div>
-          <div style="font-size:10px; color:var(--text2); margin-top:5px;" id="pp-mov">🕒 Último mov: —</div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
@@ -300,20 +256,10 @@
         <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
         <div class="field"><label class="f-label">Tipo de Operación</label>
-          <select class="f-in" id="cc-tipo" onchange="actualizarContextoCC()">
+          <select class="f-in" id="cc-tipo">
             <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
             <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
           </select>
-        </div>
-        <div class="curr-toggle">
-          <button type="button" class="curr-btn on" id="cc-curr-ars" onclick="setMonedaCC('ARS')">$ Pesos</button>
-          <button type="button" class="curr-btn" id="cc-curr-usd" onclick="setMonedaCC('USD')">u$s Dólares</button>
-        </div>
-        <div class="field fx-rate-row" id="cc-rate-row">
-          <label class="f-label" id="cc-rate-label">Cotización que estás pactando ahora</label>
-          <input class="f-in" id="cc-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewCC()">
-          <div style="font-size:10px;color:var(--text2);margin-top:5px" id="cc-rate-hint"></div>
-          <div class="usd-tag" id="cc-rate-preview" style="margin-top:5px"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
@@ -333,20 +279,9 @@
       </div>
     </div>
 
-
     <div class="tab" id="tab-caja">
-      <div class="card" style="border-left: 4px solid var(--blue)">
-        <div class="card-title" style="color:var(--blue)">Transferencia entre Billeteras</div>
-        <div class="f-row">
-          <div class="field"><label class="f-label">Origen (Sale de)</label><select class="f-in" id="t-orig"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
-          <div class="field"><label class="f-label">Destino (Entra a)</label><select class="f-in" id="t-dest"><option>MERCADO PAGO</option><option>EFECTIVO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
-        </div>
-        <div class="field"><label class="f-label">Monto a Transferir ($)</label><input class="f-in" id="t-monto" type="text" placeholder="Ej: 5000" onchange="evalMath(this)"></div>
-        <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
-      </div>
-
       <div class="card">
-        <div class="card-title">Registrar Movimiento de Caja Ordinario</div>
+        <div class="card-title">Registrar Movimiento de Caja</div>
         <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
         <div class="field"><label class="f-label">Categoría</label>
           <select class="f-in" id="c-cat">
@@ -367,20 +302,11 @@
    <div class="tab" id="tab-stock">
       
       <div class="card">
-        <div class="card-title">Entrada de Stock (Compra)</div>
+        <div class="card-title">Entrada de Stock</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
-        <div class="curr-toggle">
-          <button type="button" class="curr-btn on" id="e-curr-ars" onclick="setMonedaEntrada('ARS')">$ Pesos</button>
-          <button type="button" class="curr-btn" id="e-curr-usd" onclick="setMonedaEntrada('USD')">u$s Dólares</button>
-        </div>
-        <div class="field fx-rate-row" id="e-rate-row">
-          <label class="f-label">Cotización a aplicar (la que negociaste)</label>
-          <input class="f-in" id="e-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewEntrada()">
-          <div class="usd-tag" id="e-rate-preview" style="margin-top:5px"></div>
-        </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1"></div>
-          <div class="field"><label class="f-label" id="e-costo-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)"></div>
         </div>
         <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="e-prov" placeholder="Ej: PEDRO DONATI" style="text-transform: uppercase;"></div>
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
@@ -391,7 +317,7 @@
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Accesorios"></div>
-          <div class="field"><label class="f-label">Proveedor Pred.</label><input class="f-in" id="n-prov" placeholder="Ej: Pedro Donati"></div>
+          <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="n-prov" placeholder="Ej: Pedro Donati"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Costo Unitario ($)</label><input class="f-in" id="n-costo" type="text" placeholder="Ej: 2000+500/10" onchange="evalMath(this)"></div>
@@ -401,22 +327,9 @@
       </div>
 
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista de Entrada</span><span class="pill pill-muted" id="entrada-count">0</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista</span><span class="pill pill-muted" id="entrada-count">0</span></div>
         <div id="entrada-items"></div>
         <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Catálogo Completo y Exportación</div>
-        <div class="f-row" style="margin-bottom:8px">
-          <button class="btn btn-ghost" onclick="seleccionarConStock()" style="border-color:var(--cyan); color:var(--cyan); margin:0; font-size:11px; padding:8px;">✅ Sel. c/Stock</button>
-          <button class="btn btn-ghost" onclick="deseleccionarTodo()" style="border-color:var(--text3); color:var(--text2); margin:0; font-size:11px; padding:8px;">❌ Limpiar Todo</button>
-        </div>
-        <button class="btn btn-white" onclick="exportarStockCopiar()" style="margin-bottom:12px; background:var(--s2); border:1px solid var(--s3);">📋 Copiar Seleccionados</button>
-        <div class="search-wrap" style="margin-bottom:8px;">
-           <span class="search-ico">🔍</span><input class="f-in ico" id="s-search" placeholder="Buscar en catálogo..." oninput="filtrarCatalogo()">
-        </div>
-        <div id="cat-lista" style="max-height:400px; overflow-y:auto; font-size:12px;"></div>
       </div>
 
     </div>
@@ -470,92 +383,6 @@ const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
 let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[]}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null;
-
-// ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
-let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
-let monedaEntradaActual = 'ARS';
-let monedaCCActual = 'ARS';
-const TC_MIN_SEGURO = 100;
-
-function getTCActual(){ return COTIZ[COTIZ.elegida] || COTIZ.blue || COTIZ.manual || 0; }
-
-async function cargarCotizaciones(){
-  try{
-    const r = await fetch('https://dolarapi.com/v1/dolares');
-    const data = await r.json();
-    const blue = data.find(d=>d.casa==='blue'), cripto = data.find(d=>d.casa==='cripto'), oficial = data.find(d=>d.casa==='oficial');
-    if(blue) COTIZ.blue = blue.venta; if(cripto) COTIZ.cripto = cripto.venta; if(oficial) COTIZ.oficial = oficial.venta;
-    setText('fx-val-blue', COTIZ.blue ? '$'+Math.round(COTIZ.blue).toLocaleString('es-AR') : '—');
-    setText('fx-val-cripto', COTIZ.cripto ? '$'+Math.round(COTIZ.cripto).toLocaleString('es-AR') : '—');
-    setText('fx-val-oficial', COTIZ.oficial ? '$'+Math.round(COTIZ.oficial).toLocaleString('es-AR') : '—');
-    const mInp = $('fx-manual-input');
-    if(mInp && !mInp.value){ mInp.value = Math.round(COTIZ.blue||0); COTIZ.manual = COTIZ.blue; }
-  }catch(e){ /* si falla la API no rompe nada: quedan las últimas cotizaciones cargadas */ }
-}
-
-function elegirCotizacion(tipo){
-  COTIZ.elegida = tipo;
-  document.querySelectorAll('.fx-chip').forEach(c=>c.classList.remove('on'));
-  const chip = $('fx-chip-'+tipo); if(chip) chip.classList.add('on');
-}
-
-function setManualTC(v){ COTIZ.manual = parseFloat(v.toString().replace(',','.'))||0; if(COTIZ.elegida==='manual' && !COTIZ.manual) elegirCotizacion('blue'); }
-
-function previewCC(){
-  const montoElem = $('cc-monto'), rateElem = $('cc-rate-val'), prev = $('cc-rate-preview');
-  if(!montoElem || !rateElem || !prev) return;
-  const usd = parseFloat(montoElem.value)||0, tc = parseFloat(rateElem.value)||0;
-  if(usd>0 && tc>0){
-    prev.textContent = `≈ ${fmt(usd*tc)} pesos reales — esto es lo que se va a registrar en tus cuentas`;
-    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
-  } else prev.textContent = '';
-}
-
-function previewEntrada(){
-  const cantElem = $('e-cant'), costoElem = $('e-costo'), rateElem = $('e-rate-val'), prev = $('e-rate-preview');
-  if(!costoElem || !rateElem || !prev) return;
-  const cant = parseFloat(cantElem ? cantElem.value : 1)||1, usd = parseFloat(costoElem.value)||0, tc = parseFloat(rateElem.value)||0;
-  if(usd>0 && tc>0){
-    prev.textContent = `≈ ${fmt(usd*tc)}/u — ${fmt(usd*tc*cant)} en total (pesos reales)`;
-    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
-  } else prev.textContent = '';
-}
-
-function setMonedaEntrada(m){
-  monedaEntradaActual = m;
-  const bA=$('e-curr-ars'), bU=$('e-curr-usd'), row=$('e-rate-row'), lbl=$('e-costo-label'), rateInp=$('e-rate-val');
-  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
-  if(row) row.classList.toggle('on', m==='USD');
-  if(lbl) lbl.textContent = m==='USD' ? 'Costo unitario (u$s)' : 'Costo unitario';
-  if(m==='USD' && rateInp && !rateInp.value) rateInp.value = getTCActual() || '';
-}
-
-function setMonedaCC(m){
-  monedaCCActual = m;
-  const bA=$('cc-curr-ars'), bU=$('cc-curr-usd'), row=$('cc-rate-row'), lbl=$('cc-monto-label');
-  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
-  if(row) row.classList.toggle('on', m==='USD');
-  if(lbl) lbl.textContent = m==='USD' ? 'Monto u$s' : 'Monto $';
-  if(m==='USD') actualizarContextoCC();
-}
-
-function actualizarContextoCC(){
-  if(monedaCCActual !== 'USD') return;
-  const tipo = $('cc-tipo') ? $('cc-tipo').value : 'CARGO';
-  const lbl = $('cc-rate-label'), rateInp = $('cc-rate-val'), hint = $('cc-rate-hint');
-  const tcHoy = getTCActual();
-  if(tipo === 'ABONO'){
-    if(lbl) lbl.textContent = 'Cotización de HOY para esta devolución';
-    if(rateInp) rateInp.value = tcHoy || '';
-    if(hint) hint.textContent = 'Nunca uses la cotización del día del préstamo — usá siempre la de hoy, aunque haya subido.';
-  } else {
-    if(lbl) lbl.textContent = 'Cotización que estás pactando ahora';
-    if(rateInp && !rateInp.value) rateInp.value = tcHoy || '';
-    if(hint) hint.textContent = 'Esta es la cotización de ESTE préstamo puntual, no afecta a futuras devoluciones.';
-  }
-  previewCC();
-}
-// ================================================================================================
   
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
@@ -569,7 +396,7 @@ function evalMath(el) { if(!el || !el.value) return; let v = el.value.toString()
 
 function guardarToken(token, expiry){ try{ localStorage.setItem('jt_token', token); localStorage.setItem('jt_expiry', expiry); } catch(e){} }
 function tokenGuardado(){ try{ const t = localStorage.getItem('jt_token'); const e = parseInt(localStorage.getItem('jt_expiry')||'0'); if(t && e && Date.now() < e - 60000) return t; }catch(e){} return null; }
-async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; cargarCotizaciones(); await cargarTodo(); }
+async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; await cargarTodo(); }
 
 function iniciarAuth(){
   const tokenExistente = tokenGuardado();
@@ -585,8 +412,9 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
 async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
-async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
+async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
+  
 function num(v){ if(!v) return 0; if(typeof v==='number') return v; let s = v.toString().replace(/[$\s]/g,''); if(s.includes(',')&&s.includes('.')) s = s.replace(/\./g,'').replace(',','.'); else if(s.includes(',')) s = s.replace(',','.'); return parseFloat(s)||0; }
 function str(v){ return v ? v.toString().trim() : ''; }
 function addSaldo(s,m,monto,sig){ if(m.includes('MERCADO')) s['MERCADO PAGO']+=monto*sig; else if(m.includes('NX')) s['NX']+=monto*sig; else if(m.includes('EFEC')) s['EFECTIVO']+=monto*sig; else if(m.includes('TRANSF')) s['TRANSFERENCIA']+=monto*sig; else s['OTRO']+=monto*sig; }
@@ -610,20 +438,15 @@ async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
     const pRows = await get('Productos!A2:F');
-    const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2}; });
+const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2}; });
 
-    const eRows = await get('Entradas!A2:G'); const stockE = {}, costoR = {};
+    const eRows = await get('Entradas!A2:D'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
 
     const sRows = await get('Salidas!A2:M'); let sRowsHist = []; try { sRowsHist = await get('SalidasHistorial!A2:M'); } catch(e) {} 
     const todasLasSalidas = sRows.concat(sRowsHist);
     const stockS = {}; 
     
-    // CAPTURA DE ÚLTIMOS MOVIMIENTOS
-    let ultimoMovMap = {};
-    if(typeof eRows !== 'undefined') { eRows.forEach(r => { if(r[0] && r[5]) ultimoMovMap[str(r[0])] = str(r[5]); }); }
-    if(typeof sRows !== 'undefined') { todasLasSalidas.forEach(r => { if(r[0] && r[5]) { let f = str(r[5]).split(' ')[0]; ultimoMovMap[str(r[0])] = f; } }); }
-
     let ganV = 0;
     sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
     todasLasSalidas.forEach(r => { if(!r[0]) return; stockS[str(r[0])] = (stockS[str(r[0])]||0) + num(r[2]); });
@@ -632,9 +455,10 @@ async function cargarTodo(){
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
 
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
-    Object.keys(pMap).forEach(n => {
-      const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};      DB.todo.push(item); 
+Object.keys(pMap).forEach(n => {
+  const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
+  const item = {nombre:n, sku:pMap[n].sku, costo:pMap[n].costo, precio:pMap[n].precio, stock, fila:pMap[n].fila};
+      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
@@ -647,7 +471,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
          let pDate = parseExcelDate(fechaRaw);
          DB.clientes[cli].totalComprado += subNeto;
          DB.clientes[cli].items[sysName] = (DB.clientes[cli].items[sysName] || 0) + cant;
-         DB.clientes[cli].historial.push({ fecha: pDate.s, tipo: 'COMPRA', detalle: `${cant}x ${sysName}`, monto: subNeto, estilo: 'color:var(--text)', ts: pDate.t });
+         DB.clientes[cli].historial.push({ fecha: pDate.s, prod: sysName, cant: cant, total: subNeto });
          if(pDate.t > DB.clientes[cli].ultCompraTs) { DB.clientes[cli].ultCompraTs = pDate.t; DB.clientes[cli].ultCompraStr = pDate.s; }
       }
     });
@@ -656,18 +480,11 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     DB.saldosCC = {}; let plataEnCalle = 0;
     ccRows.forEach(r => {
       if(!r[1]) return;
-      const persona = str(r[1]).toUpperCase(), tipo = str(r[2]).toUpperCase(), monto = num(r[3]), detalle = str(r[4]);
+      const persona = str(r[1]).toUpperCase(), tipo = str(r[2]).toUpperCase(), monto = num(r[3]);
       if(!DB.saldosCC[persona]) DB.saldosCC[persona] = 0;
       if(tipo === 'CARGO') DB.saldosCC[persona] += monto;
       if(tipo === 'ABONO') DB.saldosCC[persona] -= monto;
-      
-      if(!DB.clientes[persona]) DB.clientes[persona] = { totalComprado: 0, items: {}, ultCompraStr: '-', ultCompraTs: 0, historial: [] };
-      let pDate = parseExcelDate(r[0]);
-      let color = tipo === 'ABONO' ? 'color:#39d353' : 'color:#f85149';
-      DB.clientes[persona].historial.push({ fecha: pDate.s, tipo: tipo, detalle: detalle, monto: monto, estilo: color, ts: pDate.t });
     });
-    
-    Object.keys(DB.clientes).forEach(c => { DB.clientes[c].historial.sort((a,b) => a.ts - b.ts); });
       
     let htmlCC = '';
     let deudasACobrar = 0;
@@ -722,7 +539,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     let hh=''; historial.slice(-12).reverse().forEach(m => { hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${m.tipo==='INGRESO'?'var(--cyan)':'var(--red)'}">${m.tipo==='INGRESO'?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`; });
     setHTML('home-hist', hh || '<div class="empty">Sin movimientos</div>');
     
-    // CARGA DE DIRECTORIO
+    // CARGA DE DIRECTORIO ORDENADA
     let dRows = []; try { dRows = await get('Directorio!A2:D'); } catch(e){}
     DB.directorio = dRows.map(r => str(r[0]).toUpperCase()).filter(n => n);
     Object.keys(DB.clientes).forEach(c => { if(!DB.directorio.includes(c)) DB.directorio.push(c); });
@@ -734,7 +551,6 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     }
 
     poblarListas();
-    renderCatalogo(); // Rellena el catálogo de Stock
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
@@ -746,64 +562,6 @@ function poblarListas(){
   if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
-}
-
-// --- LÓGICA DE CATÁLOGO Y SELECCIÓN ---
-function renderCatalogo(){
-   const div = $('cat-lista'); if(!div) return;
-   let html = '';
-   DB.todo.forEach(p => {
-       let dot = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
-       html += `<div class="cat-item" data-name="${p.nombre}" data-sku="${p.sku}" data-stock="${p.stock}" style="padding:10px 0; border-bottom:1px solid var(--border2); display:flex; justify-content:space-between; align-items:center;">
-         <div style="display:flex; align-items:center; gap:10px;">
-           <input type="checkbox" class="cat-chk" value="${p.nombre}" style="width:18px;height:18px;accent-color:var(--blue);">
-           <div><div style="font-weight:600;font-size:12px;">${dot} ${p.nombre}</div>
-           <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div></div>
-         </div>
-         <div style="text-align:right;"><div style="font-weight:700;color:var(--blue);">${fmt(p.precio)}</div><div style="font-size:11px;color:var(--text2)">${p.stock} u.</div></div>
-       </div>`;
-   });
-   div.innerHTML = html;
-}
-
-function filtrarCatalogo() {
-   const txt = ($('s-search')?$('s-search').value||'':'').toUpperCase();
-   document.querySelectorAll('.cat-item').forEach(el => {
-      if(el.dataset.name.includes(txt) || el.dataset.sku.includes(txt)) el.style.display = 'flex';
-      else el.style.display = 'none';
-   });
-}
-
-function seleccionarConStock() {
-   document.querySelectorAll('.cat-item').forEach(el => {
-      const chk = el.querySelector('.cat-chk');
-      if(chk) chk.checked = parseInt(el.dataset.stock) > 0;
-   });
-}
-
-function deseleccionarTodo() {
-   document.querySelectorAll('.cat-chk').forEach(chk => chk.checked = false);
-}
-
-// --- EXPORTACIÓN INTELIGENTE ---
-function exportarStockCopiar() {
-  const seleccionados = Array.from(document.querySelectorAll('.cat-chk:checked')).map(chk => chk.value);
-  if(seleccionados.length === 0) { toast('Seleccioná al menos un producto de la lista', 'err'); return; }
-  
-  let txt = `📦 *INVENTARIO ACTUAL - JUNTECH STORE* 📦\n⚡ _Actualizado al instante_\n----------------------------------------\n`;
-  let count = 0;
-  
-  DB.todo.forEach(p => {
-    if(seleccionados.includes(p.nombre)) {
-        let ind = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
-        let det = p.stock > 0 ? `${p.stock} u.` : 'SIN STOCK';
-        txt += `${ind} *${p.nombre}*\n      └ SKU: ${p.sku} | ${det} | Sugerido: ${fmt(p.precio)}\n`;
-        count++;
-    }
-  });
-  
-  txt += `----------------------------------------\nTotal de ítems filtrados: ${count}\n`;
-  navigator.clipboard.writeText(txt).then(() => toast(`✓ Stock copiado (${count} ítems)`)).catch(() => toast('Error al copiar', 'err'));
 }
 
 function buscarCliente(val) {
@@ -822,7 +580,7 @@ function buscarCliente(val) {
              const saldoCC = DB.saldosCC[c] || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; font-size:11px; max-height:160px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
@@ -833,8 +591,7 @@ window.verHistorial = function(cliNombre, cliId) {
    const el = $('hist-' + cliId); if(!el) return;
    if(el.style.display === 'block') { el.style.display = 'none'; return; }
    const d = DB.clientes[cliNombre]; if(!d) return;
-   let h = d.historial.slice().reverse().map(x => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border2); font-size:11px;"><div><span style="color:var(--text2);font-size:10px">${x.fecha.split(' ')[0]}</span> | <b style="${x.estilo}">${x.tipo}</b><br><span style="color:var(--text)">${x.detalle}</span></div><b style="${x.estilo}">${fmt(x.monto)}</b></div>`).join('');
-   if(!h) h = '<div class="empty">Sin movimientos</div>';
+   let h = d.historial.slice().reverse().map(x => `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--border2);"><span><span style="color:var(--text2)">${x.fecha.split(' ')[0]}</span> - ${x.cant}x ${x.prod}</span><b>${fmt(x.total)}</b></div>`).join('');
    el.innerHTML = h; el.style.display = 'block';
 };
 
@@ -858,41 +615,23 @@ async function guardarCC(){
 
 async function guardarContacto(){
   const nom = $('dir-nom').value.trim().toUpperCase(), tipo = $('dir-tipo').value, tel = $('dir-tel').value;
-  if(!nom) { toast('Falta el nombre', 'err'); return; }
+  if(!nom) { toast('Falta el nombre de la persona o empresa', 'err'); return; }
   setBtn('btn-dir', true, '');
   try {
     const fecha = new Date().toLocaleDateString('es-AR');
     await append('Directorio!A:D', [[nom, tipo, tel, fecha]]);
-    toast('✓ Contacto agendado'); $('dir-nom').value = ''; $('dir-tel').value = ''; await cargarTodo();
-  } catch(e) { toast('Error al agendar', 'err'); }
-  setBtn('btn-dir', false, '+ Guardar en Agenda');
-}
-
-async function ejecutarTransferencia() {
-  const orig = $('t-orig').value.toUpperCase(), dest = $('t-dest').value.toUpperCase();
-  const monto = parseFloat($('t-monto').value)||0;
-  if(!orig || !dest || monto <= 0) { toast('Campos vacíos o monto inválido', 'err'); return; }
-  if(orig === dest) { toast('No podés transferir a la misma cuenta', 'err'); return; }
-  setBtn('btn-transf', true, '');
-  try {
-    const id = 'TRF-' + Math.floor(Math.random()*8999 + 1000);
-    const fechaStr = new Date().toLocaleString('es-AR');
-    await append('Caja!A:G', [
-      [id, fechaStr, 'EGRESO', 'TRANSFERENCIA INTERNA', `Retiro hacia ${dest}`, monto, orig],
-      [id, fechaStr, 'INGRESO', 'TRANSFERENCIA INTERNA', `Ingreso desde ${orig}`, monto, dest]
-    ]);
-    toast('✓ Transferencia registrada en Caja');
-    $('t-orig').value = 'EFECTIVO'; $('t-dest').value = 'MERCADO PAGO'; $('t-monto').value = '';
+    toast('✓ Contacto agendado exitosamente');
+    $('dir-nom').value = ''; $('dir-tel').value = '';
     await cargarTodo();
-  } catch(e) { toast('Error en transferencia', 'err'); }
-  setBtn('btn-transf', false, '💸 Confirmar Movimiento');
+  } catch(e) { toast('Error al agendar: '+e.message, 'err'); }
+  setBtn('btn-dir', false, '+ Guardar en Agenda');
 }
 
 function selProduct(){
   const vSearch = $('v-search'); if(!vSearch) return;
   const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
   if(!p){ if(prev) prev.style.display='none'; currentProd=null; return; }
-  currentProd=p; setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u'); setText('pp-mov', '🕒 Último mov: '+p.ultimoMov);
+  currentProd=p; setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u');
   const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
   if(vPrecio) vPrecio.value = p.precio; if(vPrecioLista) vPrecioLista.value = p.precio; 
   if(prev) prev.style.display='block';
@@ -900,7 +639,7 @@ function selProduct(){
 
 function addToCart(){
   if(!currentProd) return;
-  const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search');
+  const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search');
   const cant = parseFloat(vCant ? vCant.value : 1)||1, precio = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio, precioLista = parseFloat(vPrecioLista ? vPrecioLista.value : currentProd.precio) || currentProd.precio;
   if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). ¿Agregar igual?')) return;
   
@@ -978,21 +717,19 @@ async function procesarVenta(){
   let metodoLiquido = 'EFECTIVO';
   
   if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
-     let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan AHORA MISMO? (Poné 0 si es todo a CC)`);
+     let promptMano = prompt(`La venta total es de ${fmt(total)}.\n¿Cuánto te pagan AHORA MISMO? (solo números)`);
      if(promptMano === null) return;
      montoEfectivo = parseFloat(promptMano)||0;
-     if(montoEfectivo < 0 || montoEfectivo > total) { toast('Monto líquido inválido','err'); return; }
+     if(montoEfectivo <= 0 || montoEfectivo > total) { toast('Monto líquido inválido','err'); return; }
      montoEfectivo = Math.round(montoEfectivo);
      
-     if(montoEfectivo > 0) {
-         let promptMetodo = prompt(`¿A dónde entraron esos ${fmt(montoEfectivo)}?\nEscribí: EFECTIVO, MP, TRANSF o NX`);
-         if(promptMetodo === null) return;
-         promptMetodo = promptMetodo.toUpperCase();
-         if(promptMetodo.includes('MP') || promptMetodo.includes('MERCADO')) metodoLiquido = 'MERCADO PAGO';
-         else if(promptMetodo.includes('TRANS')) metodoLiquido = 'TRANSFERENCIA';
-         else if(promptMetodo.includes('NX')) metodoLiquido = 'NX';
-         else metodoLiquido = 'EFECTIVO';
-     }
+     let promptMetodo = prompt(`¿A dónde entraron esos ${fmt(montoEfectivo)}?\nEscribí: EFECTIVO, MP, TRANSF o NX`);
+     if(promptMetodo === null) return;
+     promptMetodo = promptMetodo.toUpperCase();
+     if(promptMetodo.includes('MP') || promptMetodo.includes('MERCADO')) metodoLiquido = 'MERCADO PAGO';
+     else if(promptMetodo.includes('TRANS')) metodoLiquido = 'TRANSFERENCIA';
+     else if(promptMetodo.includes('NX')) metodoLiquido = 'NX';
+     else metodoLiquido = 'EFECTIVO';
   }
 
   setBtn('btn-vender',true,'');
@@ -1012,12 +749,8 @@ async function procesarVenta(){
        await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
        const deudCalle = total - montoEfectivo; 
-       if(montoEfectivo > 0) {
-           await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoEfectivo, metodoLiquido]]);
-       }
-       if(deudCalle > 0) {
-           await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudCalle, 'Remanente Ticket Venta '+id]]);
-       }
+       await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA MIXTA', 'Entrega Ticket '+id+' - '+cli, montoEfectivo, metodoLiquido]]);
+       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', deudCalle, 'Remanente Ticket Venta '+id]]);
     } else { 
        await append('Caja!A:G', [[id, fechaStr, 'INGRESO', 'VENTA', 'Ticket '+id+' - '+cli, total, metodo]]); 
     }
@@ -1048,8 +781,8 @@ async function guardarMov(){
   if(!motivo||monto<=0) return; setBtn('btn-mov',true,'');
   try{ await append('Caja!A:G', [['MOV-'+Math.floor(Math.random()*9999), new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), tipo, cat, motivo, monto, metodo]]); toast('✓ Guardado'); mot.value=''; mon.value=''; await cargarTodo(); }catch(e){} setBtn('btn-mov',false,'Guardar');
 }
-
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
+
 function addEntrada(){ 
   const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'); 
   if(!eP||!eC||!eCo) return; 
@@ -1059,12 +792,14 @@ function addEntrada(){
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
   renderEntrada(); 
 }
+
 function renderEntrada(){ 
   const d=$('entrada-items'); if(!d) return; 
   if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } 
   d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span></div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`).join(''); 
   const b=$('btn-entrada'); if(b) b.disabled=false; 
 }
+
 function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
 
 async function guardarEntrada(){ 
@@ -1073,7 +808,10 @@ async function guardarEntrada(){
   try{ 
     const fecha = new Date().toLocaleDateString('es-AR'); 
     for(const i of entradaCart) {
+       // 1. Guardamos el historial en la pestaña Entradas
        await append('Entradas!A:G', [[i.nombre, '', i.cant, i.costo, i.cant*i.costo, fecha, i.prov]]); 
+       
+       // 2. Buscamos el producto, si el costo cambió, sobreescribimos la celda maestra (Columna E)
        const prodDB = DB.todo.find(p => p.nombre === i.nombre);
        if(prodDB && prodDB.fila && i.costo > 0 && i.costo !== prodDB.costo) {
            await updateCell(`Productos!E${prodDB.fila}:E${prodDB.fila}`, [[i.costo]]);
@@ -1081,35 +819,38 @@ async function guardarEntrada(){
     }
     entradaCart=[]; renderEntrada(); await cargarTodo(); 
   }catch(e){ toast('Error: '+e.message, 'err'); } 
-  setBtn('btn-entrada',false,'💾 Guardar stock'); 
+  setBtn('btn-entrada',false,'Guardar stock'); 
 }
-
+  // --- CREACION DE PRODUCTO NUEVO (DIRECTO A SHEETS) ---
 async function crearProductoDB(){
   const nom = $('n-nom').value.trim().toUpperCase(), cat = $('n-cat').value.trim(), prov = $('n-prov').value.trim();
   const costo = parseFloat($('n-costo').value)||0, precio = parseFloat($('n-precio').value)||0;
   
   if(!nom || precio <= 0) { toast('Falta el nombre o el precio de venta', 'err'); return; }
   
-  let maxSku = 0;
+  // Generamos un SKU automático para que la BD no quede vacía en esa celda
+let maxSku = 0;
   if(DB.todo && DB.todo.length > 0){
-    DB.todo.forEach(p => {
-      let num = parseInt(p.sku.replace(/\D/g, ''), 10);
-      if(!isNaN(num) && num > maxSku) maxSku = num;
-    });
+    DB.todo.forEach(p => { let num = parseInt(p.sku.replace(/\D/g, ''), 10); if(!isNaN(num) && num > maxSku) maxSku = num; });
   }
-  const sku = String(maxSku + 1).padStart(3, '0');
-  
+  const sku = String(maxSku + 1).padStart(3, '0');  
   setBtn('btn-crear-prod', true, '');
   try {
+    // Inyectamos en el orden exacto de tu CSV: SKU, Nombre, Proveedor, Categoría, Costo, Precio
     await append('Productos!A:F', [[sku, nom, prov, cat, costo, precio]]);
-    toast('✓ Producto '+sku+' creado en el catálogo');
+    toast('✓ Producto creado y agregado al catálogo');
+    
+    // Limpiamos los inputs para la próxima carga
     $('n-nom').value = ''; $('n-cat').value = ''; $('n-prov').value = ''; $('n-costo').value = ''; $('n-precio').value = '';
+    
+    // Forzamos un sync para que el producto ya aparezca en los buscadores
     await cargarTodo();
   } catch(e) {
     toast('Error al crear producto: '+e.message, 'err');
   }
   setBtn('btn-crear-prod', false, '✨ Guardar en Base de Datos');
 }
+
 </script>
 </body>
 </html>
