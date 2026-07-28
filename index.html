@@ -123,6 +123,10 @@
     .usd-tag { font-size: 10px; color: var(--purple); font-weight: 600; margin-top: 2px; display: block; }
     /* =================================================================== */
 
+    /* Nuevos estilos para Pasivos Personales */
+    .pp-item { cursor: pointer; } .pp-item.selected { background: #2f81f715; }
+    #pp-forms > div { display: none; } #pp-forms > div.on { display: block; }
+
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
     .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 24px 20px; width: 100%; max-width: 340px; text-align: center; }
     .modal-id { font-size: 11px; background: var(--s2); border-radius: 7px; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); color: var(--text2); }
@@ -332,11 +336,42 @@
         <div id="cc-lista"><div class="empty">Cargando cuentas...</div></div>
       </div>
       <div class="card">
-        <div class="card-title" style="color:var(--orange)">Pasivos Personales (Deudas y Préstamos Externos)</div>
-        <div id="pp-lista" style="padding: 10px 0;"><div class="empty" style="font-size: 12px;">Todavía no existen deudas personales.</div></div>
-        <div class="f-row" style="gap: 8px; margin-top: 10px;">
-          <button class="btn btn-ghost" style="margin:0; border-color: var(--orange); color: var(--orange);">+ Nueva Deuda</button>
-          <button class="btn btn-ghost" style="margin:0;">✓ Registrar Pago</button>
+        <div class="card-title" style="color:var(--orange)">Préstamos y Deudas Personales</div>
+        <div id="pp-lista-wrap">
+          <div id="pp-lista" style="padding: 10px 0; max-height: 200px; overflow-y: auto;"><div class="empty" style="font-size: 12px;">Todavía no existen deudas personales.</div></div>
+          <div class="f-row" style="gap: 8px; margin-top: 10px;">
+            <button class="btn btn-ghost" style="margin:0; border-color: var(--orange); color: var(--orange);" onclick="ui_mostrarFormNuevaDeuda()">+ Nuevo Préstamo/Deuda</button>
+            <button class="btn btn-ghost" style="margin:0;" onclick="ui_mostrarFormPago()">✓ Registrar Pago</button>
+          </div>
+        </div>
+        <div id="pp-forms">
+          <div id="pp-form-nueva">
+            <div class="field"><label class="f-label">Persona</label><input class="f-in" id="pp-nueva-persona" placeholder="Ej: EMANUEL" style="text-transform: uppercase;"></div>
+            <div class="field"><label class="f-label">Concepto</label><input class="f-in" id="pp-nueva-concepto" placeholder="Ej: MacBook Air M2"></div>
+            <div class="field"><label class="f-label">Relación</label>
+              <select class="f-in" id="pp-nueva-relacion">
+                <option value="YO_DEBO">Yo debo dinero (Deuda)</option>
+                <option value="ME_DEBEN">Me deben a mí (Préstamo)</option>
+              </select>
+            </div>
+            <div class="f-row">
+              <div class="field"><label class="f-label">Monto</label><input class="f-in" id="pp-nueva-monto" type="text" inputmode="decimal"></div>
+              <div class="field"><label class="f-label">Moneda</label><select class="f-in" id="pp-nueva-moneda"><option>USD</option><option>ARS</option></select></div>
+            </div>
+            <button class="btn btn-orange" id="btn-pp-nueva" onclick="guardarMovimientoPersonal()" style="background:var(--orange);color:#fff;margin-top:8px">💾 Guardar Movimiento</button>
+            <button class="btn btn-ghost" onclick="ui_ocultarFormulariosPP()">Cancelar</button>
+          </div>
+          <div id="pp-form-pago">
+            <div style="background:var(--s2); border-radius:8px; padding:10px; font-size:12px; margin-bottom:12px; text-align:center;">Pagando a: <b id="pp-pago-info">--</b></div>
+            <input type="hidden" id="pp-pago-id">
+            <div class="f-row">
+              <div class="field"><label class="f-label">Monto del Pago</label><input class="f-in" id="pp-pago-monto" type="text" inputmode="decimal"></div>
+              <div class="field"><label class="f-label">Origen del Dinero</label><select class="f-in" id="pp-pago-origen"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option></select></div>
+            </div>
+            <div class="field"><label class="f-label">Concepto del Pago (Opcional)</label><input class="f-in" id="pp-pago-concepto" placeholder="Ej: Cuota 1/3"></div>
+            <button class="btn" id="btn-pp-pago" onclick="guardarPagoPersonal()" style="background:var(--cyan);color:#fff;margin-top:8px">✓ Confirmar Pago</button>
+            <button class="btn btn-ghost" onclick="ui_ocultarFormulariosPP()">Cancelar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -477,7 +512,7 @@ const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercon
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[]}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[], pasivos: {}}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null, ppDeudaSeleccionada = null;
 
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
@@ -617,25 +652,26 @@ function parseExcelDate(val){
 
 async function cargarPasivosPersonales() {
   try {
-    const rows = await get('PasivosPersonales!A2:H');
-    const deudas = {};
-    rows.forEach(r => {
-      const id = str(r[1]); // Col B: ID
-      if (!id) return;
-      
-      // Si la deuda no existe en nuestro objeto, la inicializamos con los datos maestros de la primera transacción que encontremos
-      if (!deudas[id]) {
-        deudas[id] = { 
-          saldo: 0, 
-          moneda: str(r[5]),   // Col F: Moneda
-          concepto: str(r[4]), // Col E: Concepto
-          persona: str(r[3])  // Col D: Persona
-        };
-      }
-      // Sumamos el monto de la transacción actual al saldo. Pagos deben ser negativos.
-      deudas[id].saldo += num(r[6]); // Col G: Monto
-    });
-    renderPasivosPersonales(deudas);
+    const rows = await get('PasivosPersonales!A2:I');
+    DB.pasivos = {};
+    if(rows) {
+      rows.forEach(r => {
+        const id = str(r[1]); // Col B: ID
+        if (!id) return;
+        
+        if (!DB.pasivos[id]) {
+          DB.pasivos[id] = { 
+            saldo: 0, 
+            moneda: str(r[5]),   // Col F: Moneda
+            concepto: str(r[4]), // Col E: Concepto
+            persona: str(r[3]),  // Col D: Persona
+            relacion: str(r[8])  // Col I: Relacion
+          };
+        }
+        DB.pasivos[id].saldo += num(r[6]); // Col G: Monto
+      });
+    }
+    renderPasivosPersonales(DB.pasivos);
   } catch(e) {
     console.error("Error cargando pasivos personales:", e);
     setHTML('pp-lista', '<div class="empty err" style="font-size:12px;">Error al cargar deudas personales.</div>');
@@ -646,15 +682,130 @@ function renderPasivosPersonales(deudas) {
   let html = '';
   Object.keys(deudas).forEach(id => {
     const d = deudas[id];
-    // Mostramos la deuda solo si el saldo es significativamente diferente de cero
     if (Math.abs(d.saldo) > 0.01) {
       const formattedSaldo = d.moneda === 'USD' ? fmtUSD(d.saldo) : fmt(d.saldo);
-      // Si el saldo es positivo, es una deuda (pasivo, color rojo). Si es negativo, es un crédito a tu favor (activo, color cyan).
-      const color = d.saldo > 0 ? 'red' : 'cyan';
-      html += `<div class="bal-row"><span class="bal-key">${d.concepto} (${d.persona})</span><span class="bal-val ${color}">${formattedSaldo}</span></div>`;
+      const color = d.relacion === 'YO_DEBO' ? 'red' : 'cyan';
+      html += `<div class="bal-row pp-item" data-id="${id}" onclick="seleccionarDeuda(this, '${id}')"><span class="bal-key">${d.concepto} (${d.persona})</span><span class="bal-val ${color}">${formattedSaldo}</span></div>`;
     }
   });
   setHTML('pp-lista', html || '<div class="empty" style="font-size: 12px;">No hay deudas personales registradas.</div>');
+  ppDeudaSeleccionada = null;
+}
+
+function seleccionarDeuda(el, id) {
+  document.querySelectorAll('.pp-item').forEach(item => item.classList.remove('selected'));
+  el.classList.add('selected');
+  ppDeudaSeleccionada = id;
+}
+
+// --- Lógica de UI para Pasivos Personales ---
+function ui_mostrarFormNuevaDeuda() {
+  $('pp-lista-wrap').style.display = 'none';
+  $('pp-forms').style.display = 'block';
+  $('pp-form-nueva').classList.add('on');
+}
+
+function ui_mostrarFormPago() {
+  if (!ppDeudaSeleccionada) {
+    toast('Primero seleccioná una deuda de la lista', 'err');
+    return;
+  }
+  const deuda = DB.pasivos[ppDeudaSeleccionada];
+  setText('pp-pago-info', `${deuda.concepto} (${deuda.persona})`);
+  $('pp-pago-id').value = ppDeudaSeleccionada;
+  $('pp-lista-wrap').style.display = 'none';
+  $('pp-forms').style.display = 'block';
+  $('pp-form-pago').classList.add('on');
+}
+
+function ui_ocultarFormulariosPP() {
+  $('pp-lista-wrap').style.display = 'block';
+  $('pp-forms').style.display = 'none';
+  $('pp-form-nueva').classList.remove('on');
+  $('pp-form-pago').classList.remove('on');
+  // Limpiar campos
+  $('pp-nueva-persona').value = ''; $('pp-nueva-concepto').value = ''; $('pp-nueva-monto').value = '';
+  $('pp-pago-monto').value = ''; $('pp-pago-concepto').value = '';
+}
+
+// --- Lógica de Escritura para Pasivos Personales ---
+async function guardarMovimientoPersonal() {
+  const persona = $('pp-nueva-persona').value.trim().toUpperCase();
+  const concepto = $('pp-nueva-concepto').value.trim();
+  const monto = Math.abs(num($('pp-nueva-monto').value));
+  const moneda = $('pp-nueva-moneda').value;
+  const relacion = $('pp-nueva-relacion').value;
+
+  if (!persona || !concepto || monto <= 0) {
+    toast('Completá todos los campos', 'err'); return;
+  }
+
+  setBtn('btn-pp-nueva', true, '');
+  try {
+    const idRows = await get('PasivosPersonales!B2:B');
+    let maxId = 0;
+    if(idRows) {
+      idRows.forEach(row => {
+        const idNum = parseInt(str(row[0]).replace('PERS-', ''), 10);
+        if (!isNaN(idNum) && idNum > maxId) maxId = idNum;
+      });
+    }
+    const nuevoId = 'PERS-' + String(maxId + 1).padStart(4, '0');
+    const fecha = new Date().toLocaleDateString('es-AR');
+    
+    await append('PasivosPersonales!A:I', [[
+      'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, moneda, relacion
+    ]]);
+    
+    toast('✓ Movimiento personal registrado');
+    ui_ocultarFormulariosPP();
+    await cargarPasivosPersonales(); 
+  } catch(e) {
+    toast('Error: '+e.message, 'err');
+  }
+  setBtn('btn-pp-nueva', false, '💾 Guardar Movimiento');
+}
+
+async function guardarPagoPersonal() {
+  const idDeuda = $('pp-pago-id').value;
+  const monto = Math.abs(num($('pp-pago-monto').value));
+  const origen = $('pp-pago-origen').value;
+  const concepto = $('pp-pago-concepto').value.trim() || 'Pago';
+
+  if (!idDeuda || monto <= 0) {
+    toast('Falta el ID o el monto', 'err'); return;
+  }
+  
+  setBtn('btn-pp-pago', true, '');
+  try {
+    const deuda = DB.pasivos[idDeuda];
+    const fecha = new Date().toLocaleDateString('es-AR');
+    
+    await append('PasivosPersonales!A:I', [[
+      'TPER-'+Date.now(), idDeuda, fecha, 'PAGO', concepto, deuda.persona, -monto, deuda.moneda, deuda.relacion
+    ]]);
+
+    if (origen !== 'EXTERNO') {
+      const fechaFull = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      const esRetiroParaPrestar = deuda.relacion === 'ME_DEBEN';
+      const categoria = esRetiroParaPrestar ? 'PERSONAL (GASTO)' : (origen === 'JOACO' ? 'PASAR GANANCIA A BILLETERA' : 'PERSONAL (GASTO)');
+      const metodo = origen === 'JOACO' ? 'TRANSFERENCIA' : origen;
+      const detalle = esRetiroParaPrestar ? `Préstamo a ${deuda.persona} (${deuda.concepto})` : `Pago a ${deuda.persona} (${deuda.concepto})`;
+
+      await append('Caja!A:G', [['MOV-'+Date.now(), fechaFull, 'EGRESO', categoria, detalle, monto, metodo]]);
+    }
+    
+    toast('✓ Pago registrado');
+    ui_ocultarFormulariosPP();
+    await cargarPasivosPersonales();
+    if(origen !== 'EXTERNO') {
+        setTimeout(cargarTodo, 200); // Pequeño delay para dar tiempo a Sheets y luego refrescar todo.
+    }
+
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  }
+  setBtn('btn-pp-pago', false, '✓ Confirmar Pago');
 }
 
 async function cargarTodo(){
@@ -1166,24 +1317,4 @@ async function crearProductoDB(){
 }
 </script>
 </body>
-</html>```
-
----
-### **Reporte de Implementación (Paso 5)**
-
-*   **¿Qué funciones nuevas agregaste?**
-    1.  **`cargarPasivosPersonales()`**: Se agregó esta función asíncrona. Su responsabilidad es leer la hoja `PasivosPersonales`, procesar las transacciones para calcular los saldos de cada deuda agrupando por el ID (columna B), y luego pasar estos datos a la función de renderizado.
-    2.  **`renderPasivosPersonales(deudas)`**: Se agregó esta función para manejar la lógica de la interfaz. Recibe los saldos calculados, genera el HTML para la lista de deudas activas con el formato y color correctos, y lo inyecta en el `div#pp-lista`.
-    3.  **`fmtUSD(n)`**: Se añadió esta pequeña función de utilidad para formatear consistentemente los montos en dólares (ej: `u$s 170.00`), manteniéndola separada de la función `fmt()` existente para pesos.
-
-*   **¿Qué función existente fue modificada?**
-    *   Se modificó la función **`cargarTodo()`**.
-
-*   **Exactamente qué línea se agregó dentro de esa función:**
-    *   Se agregó la línea `await cargarPasivosPersonales();` en la **línea 782** del script, justo antes de la línea que actualiza la hora y muestra el toast de éxito.
-
-*   **¿Por qué el resto del ERP debería seguir funcionando exactamente igual?**
-    *   **Aislamiento de Datos y Lógica:** Las nuevas funciones leen de una hoja (`PasivosPersonales`) que es ignorada por el resto del sistema y solo escriben en un `div` (`#pp-lista`) que no existía previamente. No hay ninguna variable compartida que sea modificada.
-    *   **Ejecución No Bloqueante y en Secuencia:** La nueva llamada a `await cargarPasivosPersonales()` se ejecuta al final del bloque `try` de `cargarTodo()`. Esto significa que todos los cálculos críticos del negocio (Capital, Ganancias, Saldos de Caja, Cuentas Corrientes comerciales, etc.) ya se han completado y sus resultados han sido almacenados. La ejecución de este nuevo módulo no tiene forma de alterar retroactivamente esos cálculos. Es un paso final, aditivo y totalmente independiente.
-
-El sistema ahora es capaz de leer y visualizar el estado de las deudas personales sin afectar en lo más mínimo la contabilidad principal del negocio.
+</html>
