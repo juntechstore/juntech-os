@@ -141,10 +141,11 @@
       #auditoria-stock-wrap { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 20px !important; margin: 0 !important; }
       #auditoria-stock-wrap * { color: #000000 !important; }
       #tabla-auditoria { width: 100%; border-collapse: collapse; margin-top: 15px; }
+      #tabla-auditoria thead { display: table-header-group; } /* Asegura que el thead se repita en cada página */
       #tabla-auditoria th, #tabla-auditoria td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-      #tabla-auditoria th { background: #f2f2f2; }
+      #tabla-auditoria th { background: #f2f2f2; font-weight: bold; }
       #tabla-auditoria .col-prod { width: 40%; }
-      #tabla-auditoria .col-s-erp { width: 10%; }
+      #tabla-auditoria .col-s-erp { width: 10%; text-align: center; }
       #tabla-auditoria .col-s-real { width: 15%; }
       #tabla-auditoria .col-s-dif { width: 10%; }
       #tabla-auditoria .col-s-obs { width: 25%; }
@@ -457,11 +458,10 @@
         <div id="entrada-items"></div>
         <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
       </div>
-
+      
       <div class="card">
         <div class="card-title" style="color:var(--cyan)">📋 Auditoría de Stock</div>
         <button class="btn btn-ghost" onclick="prepararAuditoria('imprimir')" style="margin-bottom:0; border-color:var(--cyan); color:var(--cyan);">🖨️ Imprimir Hoja de Auditoría</button>
-        <!-- Futuro V2: <button class="btn btn-ghost" onclick="prepararAuditoria('digital')">💻 Iniciar Auditoría Digital</button> -->
       </div>
 
       <div class="card">
@@ -809,14 +809,13 @@ async function guardarPagoPersonal() {
     ]]);
 
     if (origen !== 'EXTERNO') {
-      const fechaFull = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit'});
       const esUnCobro = deuda.relacion === 'ME_DEBEN';
       const tipo = esUnCobro ? 'INGRESO' : 'EGRESO';
       const categoria = esUnCobro ? 'PERSONAL (INGRESO)' : 'PERSONAL (GASTO)';
       const metodo = origen === 'JOACO' ? 'TRANSFERENCIA' : origen;
       const detalle = esUnCobro ? `Cobro de ${deuda.persona} (${deuda.concepto})` : `Pago a ${deuda.persona} (${deuda.concepto})`;
 
-      await append('Caja!A:G', [['MOV-'+Date.now(), fechaFull, tipo, categoria, detalle, monto, metodo]]);
+      await _guardarMovimientoEnCaja(tipo, categoria, detalle, monto, metodo);
     }
     
     toast('✓ Pago registrado');
@@ -841,8 +840,11 @@ function prepararAuditoria(modo) {
     if (!tbody || !DB.todo) return;
 
     setText('auditoria-fecha', "Fecha: " + new Date().toLocaleDateString('es-AR'));
+    
+    const productosConStock = DB.todo.filter(p => p.stock > 0);
+    
     let html = '';
-    DB.todo.forEach(p => {
+    productosConStock.forEach(p => {
       html += `<tr>
         <td class="col-prod">${p.nombre}</td>
         <td class="col-s-erp">${p.stock}</td>
@@ -854,7 +856,7 @@ function prepararAuditoria(modo) {
     tbody.innerHTML = html;
     window.print();
   }
-  // Futuro V2: else if (modo === 'digital') { ... }
+  // Futuro: else if (modo === 'digital') { ... }
 }
 
 
