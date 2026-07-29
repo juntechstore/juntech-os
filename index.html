@@ -134,13 +134,22 @@
     .toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; font-size: 12px; font-weight: 500; z-index: 300; opacity: 0; transition: all .25s; pointer-events: none; }
     .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); } .toast.ok { border-color: #2f81f750; color: var(--blue); } .toast.err { border-color: #f8514950; color: var(--red); }
     
+    #auditoria-stock-wrap { display: none; }
     @media print {
-      html, body { background: #ffffff !important; color: #000000 !important; }
-      #app, #login, .nav, .modal-bg, .toast { display: none !important; }
-      #remito-pro { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 0 !important; margin: 0 !important; }
-      #remito-pro * { color: #000000 !important; }
+      html, body { background: #ffffff !important; color: #000000 !important; font-size: 10pt; }
+      #app, #login, .nav, .modal-bg, .toast, #remito-pro { display: none !important; }
+      #auditoria-stock-wrap { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 20px !important; margin: 0 !important; }
+      #auditoria-stock-wrap * { color: #000000 !important; }
+      #tabla-auditoria { width: 100%; border-collapse: collapse; margin-top: 15px; }
+      #tabla-auditoria th, #tabla-auditoria td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      #tabla-auditoria th { background: #f2f2f2; }
+      #tabla-auditoria .col-prod { width: 40%; }
+      #tabla-auditoria .col-s-erp { width: 10%; }
+      #tabla-auditoria .col-s-real { width: 15%; }
+      #tabla-auditoria .col-s-dif { width: 10%; }
+      #tabla-auditoria .col-s-obs { width: 25%; }
+      .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
     }
-    #remito-pro { display: none; }
   </style>
 </head>
 <body>
@@ -403,7 +412,7 @@
           <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="c-monto" type="number" placeholder="0"></div>
           <div class="field"><label class="f-label">Método</label><select class="f-in" id="c-met"><option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option></select></div>
         </div>
-        <button class="btn btn-red" id="btn-mov" onclick="guardarMov()">Guardar movimiento</button>
+        <button class="btn btn-red" id="btn-mov" onclick="handleGuardarMov()">Guardar movimiento</button>
       </div>
     </div>
 
@@ -450,6 +459,12 @@
       </div>
 
       <div class="card">
+        <div class="card-title" style="color:var(--cyan)">📋 Auditoría de Stock</div>
+        <button class="btn btn-ghost" onclick="prepararAuditoria('imprimir')" style="margin-bottom:0; border-color:var(--cyan); color:var(--cyan);">🖨️ Imprimir Hoja de Auditoría</button>
+        <!-- Futuro V2: <button class="btn btn-ghost" onclick="prepararAuditoria('digital')">💻 Iniciar Auditoría Digital</button> -->
+      </div>
+
+      <div class="card">
         <div class="card-title">Catálogo Completo y Exportación</div>
         <div class="f-row" style="margin-bottom:8px">
           <button class="btn btn-ghost" onclick="seleccionarConStock()" style="border-color:var(--cyan); color:var(--cyan); margin:0; font-size:11px; padding:8px;">✅ Sel. c/Stock</button>
@@ -484,24 +499,32 @@
   </button>
 </div>
 
-<div id="remito-pro" style="background: white !important; color: black !important; padding: 40px; font-family: sans-serif;">
-  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px;">
-    <img src="https://juntechstore.github.io/juntech-os/icon-512.png" style="width: 80px; height: 80px; border-radius: 10px;">
+<div id="remito-pro" style="display: none;">
+  <!-- ... Contenido del remito ... -->
+</div>
+
+<div id="auditoria-stock-wrap">
+  <div class="print-header">
+    <div>
+      <h2 style="margin:0; font-size: 20px;">Auditoría de Stock</h2>
+      <p style="margin:0;">JuntechOS v5.1</p>
+    </div>
     <div style="text-align: right;">
-      <h2 style="margin:0; font-size: 28px;">JUNTECH STORE</h2>
-      <p style="margin:0;">División Mayorista</p>
-      <p id="remito-fecha" style="margin:5px 0 0 0; font-weight:bold;"></p>
+      <p id="auditoria-fecha" style="margin:5px 0 0 0; font-weight:bold;"></p>
     </div>
   </div>
-  <div style="margin-bottom: 20px;"><strong>Revendedor:</strong> <span id="remito-cliente" style="text-transform: uppercase;"></span></div>
-  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-    <thead><tr style="border-bottom: 2px solid #000; text-align: left;"><th style="padding: 10px; width: 10%;">Cant.</th><th style="padding: 10px; width: 50%;">Descripción</th><th style="padding: 10px; width: 20%; text-align: right;">Precio U.</th><th style="padding: 10px; width: 20%; text-align: right;">Subtotal</th></tr></thead>
-    <tbody id="remito-items-print"></tbody>
+  <table id="tabla-auditoria">
+    <thead>
+      <tr>
+        <th class="col-prod">Producto</th>
+        <th class="col-s-erp">Stock ERP</th>
+        <th class="col-s-real">Conteo Real</th>
+        <th class="col-s-dif">Diferencia</th>
+        <th class="col-s-obs">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody id="auditoria-tbody"></tbody>
   </table>
-  <div id="remito-descuento-container" style="text-align: right; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; display: none;">
-    <span id="remito-motivo-desc" style="font-size: 12px; color: #555;"></span>: <span id="remito-valor-desc" style="font-weight: bold;"></span>
-  </div>
-  <div style="text-align: right; font-size: 24px; font-weight: 900; margin-top: 10px;">TOTAL: $<span id="remito-total">0</span></div>
 </div>
 
 <div class="modal-bg" id="modal-venta"><div class="modal-box"><div class="modal-ico">✅</div><div class="modal-title">¡Exito!</div><div class="modal-sub">Operación registrada en Google Sheets</div><div class="modal-id" id="modal-ticket">—</div><a id="modal-wsp" href="#" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;border-radius:8px;padding:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px">📲 WhatsApp al cliente</a><button class="btn btn-ghost" onclick="cerrarModal()">Cerrar</button></div></div>
@@ -658,8 +681,15 @@ async function cargarPasivosPersonales() {
       rows.forEach(r => {
         const id = str(r[1]); // Col B: ID
         if (!id) return;
+        
         if (!DB.pasivos[id]) {
-          DB.pasivos[id] = { saldo: 0, moneda: str(r[5]), concepto: str(r[4]), persona: str(r[3]), relacion: str(r[8]) };
+          DB.pasivos[id] = { 
+            saldo: 0, 
+            moneda: str(r[5]),   // Col F: Moneda
+            concepto: str(r[4]), // Col E: Concepto
+            persona: str(r[3]),  // Col D: Persona
+            relacion: str(r[8])  // Col I: Relacion
+          };
         }
         DB.pasivos[id].saldo += num(r[6]); // Col G: Monto
       });
@@ -746,11 +776,8 @@ async function guardarMovimientoPersonal() {
     const nuevoId = 'PERS-' + String(maxId + 1).padStart(4, '0');
     const fecha = new Date().toLocaleDateString('es-AR');
     
-    // Si me deben, el monto inicial se registra como negativo
-    const montoConSigno = relacion === 'ME_DEBEN' ? -monto : monto;
-    
     await append('PasivosPersonales!A:I', [[
-      'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, montoConSigno, moneda, relacion
+      'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, moneda, relacion
     ]]);
     
     toast('✓ Movimiento personal registrado');
@@ -777,11 +804,8 @@ async function guardarPagoPersonal() {
     const deuda = DB.pasivos[idDeuda];
     const fecha = new Date().toLocaleDateString('es-AR');
     
-    // Si me deben, un pago es un ingreso (positivo). Si yo debo, un pago es un egreso (negativo)
-    const montoConSigno = deuda.relacion === 'ME_DEBEN' ? monto : -monto;
-    
     await append('PasivosPersonales!A:I', [[
-      'TPER-'+Date.now(), idDeuda, fecha, 'PAGO', concepto, deuda.persona, montoConSigno, deuda.moneda, deuda.relacion
+      'TPER-'+Date.now(), idDeuda, fecha, 'PAGO', concepto, deuda.persona, -monto, deuda.moneda, deuda.relacion
     ]]);
 
     if (origen !== 'EXTERNO') {
@@ -799,15 +823,38 @@ async function guardarPagoPersonal() {
     ui_ocultarFormulariosPP();
     
     if(origen !== 'EXTERNO') {
-        await cargarTodo(); // Si afectó caja, hacemos un sync completo
+        await cargarTodo(); 
     } else {
-        await cargarPasivosPersonales(); // Si no, solo refrescamos este módulo
+        await cargarPasivosPersonales();
     }
 
   } catch (e) {
     toast('Error: ' + e.message, 'err');
   }
   setBtn('btn-pp-pago', false, '✓ Confirmar Pago');
+}
+
+// --- Lógica de Auditoría de Stock (V1) ---
+function prepararAuditoria(modo) {
+  if (modo === 'imprimir') {
+    const tbody = $('auditoria-tbody');
+    if (!tbody || !DB.todo) return;
+
+    setText('auditoria-fecha', "Fecha: " + new Date().toLocaleDateString('es-AR'));
+    let html = '';
+    DB.todo.forEach(p => {
+      html += `<tr>
+        <td class="col-prod">${p.nombre}</td>
+        <td class="col-s-erp">${p.stock}</td>
+        <td class="col-s-real"></td>
+        <td class="col-s-dif"></td>
+        <td class="col-s-obs"></td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+    window.print();
+  }
+  // Futuro V2: else if (modo === 'digital') { ... }
 }
 
 
@@ -1249,17 +1296,12 @@ async function procesarVenta(){
 }
 function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
 
-// --- Lógica CORE de guardado en Caja ---
-async function _guardarMovimientoEnCaja(tipo, cat, motivo, monto, metodo) {
-  const fecha = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  await append('Caja!A:G', [['MOV-'+Date.now(), fecha, tipo, cat, motivo, monto, metodo]]);
-}
-
-async function guardarMov(){ 
+async function handleGuardarMov() {
   const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
   if(!mot || !mon) return;
   const tipo=t.value, cat=c.value, motivo=mot.value, monto=parseFloat(mon.value)||0, metodo=met.value;
   if(!motivo||monto<=0) { toast('Faltan datos', 'err'); return; }
+  
   setBtn('btn-mov',true,'');
   try{ 
     await _guardarMovimientoEnCaja(tipo, cat, motivo, monto, metodo);
@@ -1267,9 +1309,13 @@ async function guardarMov(){
     mot.value=''; mon.value=''; 
     await cargarTodo(); 
   }catch(e){ toast('Error: '+e.message, 'err'); } 
-  setBtn('btn-mov',false,'Guardar');
+  setBtn('btn-mov',false,'Guardar movimiento');
 }
 
+async function _guardarMovimientoEnCaja(tipo, cat, motivo, monto, metodo) {
+  const fecha = new Date().toLocaleString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  await append('Caja!A:G', [['MOV-'+Date.now(), fecha, tipo, cat, motivo, monto, metodo]]);
+}
 
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
 function addEntrada(){ 
