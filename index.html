@@ -1,4 +1,4 @@
-
+html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -138,7 +138,8 @@
     #auditoria-stock-wrap { display: none; }
     @media print {
       html, body { background: #ffffff !important; color: #000000 !important; font-size: 10pt; }
-      #app, #login, .nav, .modal-bg, .toast, #remito-pro { display: none !important; }
+      #app, #login, .nav, .modal-bg, .toast { display: none !important; }
+      #remito-pro { display: none !important; }
       #auditoria-stock-wrap { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 20px !important; margin: 0 !important; }
       #auditoria-stock-wrap * { color: #000000 !important; }
       #tabla-auditoria { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -391,6 +392,34 @@
         </div>
         <div class="field"><label class="f-label">Monto a Transferir ($)</label><input class="f-in" id="t-monto" type="text" placeholder="Ej: 5000" onchange="evalMath(this)"></div>
         <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--blue)">Distribución de Ganancia</div>
+        <div class="field">
+          <div class="f-row">
+            <input class="f-in" id="dist-monto" type="text" placeholder="Monto a distribuir" oninput="ui_actualizarDistribucion('monto')" onchange="evalMath(this)">
+            <button class="btn btn-ghost" onclick="ui_usarTodaGanancia()" style="margin:0; padding: 10px; font-size: .8rem;">Usar Todo</button>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: var(--text2); margin-bottom: 12px;">Destinos:</div>
+        <div class="f-row">
+          <input class="f-in" id="dist-bill-p" type="text" placeholder="% Billetera" oninput="ui_actualizarDistribucion('porcentaje')">
+          <input class="f-in" id="dist-bill-m" type="text" placeholder="$ Billetera" oninput="ui_actualizarDistribucion('monto')">
+        </div>
+        <div class="f-row" style="margin-top: 8px;">
+          <input class="f-in" id="dist-cap-p" type="text" placeholder="% Capital" oninput="ui_actualizarDistribucion('porcentaje')">
+          <input class="f-in" id="dist-cap-m" type="text" placeholder="$ Capital" oninput="ui_actualizarDistribucion('monto')">
+        </div>
+        <div class="f-row" style="margin-top: 8px;">
+          <input class="f-in" id="dist-emer-p" type="text" placeholder="% F. Emerg." oninput="ui_actualizarDistribucion('porcentaje')">
+          <input class="f-in" id="dist-emer-m" type="text" placeholder="$ F. Emerg." oninput="ui_actualizarDistribucion('monto')">
+        </div>
+        <div style="border-top: 1px solid var(--border); margin: 12px 0; padding-top: 10px; font-size: 12px;">
+          <div style="display:flex; justify-content: space-between; color: var(--text2);"><span>Total Distribuido:</span><b id="dist-total">$0</b></div>
+          <div style="display:flex; justify-content: space-between; color: var(--text2); margin-top: 4px;"><span>Ganancia Restante:</span><b id="dist-restante">—</b></div>
+        </div>
+        <button class="btn btn-blue" id="btn-distribuir" onclick="distribuirGanancia()">✓ Confirmar Distribución</button>
       </div>
 
       <div class="card">
@@ -723,7 +752,7 @@ async function _capitalCargarEstado(forzar) {
     // era frágil ante cualquier cambio futuro en ese loop. Con este
     // recorrido inverso y corte explícito, el origen del saldo queda
     // inequívoco y auditable, sin cambiar la arquitectura aprobada.
-    let ultimoSaldo = 0;
+    let ultimoSaldo = null;
     for (let i = filas.length - 1; i >= 0; i--) {
       const r = filas[i];
       if (r[4] !== undefined && r[4] !== '') { ultimoSaldo = num(r[4]); break; }
@@ -737,13 +766,13 @@ async function _capitalCargarEstado(forzar) {
     // el módulo no rompe el ERP: h-cap sigue mostrando el cálculo viejo
     // hasta que se resuelva (ver punto de corte en cargarTodo()).
     console.error('Capital: no se pudo cargar el estado de CapitalMovimientos', e);
-    if (CAPITAL_SALDO_ACTUAL === null) CAPITAL_SALDO_ACTUAL = 0;
+    // No se asigna 0 a CAPITAL_SALDO_ACTUAL para forzar el fallback a capJ.
   }
 }
 
 // FUNCIÓN CENTRAL — registra un movimiento de Capital con control de duplicados.
 //   evento:      'CAPITALIZACION' | 'RECUPERO_COSTO' | 'INGRESO_MERCADERIA'
-//                | 'AJUSTE_INVENTARIO' | 'SALDO_INICIAL'
+//                | 'AJUSTE_INVENTARIO' | 'SALDO_INICIAL' | 'CAPITALIZACION_INTERNA'
 //   monto:       número con signo (+ aumenta el Capital, - lo disminuye)
 //   referencia:  string único e irrepetible del evento de origen
 //                (ej. "ID_TICKET-0", "ENT-<timestamp>-0", "AJUSTE-FILA-14")
@@ -756,7 +785,8 @@ async function registrarMovimientoCapital(evento, monto, referencia, observacion
   await _capitalCargarEstado(false);
   if (CAPITAL_REFS.has(referencia)) return; // ya registrado: no duplicar (requisito de deduplicación)
 
-  const nuevoSaldo = (CAPITAL_SALDO_ACTUAL || 0) + monto;
+  const saldoAnterior = CAPITAL_SALDO_ACTUAL === null ? 0 : CAPITAL_SALDO_ACTUAL;
+  const nuevoSaldo = saldoAnterior + monto;
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   try {
     await append('CapitalMovimientos!A:F', [[fecha, evento, monto, referencia, nuevoSaldo, observaciones || '']]);
@@ -775,7 +805,7 @@ async function registrarMovimientoCapital(evento, monto, referencia, observacion
 // último saldo cacheado en memoria (o lo carga una vez si hace falta).
 async function obtenerCapitalActual() {
   await _capitalCargarEstado(false);
-  return CAPITAL_SALDO_ACTUAL || 0;
+  return CAPITAL_SALDO_ACTUAL;
 }
 
 // Único evento sin función de guardado propia en la app (AJUSTES se carga
@@ -1133,8 +1163,8 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
       else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
       else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
-      else if(cat.includes('CAPITALIZACION')){ caps+=monto; }
-      else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; } // Contablemente es una capitalización
+      else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; }
+      else if(cat.includes('CAPITALIZACION')){ caps+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
       else { 
         if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
         else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
@@ -1153,7 +1183,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     // Esto asegura que el ERP sigue mostrando un Capital Real coherente
     // aunque falle la carga/inicialización del nuevo módulo, cumpliendo
     // el requisito de no romper ninguna funcionalidad existente.
-    const capitalMostrado = CAPITAL_SALDO_ACTUAL !== null ? CAPITAL_SALDO_ACTUAL : capJ;
+    const capitalMostrado = CAPITAL_SALDO_ACTUAL !== null ? await obtenerCapitalActual() : capJ;
     setText('h-cap', fmt(capitalMostrado));
     
     setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
