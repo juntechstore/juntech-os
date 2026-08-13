@@ -137,8 +137,7 @@
     #auditoria-stock-wrap { display: none; }
     @media print {
       html, body { background: #ffffff !important; color: #000000 !important; font-size: 10pt; }
-      #app, #login, .nav, .modal-bg, .toast { display: none !important; }
-      #remito-pro { display: none !important; }
+      #app, #login, .nav, .modal-bg, .toast, #remito-pro { display: none !important; }
       #auditoria-stock-wrap { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 20px !important; margin: 0 !important; }
       #auditoria-stock-wrap * { color: #000000 !important; }
       #tabla-auditoria { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -750,7 +749,7 @@ async function _capitalCargarEstado(forzar) {
     // era frágil ante cualquier cambio futuro en ese loop. Con este
     // recorrido inverso y corte explícito, el origen del saldo queda
     // inequívoco y auditable, sin cambiar la arquitectura aprobada.
-    let ultimoSaldo = null; // CORREGIDO: Inicializa en null
+    let ultimoSaldo = null;
     if (filas.length > 0) {
       for (let i = filas.length - 1; i >= 0; i--) {
         const r = filas[i];
@@ -1164,7 +1163,9 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
         if(cat.includes('PERSONAL (INGRESO)')){ ingP+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
         else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
         else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
-        else if(cat.includes('CAPITALIZACION') && !cat.includes('INTERNA')){ caps+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
+        else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
+        else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; } 
+        else if(cat.includes('CAPITALIZACION')){ caps+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
         else { 
           if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
           else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
@@ -1184,13 +1185,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     
     setText('h-gan', fmt(ganD)); 
     const capJ = (totalCaja + plataEnCalle) - billJ - ganD;
-    // Punto de corte: si el nuevo sistema de Capital está activo (saldo no nulo),
-    // muestra ese valor; si no, muestra el cálculo derivado viejo (capJ).
-    // Esto asegura que el ERP sigue mostrando un Capital Real coherente
-    // aunque falle la carga/inicialización del nuevo módulo, cumpliendo
-    // el requisito de no romper ninguna funcionalidad existente.
-    await _capitalCargarEstado(false);
-    const capitalMostrado = CAPITAL_SALDO_ACTUAL !== null ? CAPITAL_SALDO_ACTUAL : capJ;
+    const capitalMostrado = CAPITAL_SALDO_ACTUAL !== null ? await obtenerCapitalActual() : capJ;
     setText('h-cap', fmt(capitalMostrado));
     
     setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
