@@ -215,67 +215,6 @@
         <div class="kpi orange"><div class="kpi-label">Billetera Joaco</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--purple)">
-        <div class="card-title" style="color:var(--purple)">Distribución de Ganancia</div>
-        <div class="bal-row" style="margin-bottom:8px;">
-          <span class="bal-key">Ganancia Disponible</span>
-          <span class="bal-val blue" id="dg-gan-disp">—</span>
-        </div>
-
-        <div class="field">
-          <label class="f-label">Monto a distribuir ($)</label>
-          <input class="f-in" id="dg-monto" type="text" inputmode="decimal" placeholder="Ej: 100000" oninput="dgRecalcular()">
-        </div>
-        <button type="button" class="btn btn-ghost" onclick="dgUsarTodaGanancia()" style="border-color:var(--purple); color:var(--purple); margin-bottom:14px; font-size:0.85rem;">Usar toda la Ganancia Disponible</button>
-
-        <div class="field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <label class="f-label" style="margin:0;">💰 Billetera Joaco / Personal</label>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="curr-btn on" id="dg-mode-bill-pct" onclick="dgSetModo('bill','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
-              <button type="button" class="curr-btn" id="dg-mode-bill-monto" onclick="dgSetModo('bill','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
-            </div>
-          </div>
-          <input class="f-in" id="dg-bill-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
-        </div>
-
-        <div class="field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <label class="f-label" style="margin:0;">🏦 Capital</label>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="curr-btn on" id="dg-mode-cap-pct" onclick="dgSetModo('cap','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
-              <button type="button" class="curr-btn" id="dg-mode-cap-monto" onclick="dgSetModo('cap','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
-            </div>
-          </div>
-          <input class="f-in" id="dg-cap-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
-        </div>
-
-        <div class="field">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <label class="f-label" style="margin:0;">🚨 Fondo de Emergencia</label>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="curr-btn on" id="dg-mode-fondo-pct" onclick="dgSetModo('fondo','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
-              <button type="button" class="curr-btn" id="dg-mode-fondo-monto" onclick="dgSetModo('fondo','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
-            </div>
-          </div>
-          <input class="f-in" id="dg-fondo-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
-        </div>
-
-        <div class="total-block">
-          <div class="total-line"><span>Monto a distribuir</span><span id="dg-r-monto">$0</span></div>
-          <div class="total-line"><span>Billetera</span><span id="dg-r-bill">$0</span></div>
-          <div class="total-line"><span>Capital</span><span id="dg-r-cap">$0</span></div>
-          <div class="total-line"><span>Fondo Emergencia</span><span id="dg-r-fondo">$0</span></div>
-          <div class="total-final"><span class="total-final-label">Total distribuido</span><span class="total-final-val" id="dg-r-total" style="font-size:1.3rem;">$0</span></div>
-        </div>
-        <div class="bal-row">
-          <span class="bal-key">Ganancia restante</span>
-          <span class="bal-val cyan" id="dg-r-restante">—</span>
-        </div>
-
-        <button class="btn btn-purple" id="btn-dist-gan" onclick="confirmarDistribucionGanancia()" style="margin-top:10px;">💾 Confirmar Distribución</button>
-      </div>
-
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span class="card-title" style="margin:0">Balances Financieros</span>
@@ -467,6 +406,67 @@
         </div>
         <div class="field"><label class="f-label">Monto a Transferir ($)</label><input class="f-in" id="t-monto" type="text" placeholder="Ej: 5000" onchange="evalMath(this)"></div>
         <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
+      </div>
+
+      <div class="card" style="border-left: 4px solid var(--purple)">
+        <div class="card-title" style="color:var(--purple)">Distribución de Ganancia</div>
+        <div class="bal-row" style="margin-bottom:8px;">
+          <span class="bal-key">Ganancia Disponible</span>
+          <span class="bal-val blue" id="dg-gan-disp">—</span>
+        </div>
+
+        <div class="field">
+          <label class="f-label">Monto a distribuir ($)</label>
+          <input class="f-in" id="dg-monto" type="text" inputmode="decimal" placeholder="Ej: 100000" oninput="dgRecalcular()">
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="dgUsarTodaGanancia()" style="border-color:var(--purple); color:var(--purple); margin-bottom:14px; font-size:0.85rem;">Usar toda la Ganancia Disponible</button>
+
+        <div class="field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <label class="f-label" style="margin:0;">💰 Billetera Joaco / Personal</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="curr-btn on" id="dg-mode-bill-pct" onclick="dgSetModo('bill','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
+              <button type="button" class="curr-btn" id="dg-mode-bill-monto" onclick="dgSetModo('bill','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
+            </div>
+          </div>
+          <input class="f-in" id="dg-bill-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
+        </div>
+
+        <div class="field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <label class="f-label" style="margin:0;">🏦 Capital</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="curr-btn on" id="dg-mode-cap-pct" onclick="dgSetModo('cap','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
+              <button type="button" class="curr-btn" id="dg-mode-cap-monto" onclick="dgSetModo('cap','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
+            </div>
+          </div>
+          <input class="f-in" id="dg-cap-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
+        </div>
+
+        <div class="field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <label class="f-label" style="margin:0;">🚨 Fondo de Emergencia</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="curr-btn on" id="dg-mode-fondo-pct" onclick="dgSetModo('fondo','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
+              <button type="button" class="curr-btn" id="dg-mode-fondo-monto" onclick="dgSetModo('fondo','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
+            </div>
+          </div>
+          <input class="f-in" id="dg-fondo-val" type="text" inputmode="decimal" placeholder="0 %" oninput="dgRecalcular()">
+        </div>
+
+        <div class="total-block">
+          <div class="total-line"><span>Monto a distribuir</span><span id="dg-r-monto">$0</span></div>
+          <div class="total-line"><span>Billetera</span><span id="dg-r-bill">$0</span></div>
+          <div class="total-line"><span>Capital</span><span id="dg-r-cap">$0</span></div>
+          <div class="total-line"><span>Fondo Emergencia</span><span id="dg-r-fondo">$0</span></div>
+          <div class="total-final"><span class="total-final-label">Total distribuido</span><span class="total-final-val" id="dg-r-total" style="font-size:1.3rem;">$0</span></div>
+        </div>
+        <div class="bal-row">
+          <span class="bal-key">Ganancia restante</span>
+          <span class="bal-val cyan" id="dg-r-restante">—</span>
+        </div>
+
+        <button class="btn btn-purple" id="btn-dist-gan" onclick="confirmarDistribucionGanancia()" style="margin-top:10px;">💾 Confirmar Distribución</button>
       </div>
 
       <div class="card">
