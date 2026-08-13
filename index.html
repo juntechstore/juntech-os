@@ -138,8 +138,7 @@
     #auditoria-stock-wrap { display: none; }
     @media print {
       html, body { background: #ffffff !important; color: #000000 !important; font-size: 10pt; }
-      #app, #login, .nav, .modal-bg, .toast { display: none !important; }
-      #remito-pro { display: none !important; }
+      #app, #login, .nav, .modal-bg, .toast, #remito-pro { display: none !important; }
       #auditoria-stock-wrap { display: block !important; position: static !important; width: 100% !important; background: #ffffff !important; padding: 20px !important; margin: 0 !important; }
       #auditoria-stock-wrap * { color: #000000 !important; }
       #tabla-auditoria { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -206,33 +205,6 @@
         <div class="kpi cyan"><div class="kpi-label">Capital Real</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
         <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-bar"></div></div>
         <div class="kpi orange"><div class="kpi-label">Billetera Joaco</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
-      </div>
-      <div class="card">
-        <div class="card-title" style="color: var(--blue);">Distribución de Ganancia</div>
-        <div class="field">
-          <div class="f-row">
-            <input class="f-in" id="dist-monto" type="text" placeholder="Monto a distribuir" oninput="ui_actualizarDistribucion('monto')" onchange="evalMath(this)">
-            <button class="btn btn-ghost" onclick="ui_usarTodaGanancia()" style="margin:0; padding: 10px; font-size: .8rem;">Usar Todo</button>
-          </div>
-        </div>
-        <div style="font-size: 11px; color: var(--text2); margin-bottom: 12px;">Destinos:</div>
-        <div class="f-row">
-          <input class="f-in" id="dist-bill-p" type="text" placeholder="% Billetera" oninput="ui_actualizarDistribucion('porcentaje')">
-          <input class="f-in" id="dist-bill-m" type="text" placeholder="$ Billetera" oninput="ui_actualizarDistribucion('monto')">
-        </div>
-        <div class="f-row" style="margin-top: 8px;">
-          <input class="f-in" id="dist-cap-p" type="text" placeholder="% Capital" oninput="ui_actualizarDistribucion('porcentaje')">
-          <input class="f-in" id="dist-cap-m" type="text" placeholder="$ Capital" oninput="ui_actualizarDistribucion('monto')">
-        </div>
-        <div class="f-row" style="margin-top: 8px;">
-          <input class="f-in" id="dist-emer-p" type="text" placeholder="% F. Emerg." oninput="ui_actualizarDistribucion('porcentaje')">
-          <input class="f-in" id="dist-emer-m" type="text" placeholder="$ F. Emerg." oninput="ui_actualizarDistribucion('monto')">
-        </div>
-        <div style="border-top: 1px solid var(--border); margin: 12px 0; padding-top: 10px; font-size: 12px;">
-          <div style="display:flex; justify-content: space-between; color: var(--text2);"><span>Total Distribuido:</span><b id="dist-total">$0</b></div>
-          <div style="display:flex; justify-content: space-between; color: var(--text2); margin-top: 4px;"><span>Ganancia Restante:</span><b id="dist-restante">—</b></div>
-        </div>
-        <button class="btn btn-blue" id="btn-distribuir" onclick="distribuirGanancia()">✓ Confirmar Distribución</button>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -426,7 +398,7 @@
         <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
         <div class="field"><label class="f-label">Categoría</label>
           <select class="f-in" id="c-cat">
-            <optgroup label="JUNTECH"><option>GASTO OPERATIVO</option><option>COMPRA STOCK</option><option>CAPITALIZACION</option><option>CAPITALIZACION_INTERNA</option><option>FONDO EMERGENCIA</option></optgroup>
+            <optgroup label="JUNTECH"><option>GASTO OPERATIVO</option><option>COMPRA STOCK</option><option>CAPITALIZACION</option><option>CAPITALIZACION_INTERNA</option><option>FONDO EMERGENCIA</option><option>DISTRIBUCION_GANANCIA</option></optgroup>
             <optgroup label="JOACO PERSONAL"><option>PERSONAL (INGRESO)</option><option>PERSONAL (GASTO)</option><option>PASAR GANANCIA A BILLETERA</option></optgroup>
             <optgroup label="OTRO"><option>APORTE DE CAPITAL (EXTERNO)</option></optgroup>
           </select>
@@ -611,7 +583,14 @@ function previewCC(){
   if(!montoElem || !rateElem || !prev) return;
   const usd = parseFloat(montoElem.value)||0, tc = parseFloat(rateElem.value)||0;
   if(usd>0 && tc>0){
-    prev.textContent = `≈ ${fmt(usd*tc)} pesos reales — esto es lo que se va a registrar en tus cuentas`;
+    const montoEnMonedaOriginal = usd;
+    const montoEnPesos = montoEnMonedaOriginal * tc;
+    let texto = `≈ ${fmt(montoEnPesos)} pesos reales.`;
+    if(monedaCCActual === 'USD'){
+      prev.textContent = texto + ` Se registrarán u$s ${montoEnMonedaOriginal.toFixed(2)} en la cuenta corriente.`;
+    } else {
+      prev.textContent = texto;
+    }
     prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
   } else prev.textContent = '';
 }
@@ -1155,6 +1134,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
       else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
       else if(cat.includes('CAPITALIZACION')){ caps+=monto; }
+      else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; } // Contablemente es una capitalización
       else { 
         if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
         else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
@@ -1165,8 +1145,6 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps;
-    const activosTotales = totalCaja + plataEnCalle; 
-    const capJ = activosTotales - billJ - ganD;
     DB.finanzas.gananciaDisponible = ganD; // Cachear para la UI de distribución
     
     setText('h-gan', fmt(ganD)); 
@@ -1308,18 +1286,49 @@ window.verHistorial = function(cliNombre, cliId) {
 
 async function guardarCC(){
   const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
-  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
+  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, met = $('cc-metodo').value, det = detElem.value;
+  let monto = num(montoElem.value);
+  
   if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
+  
+  // --- MÓDULO BIMONETARIO: CORRECCIÓN DE BUG ---
+  // Antes, el sistema usaba el monto en pesos para el append a Caja y el
+  // monto en USD para el append a CC, creando una inconsistencia contable.
+  // Ahora, el monto que se persiste es siempre el valor en la moneda original
+  // de la transacción. La conversión a pesos solo se usa para el movimiento
+  // de Caja.
+  let montoCaja = monto;
+  let montoCC = monto;
+  
+  if (monedaCCActual === 'USD') {
+    const tc = parseFloat($('cc-rate-val').value) || 0;
+    if (tc < TC_MIN_SEGURO) {
+      if (!confirm(`⚠️ Cotización de $${tc} es muy baja. ¿Seguro que es correcta?`)) return;
+    }
+    montoCaja = Math.round(monto * tc);
+    // El monto en la CC se mantiene en USD.
+  }
+  
   setBtn('btn-cc',true,'');
   try {
     const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
-    if(met !== 'NINGUNA'){
-      const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
+    let detalleFinal = det;
+    if (monedaCCActual === 'USD') {
+      detalleFinal = `[U$S ${montoCC.toFixed(2)} @ ${$('cc-rate-val').value}] ${det}`.trim();
     }
-    toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; await cargarTodo();
+    
+    await append('CuentasCorrientes!A:E', [[fecha, per, tipo, montoCC, detalleFinal]]);
+    
+    if(met !== 'NINGUNA'){
+      const idMov = 'CC-'+Date.now();
+      const tipoCaja = tipo === 'CARGO' ? 'EGRESO' : 'INGRESO';
+      const catCaja = tipo === 'CARGO' ? 'PRESTAMO CC' : 'COBRO CC';
+      const motivoCaja = tipo === 'CARGO' ? 'Préstamo a '+per : 'Pago de '+per;
+      await _guardarMovimientoEnCaja(tipoCaja, catCaja, motivoCaja, montoCaja, met);
+    }
+    toast('✓ Movimiento de CC guardado'); 
+    perElem.value=''; montoElem.value=''; detElem.value=''; 
+    await cargarTodo();
   } catch(e) { toast('Error: '+e.message,'err'); }
   setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
 }
