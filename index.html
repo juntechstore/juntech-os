@@ -382,16 +382,6 @@
 
 
     <div class="tab" id="tab-caja">
-      <div class="card" style="border-left: 4px solid var(--blue)">
-        <div class="card-title" style="color:var(--blue)">Transferencia entre Billeteras</div>
-        <div class="f-row">
-          <div class="field"><label class="f-label">Origen (Sale de)</label><select class="f-in" id="t-orig"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
-          <div class="field"><label class="f-label">Destino (Entra a)</label><select class="f-in" id="t-dest"><option>MERCADO PAGO</option><option>EFECTIVO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
-        </div>
-        <div class="field"><label class="f-label">Monto a Transferir ($)</label><input class="f-in" id="t-monto" type="text" placeholder="Ej: 5000" onchange="evalMath(this)"></div>
-        <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
-      </div>
-      
       <div class="card">
         <div class="card-title" style="color:var(--blue)">Distribución de Ganancia</div>
         <div class="field">
@@ -418,6 +408,15 @@
           <div style="display:flex; justify-content: space-between; color: var(--text2); margin-top: 4px;"><span>Ganancia Restante:</span><b id="dist-restante">—</b></div>
         </div>
         <button class="btn btn-blue" id="btn-distribuir" onclick="distribuirGanancia()">✓ Confirmar Distribución</button>
+      </div>
+      <div class="card" style="border-left: 4px solid var(--blue)">
+        <div class="card-title" style="color:var(--blue)">Transferencia entre Billeteras</div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Origen (Sale de)</label><select class="f-in" id="t-orig"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
+          <div class="field"><label class="f-label">Destino (Entra a)</label><select class="f-in" id="t-dest"><option>MERCADO PAGO</option><option>EFECTIVO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
+        </div>
+        <div class="field"><label class="f-label">Monto a Transferir ($)</label><input class="f-in" id="t-monto" type="text" placeholder="Ej: 5000" onchange="evalMath(this)"></div>
+        <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
       </div>
 
       <div class="card">
@@ -750,10 +749,12 @@ async function _capitalCargarEstado(forzar) {
     // era frágil ante cualquier cambio futuro en ese loop. Con este
     // recorrido inverso y corte explícito, el origen del saldo queda
     // inequívoco y auditable, sin cambiar la arquitectura aprobada.
-    let ultimoSaldo = null; // CORREGIDO: Inicializa en null
-    for (let i = filas.length - 1; i >= 0; i--) {
-      const r = filas[i];
-      if (r[4] !== undefined && r[4] !== '') { ultimoSaldo = num(r[4]); break; }
+    let ultimoSaldo = null;
+    if (filas.length > 0) {
+      for (let i = filas.length - 1; i >= 0; i--) {
+        const r = filas[i];
+        if (r[4] !== undefined && r[4] !== '') { ultimoSaldo = num(r[4]); break; }
+      }
     }
 
     CAPITAL_REFS = refs;
@@ -1156,17 +1157,24 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     cRows.forEach(r => {
       if(!r[0]) return;
       const tipo=str(r[2]).toUpperCase(), cat=str(r[3]).toUpperCase(), monto=num(r[5]), metodo=str(r[6]).toUpperCase();
-      if(cat.includes('FONDO EMERGENCIA')){ fondo += tipo==='INGRESO'?monto:-monto; }
-      if(cat.includes('PERSONAL (INGRESO)')){ ingP+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
-      else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
-      else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
-      else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
-      else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; } // Contablemente es una capitalización
-      else if(cat.includes('CAPITALIZACION')){ caps+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
-      else { 
-        if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
-        else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
-        if(tipo==='EGRESO'){ if(cat.includes('GASTO')) gastosJ+=monto; if(cat.includes('RETIRO JOACO')) retirosJ+=monto; }
+      
+      if (metodo !== 'NINGUNA') {
+        if(cat.includes('FONDO EMERGENCIA')){ fondo += tipo==='INGRESO'?monto:-monto; }
+        if(cat.includes('PERSONAL (INGRESO)')){ ingP+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
+        else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
+        else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
+        else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
+        else if(cat.includes('DISTRIBUCION_GANANCIA')){ caps+=monto; } 
+        else if(cat.includes('CAPITALIZACION')){ caps+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
+        else { 
+          if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
+          else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
+          if(tipo==='EGRESO'){ if(cat.includes('GASTO')) gastosJ+=monto; if(cat.includes('RETIRO JOACO')) retirosJ+=monto; }
+        }
+      } else { // Movimientos internos que no afectan CAJA
+        if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
+        else if(cat.includes('FONDO EMERGENCIA')){ fondo += monto; }
+        else if(cat.includes('CAPITALIZACION_INTERNA')){ caps+=monto; }
       }
       historial.push({tipo, cat:str(r[3]), motivo:str(r[4]), monto, metodo});
     });
@@ -1176,11 +1184,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     DB.finanzas.gananciaDisponible = ganD; // Cachear para la UI de distribución
     
     setText('h-gan', fmt(ganD)); 
-    // Punto de corte: si el nuevo sistema de Capital está activo (saldo no nulo),
-    // muestra ese valor; si no, muestra el cálculo derivado viejo (capJ).
-    // Esto asegura que el ERP sigue mostrando un Capital Real coherente
-    // aunque falle la carga/inicialización del nuevo módulo, cumpliendo
-    // el requisito de no romper ninguna funcionalidad existente.
+    const capJ = (totalCaja + plataEnCalle) - billJ - ganD;
     const capitalMostrado = CAPITAL_SALDO_ACTUAL !== null ? await obtenerCapitalActual() : capJ;
     setText('h-cap', fmt(capitalMostrado));
     
