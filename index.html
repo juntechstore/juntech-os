@@ -321,78 +321,69 @@
         <button class="btn btn-ghost" id="btn-dir" onclick="guardarContacto()" style="border-color:var(--cyan); color:var(--cyan)">+ Guardar en Agenda</button>
       </div>
       <div class="card">
-        <div class="card-title" style="color:var(--purple)">Nuevo Movimiento / Préstamo</div>
-        <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cc-persona" placeholder="Ej: Papás, Juan Perez"></div>
-        <div class="field"><label class="f-label">Tipo de Operación</label>
-          <select class="f-in" id="cc-tipo" onchange="actualizarContextoCC()">
-            <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
-            <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
-          </select>
-        </div>
+        <div class="card-title" style="color:var(--purple)">Cuentas Activas</div>
+        <div id="cta-lista"><div class="empty">Cargando cuentas...</div></div>
+      </div>
+
+      <div class="card" id="cta-form-nueva">
+        <div class="card-title" style="color:var(--purple)">Nueva Cuenta / Movimiento</div>
         <div class="curr-toggle">
-          <button type="button" class="curr-btn on" id="cc-curr-ars" onclick="setMonedaCC('ARS')">$ Pesos</button>
-          <button type="button" class="curr-btn" id="cc-curr-usd" onclick="setMonedaCC('USD')">u$s Dólares</button>
+          <button type="button" class="curr-btn on" id="cta-tipo-cliente" onclick="ctaSetTipo('CLIENTE')">Cliente</button>
+          <button type="button" class="curr-btn" id="cta-tipo-personal" onclick="ctaSetTipo('PERSONAL')">Personal</button>
         </div>
-        <div class="field fx-rate-row" id="cc-rate-row">
-          <label class="f-label" id="cc-rate-label">Cotización que estás pactando ahora</label>
-          <input class="f-in" id="cc-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewCC()">
-          <div style="font-size:10px;color:var(--text2);margin-top:5px" id="cc-rate-hint"></div>
-          <div class="usd-tag" id="cc-rate-preview" style="margin-top:5px"></div>
+
+        <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cta-persona" placeholder="Ej: Papás, Juan Perez" style="text-transform: uppercase;"></div>
+
+        <div id="cta-bloque-cliente">
+          <div class="field"><label class="f-label">Tipo de Operación</label>
+            <select class="f-in" id="cta-operacion">
+              <option value="CARGO">PRESTAR PLATA / FIAR (Suma a la deuda)</option>
+              <option value="ABONO">REGISTRAR PAGO (Te devuelven plata)</option>
+            </select>
+          </div>
         </div>
+
+        <div id="cta-bloque-personal" style="display:none;">
+          <div class="field"><label class="f-label">Concepto</label><input class="f-in" id="cta-concepto" placeholder="Ej: MacBook Air M2"></div>
+          <div class="field"><label class="f-label">Relación</label>
+            <select class="f-in" id="cta-relacion">
+              <option value="YO_DEBO">Yo debo dinero (Deuda)</option>
+              <option value="ME_DEBEN">Me deben a mí (Préstamo)</option>
+            </select>
+          </div>
+          <div class="curr-toggle">
+            <button type="button" class="curr-btn on" id="cta-moneda-ars" onclick="ctaSetMoneda('ARS')">$ Pesos</button>
+            <button type="button" class="curr-btn" id="cta-moneda-usd" onclick="ctaSetMoneda('USD')">u$s Dólares</button>
+          </div>
+        </div>
+
         <div class="f-row">
-          <div class="field"><label class="f-label">Monto $</label><input class="f-in" id="cc-monto" type="number" placeholder="0"></div>
-          <div class="field" id="cc-metodo-box"><label class="f-label">Caja física afectada</label>
-            <select class="f-in" id="cc-metodo">
+          <div class="field"><label class="f-label" id="cta-monto-label">Monto $</label><input class="f-in" id="cta-monto" type="text" inputmode="decimal" placeholder="0"></div>
+          <div class="field" id="cta-metodo-box"><label class="f-label">Caja física afectada</label>
+            <select class="f-in" id="cta-metodo">
               <option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option>
               <option value="NINGUNA">NINGUNA (Solo apunte interno)</option>
             </select>
           </div>
         </div>
-        <div class="field"><label class="f-label">Detalle / Motivo</label><input class="f-in" id="cc-detalle" placeholder="Ej: Préstamo para el super"></div>
-        <button class="btn btn-purple" id="btn-cc" onclick="guardarCC()">Registrar en Cuenta Corriente</button>
+
+        <div class="field" id="cta-detalle-box"><label class="f-label">Detalle / Motivo</label><input class="f-in" id="cta-detalle" placeholder="Ej: Préstamo para el super"></div>
+
+        <button class="btn btn-purple" id="btn-cta-nueva" onclick="guardarCuentaNueva()">💾 Registrar</button>
       </div>
-      <div class="card">
-        <div class="card-title">Saldos Activos en la calle</div>
-        <div id="cc-lista"><div class="empty">Cargando cuentas...</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title" style="color:var(--orange)">Préstamos y Deudas Personales</div>
-        <div id="pp-lista-wrap">
-          <div id="pp-lista" style="padding: 10px 0; max-height: 200px; overflow-y: auto;"><div class="empty" style="font-size: 12px;">Todavía no existen deudas personales.</div></div>
-          <div class="f-row" style="gap: 8px; margin-top: 10px;">
-            <button class="btn btn-ghost" style="margin:0; border-color: var(--orange); color: var(--orange);" onclick="ui_mostrarFormNuevaDeuda()">+ Nuevo Préstamo/Deuda</button>
-            <button class="btn btn-ghost" style="margin:0;" onclick="ui_mostrarFormPago()">✓ Registrar Pago</button>
-          </div>
+
+      <div class="card" id="cta-form-pago" style="display:none;">
+        <div class="card-title">Registrar Pago / Cobro</div>
+        <div style="background:var(--s2); border-radius:8px; padding:10px; font-size:12px; margin-bottom:12px; text-align:center;">Cuenta: <b id="cta-pago-info">--</b></div>
+        <input type="hidden" id="cta-pago-tipo">
+        <input type="hidden" id="cta-pago-id">
+        <div class="f-row">
+          <div class="field"><label class="f-label">Monto del Pago</label><input class="f-in" id="cta-pago-monto" type="text" inputmode="decimal"></div>
+          <div class="field"><label class="f-label">Origen del Dinero</label><select class="f-in" id="cta-pago-origen"></select></div>
         </div>
-        <div id="pp-forms" style="display:none;">
-          <div id="pp-form-nueva">
-            <div class="field"><label class="f-label">Persona</label><input class="f-in" id="pp-nueva-persona" placeholder="Ej: EMANUEL" style="text-transform: uppercase;"></div>
-            <div class="field"><label class="f-label">Concepto</label><input class="f-in" id="pp-nueva-concepto" placeholder="Ej: MacBook Air M2"></div>
-            <div class="field"><label class="f-label">Relación</label>
-              <select class="f-in" id="pp-nueva-relacion">
-                <option value="YO_DEBO">Yo debo dinero (Deuda)</option>
-                <option value="ME_DEBEN">Me deben a mí (Préstamo)</option>
-              </select>
-            </div>
-            <div class="f-row">
-              <div class="field"><label class="f-label">Monto</label><input class="f-in" id="pp-nueva-monto" type="text" inputmode="decimal"></div>
-              <div class="field"><label class="f-label">Moneda</label><select class="f-in" id="pp-nueva-moneda"><option>USD</option><option>ARS</option></select></div>
-            </div>
-            <button class="btn btn-orange" id="btn-pp-nueva" onclick="guardarMovimientoPersonal()" style="background:var(--orange);color:#fff;margin-top:8px">💾 Guardar Movimiento</button>
-            <button class="btn btn-ghost" onclick="ui_ocultarFormulariosPP()">Cancelar</button>
-          </div>
-          <div id="pp-form-pago">
-            <div style="background:var(--s2); border-radius:8px; padding:10px; font-size:12px; margin-bottom:12px; text-align:center;">Pagando a: <b id="pp-pago-info">--</b></div>
-            <input type="hidden" id="pp-pago-id">
-            <div class="f-row">
-              <div class="field"><label class="f-label">Monto del Pago</label><input class="f-in" id="pp-pago-monto" type="text" inputmode="decimal"></div>
-              <div class="field"><label class="f-label">Origen del Dinero</label><select class="f-in" id="pp-pago-origen"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option></select></div>
-            </div>
-            <div class="field"><label class="f-label">Concepto del Pago (Opcional)</label><input class="f-in" id="pp-pago-concepto" placeholder="Ej: Cuota 1/3"></div>
-            <button class="btn" id="btn-pp-pago" onclick="guardarPagoPersonal()" style="background:var(--cyan);color:#fff;margin-top:8px">✓ Confirmar Pago</button>
-            <button class="btn btn-ghost" onclick="ui_ocultarFormulariosPP()">Cancelar</button>
-          </div>
-        </div>
+        <div class="field"><label class="f-label">Concepto del Pago (Opcional)</label><input class="f-in" id="cta-pago-concepto" placeholder="Ej: Cuota 1/3"></div>
+        <button class="btn" id="btn-cta-pago" onclick="confirmarPagoCuenta()" style="background:var(--cyan);color:#fff;margin-top:8px">✓ Confirmar Pago</button>
+        <button class="btn btn-ghost" onclick="ctaOcultarFormPago()">Cancelar</button>
       </div>
     </div>
 
@@ -637,7 +628,6 @@ let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
 let monedaEntradaActual = 'ARS';
-let monedaCCActual = 'ARS';
 const TC_MIN_SEGURO = 100;
 
 function getTCActual(){ return COTIZ[COTIZ.elegida] || COTIZ.blue || COTIZ.manual || 0; }
@@ -664,16 +654,6 @@ function elegirCotizacion(tipo){
 
 function setManualTC(v){ COTIZ.manual = parseFloat(v.toString().replace(',','.'))||0; if(COTIZ.elegida==='manual' && !COTIZ.manual) elegirCotizacion('blue'); }
 
-function previewCC(){
-  const montoElem = $('cc-monto'), rateElem = $('cc-rate-val'), prev = $('cc-rate-preview');
-  if(!montoElem || !rateElem || !prev) return;
-  const usd = parseFloat(montoElem.value)||0, tc = parseFloat(rateElem.value)||0;
-  if(usd>0 && tc>0){
-    prev.textContent = `≈ ${fmt(usd*tc)} pesos reales — esto es lo que se va a registrar en tus cuentas`;
-    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
-  } else prev.textContent = '';
-}
-
 function previewEntrada(){
   const cantElem = $('e-cant'), costoElem = $('e-costo'), rateElem = $('e-rate-val'), prev = $('e-rate-preview');
   if(!costoElem || !rateElem || !prev) return;
@@ -693,31 +673,6 @@ function setMonedaEntrada(m){
   if(m==='USD' && rateInp && !rateInp.value) rateInp.value = getTCActual() || '';
 }
 
-function setMonedaCC(m){
-  monedaCCActual = m;
-  const bA=$('cc-curr-ars'), bU=$('cc-curr-usd'), row=$('cc-rate-row'), lbl=$('cc-monto-label');
-  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
-  if(row) row.classList.toggle('on', m==='USD');
-  if(lbl) lbl.textContent = m==='USD' ? 'Monto u$s' : 'Monto $';
-  if(m==='USD') actualizarContextoCC();
-}
-
-function actualizarContextoCC(){
-  if(monedaCCActual !== 'USD') return;
-  const tipo = $('cc-tipo') ? $('cc-tipo').value : 'CARGO';
-  const lbl = $('cc-rate-label'), rateInp = $('cc-rate-val'), hint = $('cc-rate-hint');
-  const tcHoy = getTCActual();
-  if(tipo === 'ABONO'){
-    if(lbl) lbl.textContent = 'Cotización de HOY para esta devolución';
-    if(rateInp) rateInp.value = tcHoy || '';
-    if(hint) hint.textContent = 'Nunca uses la cotización del día del préstamo — usá siempre la de hoy, aunque haya subido.';
-  } else {
-    if(lbl) lbl.textContent = 'Cotización que estás pactando ahora';
-    if(rateInp && !rateInp.value) rateInp.value = tcHoy || '';
-    if(hint) hint.textContent = 'Esta es la cotización de ESTE préstamo puntual, no afecta a futuras devoluciones.';
-  }
-  previewCC();
-}
 // ================================================================================================
   
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
@@ -939,155 +894,206 @@ async function cargarPasivosPersonales() {
         if (!DB.pasivos[id]) {
           DB.pasivos[id] = { 
             saldo: 0, 
-            moneda: str(r[5]),   // Col F: Moneda
+            // CORRECCIÓN: estas dos lecturas estaban cruzadas (col D = tipo DEUDA/PAGO,
+            // col F = persona). El bug hacía que toda deuda mostrara "(DEUDA)" o "(PAGO)"
+            // en vez del nombre real, y que la moneda nunca se detectara como USD
+            // (porque leía un nombre de persona en vez del texto "USD"/"ARS").
+            persona: str(r[5]), // Col F: Persona
+            moneda: str(r[7]),  // Col H: Moneda
             concepto: str(r[4]), // Col E: Concepto
-            persona: str(r[3]),  // Col D: Persona
             relacion: str(r[8])  // Col I: Relacion
           };
         }
         DB.pasivos[id].saldo += num(r[6]); // Col G: Monto
       });
     }
-    renderPasivosPersonales(DB.pasivos);
+    renderCuentasUnificadas();
   } catch(e) {
     console.error("Error cargando pasivos personales:", e);
-    setHTML('pp-lista', '<div class="empty err" style="font-size:12px;">Error al cargar deudas personales.</div>');
+    setHTML('cta-lista', '<div class="empty err" style="font-size:12px;">Error al cargar cuentas.</div>');
   }
 }
 
-function renderPasivosPersonales(deudas) {
-  let html = '';
-  Object.keys(deudas).forEach(id => {
-    const d = deudas[id];
+// ================================================================
+// MÓDULO CUENTAS UNIFICADO (Clientes + Personales) — aditivo/UI
+// ----------------------------------------------------------------
+// Antes había dos sistemas separados en pantalla (Cuenta Corriente de
+// clientes y Préstamos/Deudas Personales). Las hojas de cálculo
+// CuentasCorrientes y PasivosPersonales siguen siendo dos hojas
+// distintas (no se migran datos históricos), pero ahora comparten
+// una sola lista, un solo formulario de alta y un solo panel de pago.
+// No toca plataEnCalle/Capital: esa cuenta sigue calculándose SOLO
+// con CuentasCorrientes, exactamente igual que antes.
+// ================================================================
+
+let CTA_TIPO = 'CLIENTE';
+let CTA_MONEDA_PERSONAL = 'ARS';
+
+function renderCuentasUnificadas() {
+  const cuentas = [];
+  Object.keys(DB.saldosCC || {}).forEach(p => {
+    const saldo = DB.saldosCC[p];
+    if (Math.abs(saldo) > 0.01) cuentas.push({ tipo:'CLIENTE', id:p, nombre:p, concepto:null, saldo, moneda:'ARS' });
+  });
+  Object.keys(DB.pasivos || {}).forEach(id => {
+    const d = DB.pasivos[id];
     if (Math.abs(d.saldo) > 0.01) {
-      const formattedSaldo = d.moneda === 'USD' ? fmtUSD(d.saldo) : fmt(d.saldo);
-      const color = d.relacion === 'YO_DEBO' ? 'red' : 'cyan';
-      html += `<div class="bal-row pp-item" data-id="${id}" onclick="seleccionarDeuda(this, '${id}')"><span class="bal-key">${d.concepto} (${d.persona})</span><span class="bal-val ${color}">${formattedSaldo}</span></div>`;
+      const saldoSigned = d.relacion === 'YO_DEBO' ? -Math.abs(d.saldo) : Math.abs(d.saldo);
+      cuentas.push({ tipo:'PERSONAL', id, nombre:d.persona, concepto:d.concepto, saldo:saldoSigned, moneda:d.moneda });
     }
   });
-  setHTML('pp-lista', html || '<div class="empty" style="font-size: 12px;">No hay deudas personales registradas.</div>');
-  ppDeudaSeleccionada = null;
+  cuentas.sort((a,b) => Math.abs(b.saldo) - Math.abs(a.saldo));
+
+  let html = '';
+  cuentas.forEach(c => {
+    const formattedSaldo = c.moneda === 'USD' ? fmtUSD(Math.abs(c.saldo)) : fmt(Math.abs(c.saldo));
+    const signo = c.saldo < 0 ? '-' : '';
+    const color = c.saldo > 0 ? 'blue' : 'red';
+    const pill = c.tipo === 'CLIENTE' ? '<span class="pill pill-blue" style="margin-left:6px;">Cliente</span>' : '<span class="pill pill-orange" style="margin-left:6px;">Personal</span>';
+    const label = c.concepto ? `${c.concepto} (${c.nombre})` : c.nombre;
+    html += `<div class="bal-row cta-item" data-tipo="${c.tipo}" data-id="${c.id}" onclick="seleccionarCuenta(this,'${c.tipo}','${c.id}')" style="cursor:pointer;"><span class="bal-key">${label}${pill}</span><span class="bal-val ${color}">${signo}${formattedSaldo}</span></div>`;
+  });
+  setHTML('cta-lista', html || '<div class="empty">Sin cuentas activas</div>');
 }
 
-function seleccionarDeuda(el, id) {
-  document.querySelectorAll('.pp-item').forEach(item => item.classList.remove('selected'));
-  el.classList.add('selected');
-  ppDeudaSeleccionada = id;
+function ctaSetTipo(tipo) {
+  CTA_TIPO = tipo;
+  const bC = $('cta-tipo-cliente'), bP = $('cta-tipo-personal');
+  if (bC) bC.classList.toggle('on', tipo==='CLIENTE');
+  if (bP) bP.classList.toggle('on', tipo==='PERSONAL');
+  const bloqueCliente = $('cta-bloque-cliente'), bloquePersonal = $('cta-bloque-personal');
+  if (bloqueCliente) bloqueCliente.style.display = tipo==='CLIENTE' ? 'block' : 'none';
+  if (bloquePersonal) bloquePersonal.style.display = tipo==='PERSONAL' ? 'block' : 'none';
+  const metodoBox = $('cta-metodo-box'), detalleBox = $('cta-detalle-box');
+  if (metodoBox) metodoBox.style.display = tipo==='CLIENTE' ? 'block' : 'none';
+  if (detalleBox) detalleBox.style.display = tipo==='CLIENTE' ? 'block' : 'none';
+  const lbl = $('cta-monto-label');
+  if (lbl) lbl.textContent = (tipo==='PERSONAL' && CTA_MONEDA_PERSONAL==='USD') ? 'Monto u$s' : 'Monto $';
 }
 
-// --- Lógica de UI para Pasivos Personales ---
-function ui_mostrarFormNuevaDeuda() {
-  $('pp-lista-wrap').style.display = 'none';
-  $('pp-forms').style.display = 'block';
-  $('pp-form-nueva').classList.add('on');
+function ctaSetMoneda(m) {
+  CTA_MONEDA_PERSONAL = m;
+  const bA = $('cta-moneda-ars'), bU = $('cta-moneda-usd');
+  if (bA) bA.classList.toggle('on', m==='ARS');
+  if (bU) bU.classList.toggle('on', m==='USD');
+  ctaSetTipo(CTA_TIPO);
 }
 
-function ui_mostrarFormPago() {
-  if (!ppDeudaSeleccionada) {
-    toast('Primero seleccioná una deuda de la lista', 'err');
-    return;
-  }
-  const deuda = DB.pasivos[ppDeudaSeleccionada];
-  setText('pp-pago-info', `${deuda.concepto} (${deuda.persona})`);
-  $('pp-pago-id').value = ppDeudaSeleccionada;
-  $('pp-lista-wrap').style.display = 'none';
-  $('pp-forms').style.display = 'block';
-  $('pp-form-pago').classList.add('on');
+function ctaLimpiarFormNueva() {
+  ['cta-persona','cta-concepto','cta-monto','cta-detalle'].forEach(id => { const el=$(id); if(el) el.value=''; });
 }
 
-function ui_ocultarFormulariosPP() {
-  $('pp-lista-wrap').style.display = 'block';
-  $('pp-forms').style.display = 'none';
-  $('pp-form-nueva').classList.remove('on');
-  $('pp-form-pago').classList.remove('on');
-  // Limpiar campos
-  $('pp-nueva-persona').value = ''; $('pp-nueva-concepto').value = ''; $('pp-nueva-monto').value = '';
-  $('pp-pago-monto').value = ''; $('pp-pago-concepto').value = '';
-}
+async function guardarCuentaNueva() {
+  const persona = ($('cta-persona').value || '').trim().toUpperCase();
+  const monto = Math.abs(parseFloat(($('cta-monto').value||'').toString().replace(',','.')) || 0);
+  if (!persona || monto <= 0) { toast('Falta persona o monto', 'err'); return; }
 
-// --- Lógica de Escritura para Pasivos Personales ---
-async function guardarMovimientoPersonal() {
-  const persona = $('pp-nueva-persona').value.trim().toUpperCase();
-  const concepto = $('pp-nueva-concepto').value.trim();
-  const monto = Math.abs(num($('pp-nueva-monto').value));
-  const moneda = $('pp-nueva-moneda').value;
-  const relacion = $('pp-nueva-relacion').value;
-
-  if (!persona || !concepto || monto <= 0) {
-    toast('Completá todos los campos', 'err'); return;
-  }
-
-  setBtn('btn-pp-nueva', true, '');
+  setBtn('btn-cta-nueva', true, '');
   try {
-    const idRows = await get('PasivosPersonales!B2:B');
-    let maxId = 0;
-    if(idRows) {
-      idRows.forEach(row => {
-        const idNum = parseInt(str(row[0]).replace('PERS-', ''), 10);
-        if (!isNaN(idNum) && idNum > maxId) maxId = idNum;
-      });
-    }
-    const nuevoId = 'PERS-' + String(maxId + 1).padStart(4, '0');
-    const fecha = new Date().toLocaleDateString('es-AR');
-    
-    const montoConSigno = relacion === 'ME_DEBEN' ? -monto : monto;
-    
-    await append('PasivosPersonales!A:I', [[
-      'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, moneda, relacion
-    ]]);
-    
-    toast('✓ Movimiento personal registrado');
-    ui_ocultarFormulariosPP();
-    await cargarPasivosPersonales(); 
-  } catch(e) {
-    toast('Error: '+e.message, 'err');
-  }
-  setBtn('btn-pp-nueva', false, '💾 Guardar Movimiento');
-}
-
-async function guardarPagoPersonal() {
-  const idDeuda = $('pp-pago-id').value;
-  const monto = Math.abs(num($('pp-pago-monto').value));
-  const origen = $('pp-pago-origen').value;
-  const concepto = $('pp-pago-concepto').value.trim() || 'Pago';
-
-  if (!idDeuda || monto <= 0) {
-    toast('Falta el ID o el monto', 'err'); return;
-  }
-  
-  setBtn('btn-pp-pago', true, '');
-  try {
-    const deuda = DB.pasivos[idDeuda];
-    const fecha = new Date().toLocaleDateString('es-AR');
-    
-    await append('PasivosPersonales!A:I', [[
-      'TPER-'+Date.now(), idDeuda, fecha, 'PAGO', concepto, deuda.persona, -monto, deuda.moneda, deuda.relacion
-    ]]);
-
-    if (origen !== 'EXTERNO') {
-      const esUnCobro = deuda.relacion === 'ME_DEBEN';
-      const tipo = esUnCobro ? 'INGRESO' : 'EGRESO';
-      const categoria = esUnCobro ? 'PERSONAL (INGRESO)' : 'PERSONAL (GASTO)';
-      const metodo = origen === 'JOACO' ? 'TRANSFERENCIA' : origen;
-      const detalle = esUnCobro ? `Cobro de ${deuda.persona} (${deuda.concepto})` : `Pago a ${deuda.persona} (${deuda.concepto})`;
-
-      await _guardarMovimientoEnCaja(tipo, categoria, detalle, monto, metodo);
-    }
-    
-    toast('✓ Pago registrado');
-    ui_ocultarFormulariosPP();
-    
-    if(origen !== 'EXTERNO') {
-        await cargarTodo(); 
+    if (CTA_TIPO === 'CLIENTE') {
+      const operacion = $('cta-operacion').value;
+      const metodo = $('cta-metodo').value;
+      const detalle = $('cta-detalle').value;
+      const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      await append('CuentasCorrientes!A:E', [[fecha, persona, operacion, monto, detalle]]);
+      if (metodo !== 'NINGUNA') {
+        const idMov = 'CC-'+Math.floor(Math.random()*9999);
+        if (operacion === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+persona, monto, metodo]]);
+        else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+persona, monto, metodo]]);
+      }
     } else {
-        await cargarPasivosPersonales();
+      const concepto = ($('cta-concepto').value || '').trim();
+      if (!concepto) { toast('Falta el concepto', 'err'); setBtn('btn-cta-nueva', false, '💾 Registrar'); return; }
+      const relacion = $('cta-relacion').value;
+      const moneda = CTA_MONEDA_PERSONAL;
+      const idRows = await get('PasivosPersonales!B2:B');
+      let maxId = 0;
+      if (idRows) idRows.forEach(row => { const n = parseInt(str(row[0]).replace('PERS-',''),10); if(!isNaN(n) && n>maxId) maxId=n; });
+      const nuevoId = 'PERS-' + String(maxId+1).padStart(4,'0');
+      const fecha = new Date().toLocaleDateString('es-AR');
+      await append('PasivosPersonales!A:I', [[
+        'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, moneda, relacion
+      ]]);
     }
-
-  } catch (e) {
-    toast('Error: ' + e.message, 'err');
-  }
-  setBtn('btn-pp-pago', false, '✓ Confirmar Pago');
+    toast('✓ Registrado');
+    ctaLimpiarFormNueva();
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-cta-nueva', false, '💾 Registrar');
 }
+
+function seleccionarCuenta(el, tipo, id) {
+  document.querySelectorAll('.cta-item').forEach(item => item.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+
+  const origenSel = $('cta-pago-origen');
+  if (tipo === 'CLIENTE') {
+    setText('cta-pago-info', id);
+    if (origenSel) origenSel.innerHTML = '<option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option><option value="NINGUNA">NINGUNA (Solo apunte interno)</option>';
+  } else {
+    const d = DB.pasivos[id];
+    if (!d) return;
+    setText('cta-pago-info', `${d.concepto} (${d.persona})`);
+    if (origenSel) origenSel.innerHTML = '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
+  }
+  $('cta-pago-tipo').value = tipo;
+  $('cta-pago-id').value = id;
+  const panel = $('cta-form-pago');
+  if (panel) { panel.style.display = 'block'; panel.scrollIntoView({behavior:'smooth', block:'center'}); }
+}
+
+function ctaOcultarFormPago() {
+  const panel = $('cta-form-pago');
+  if (panel) panel.style.display = 'none';
+  document.querySelectorAll('.cta-item').forEach(item => item.classList.remove('selected'));
+  const m = $('cta-pago-monto'), c = $('cta-pago-concepto');
+  if (m) m.value = ''; if (c) c.value = '';
+}
+
+async function confirmarPagoCuenta() {
+  const tipo = $('cta-pago-tipo').value;
+  const id = $('cta-pago-id').value;
+  const monto = Math.abs(parseFloat(($('cta-pago-monto').value||'').toString().replace(',','.')) || 0);
+  const origen = $('cta-pago-origen').value;
+  const conceptoPago = ($('cta-pago-concepto').value || '').trim();
+
+  if (!id || monto <= 0) { toast('Falta la cuenta o el monto', 'err'); return; }
+
+  setBtn('btn-cta-pago', true, '');
+  try {
+    if (tipo === 'CLIENTE') {
+      const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      const det = conceptoPago || ('Pago de '+id);
+      await append('CuentasCorrientes!A:E', [[fecha, id, 'ABONO', monto, det]]);
+      if (origen !== 'NINGUNA') {
+        const idMov = 'CC-'+Math.floor(Math.random()*9999);
+        await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+id, monto, origen]]);
+      }
+    } else {
+      const deuda = DB.pasivos[id];
+      if (!deuda) { toast('No se encontró la deuda', 'err'); setBtn('btn-cta-pago', false, '✓ Confirmar Pago'); return; }
+      const fecha = new Date().toLocaleDateString('es-AR');
+      const concepto = conceptoPago || 'Pago';
+      await append('PasivosPersonales!A:I', [[
+        'TPER-'+Date.now(), id, fecha, 'PAGO', concepto, deuda.persona, -monto, deuda.moneda, deuda.relacion
+      ]]);
+      if (origen !== 'EXTERNO') {
+        const esUnCobro = deuda.relacion === 'ME_DEBEN';
+        const tipoCaja = esUnCobro ? 'INGRESO' : 'EGRESO';
+        const categoria = esUnCobro ? 'PERSONAL (INGRESO)' : 'PERSONAL (GASTO)';
+        const metodo = origen === 'JOACO' ? 'TRANSFERENCIA' : origen;
+        const detalle = esUnCobro ? `Cobro de ${deuda.persona} (${deuda.concepto})` : `Pago a ${deuda.persona} (${deuda.concepto})`;
+        await _guardarMovimientoEnCaja(tipoCaja, categoria, detalle, monto, metodo);
+      }
+    }
+    toast('✓ Pago registrado');
+    ctaOcultarFormPago();
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-cta-pago', false, '✓ Confirmar Pago');
+}
+
+// --- Lógica de Auditoría de Stock (V1) ---
 
 // --- Lógica de Auditoría de Stock (V1) ---
 function prepararAuditoria(modo) {
@@ -1190,7 +1196,6 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     
     Object.keys(DB.clientes).forEach(c => { DB.clientes[c].historial.sort((a,b) => a.ts - b.ts); });
       
-    let htmlCC = '';
     let deudasACobrar = 0;
     let deudasAPagar = 0;
 
@@ -1199,11 +1204,9 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       if(saldo !== 0){
         if(saldo > 0) deudasACobrar += saldo;
         else deudasAPagar += saldo;
-        htmlCC += `<div class="bal-row"><span class="bal-key">${p}</span><span class="bal-val ${saldo>0?'blue':'red'}">${fmt(saldo)}</span></div>`;
       }
     });
     
-    setHTML('cc-lista', htmlCC || '<div class="empty">Sin cuentas activas</div>');
     setText('h-cc-cobrar', fmt(deudasACobrar));
     setText('h-cc-pagar', fmt(deudasAPagar));
     
@@ -1372,24 +1375,6 @@ window.verHistorial = function(cliNombre, cliId) {
    if(!h) h = '<div class="empty">Sin movimientos</div>';
    el.innerHTML = h; el.style.display = 'block';
 };
-
-async function guardarCC(){
-  const perElem = $('cc-persona'), montoElem = $('cc-monto'), detElem = $('cc-detalle'); if(!perElem || !montoElem) return;
-  const per = perElem.value.trim().toUpperCase(), tipo = $('cc-tipo').value, monto = parseFloat(montoElem.value)||0, met = $('cc-metodo').value, det = detElem.value;
-  if(!per || monto<=0){ toast('Falta persona o monto','err'); return; }
-  setBtn('btn-cc',true,'');
-  try {
-    const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    await append('CuentasCorrientes!A:E', [[fecha, per, tipo, monto, det]]);
-    if(met !== 'NINGUNA'){
-      const idMov = 'CC-'+Math.floor(Math.random()*9999);
-      if(tipo === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+per, monto, met]]);
-      else await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+per, monto, met]]);
-    }
-    toast('✓ Movimiento bancario guardado'); perElem.value=''; montoElem.value=''; detElem.value=''; await cargarTodo();
-  } catch(e) { toast('Error: '+e.message,'err'); }
-  setBtn('btn-cc',false,'Registrar en Cuenta Corriente');
-}
 
 async function guardarContacto(){
   const nom = $('dir-nom').value.trim().toUpperCase(), tipo = $('dir-tipo').value, tel = $('dir-tel').value;
