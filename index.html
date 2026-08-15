@@ -760,7 +760,14 @@ function iniciarAuth(){
 window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ iniciarAuth(); }, 800); });
 
 async function get(range){ try { const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); const data = await r.json(); return data.values||[]; } catch(e) { return []; } }
-async function append(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
+async function append(range,values){
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) });
+  if (!r.ok) {
+    let detalle = '';
+    try { const data = await r.json(); detalle = (data && data.error && data.error.message) || ''; } catch(e) {}
+    throw new Error('No se pudo guardar en "'+range+'"' + (detalle ? ': '+detalle : ' (código '+r.status+')'));
+  }
+}
 async function updateCell(range,values){ await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) }); }
 
 // ================================================================
@@ -793,6 +800,35 @@ async function updateCell(range,values){ await fetch(`https://sheets.googleapis.
 let CAPITAL_REFS_CARGADAS = false;   // true una vez que se leyó CapitalMovimientos en esta sesión
 let CAPITAL_REFS = new Set();        // Referencias ya registradas (control de duplicados)
 let CAPITAL_SALDO_ACTUAL = null;     // Último saldoResultante conocido (cache en memoria)
+let CAPITAL_HOJA_VERIFICADA = false; // evita repetir la verificación/creación en cada llamada
+
+// CAUSA RAÍZ (encontrada en producción): la hoja "CapitalMovimientos" nunca existió en
+// la planilla. get() devuelve [] silenciosamente si una hoja no existe (indistinguible
+// de "existe pero está vacía"), y el append() de esta app tampoco revisaba si la
+// escritura funcionaba — así que cada intento de anotar un movimiento fallaba sin que
+// nadie se enterara, mientras el resto del código asumía que sí se había guardado.
+// Esta función crea la hoja (con sus encabezados) la primera vez que hace falta, así
+// el Ledger deja de fallar en silencio sin que el usuario tenga que hacer nada a mano.
+async function asegurarHojaCapital() {
+  if (CAPITAL_HOJA_VERIFICADA) return;
+  try {
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties.title`, { headers:{ 'Authorization':'Bearer '+accessToken } });
+    const data = await r.json();
+    const existe = (data.sheets || []).some(s => s.properties && s.properties.title === 'CapitalMovimientos');
+    if (!existe) {
+      const rc = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer '+accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ addSheet: { properties: { title: 'CapitalMovimientos' } } }] })
+      });
+      if (!rc.ok) { console.error('No se pudo crear la hoja CapitalMovimientos', await rc.text()); return; }
+      await append('CapitalMovimientos!A1', [['Fecha','Evento','Monto','Referencia','SaldoResultante','Observaciones']]);
+    }
+    CAPITAL_HOJA_VERIFICADA = true;
+  } catch (e) {
+    console.error('asegurarHojaCapital falló', e);
+  }
+}
 
 // Carga en memoria las referencias existentes y el último saldo persistido.
 // Se ejecuta una sola vez por sesión (salvo que se fuerce), para que
@@ -800,6 +836,7 @@ let CAPITAL_SALDO_ACTUAL = null;     // Último saldoResultante conocido (cache 
 // implique releer toda la hoja en cada uno.
 async function _capitalCargarEstado(forzar) {
   if (CAPITAL_REFS_CARGADAS && !forzar) return;
+  await asegurarHojaCapital();
   try {
     const filas = await get('CapitalMovimientos!A2:F');
     const refs = new Set();
