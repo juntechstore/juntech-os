@@ -1309,13 +1309,21 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     // Antes convivían dos "verdades" de Capital: este cálculo derivado (capJ) y el
     // ledger persistente en CapitalMovimientos (obtenerCapitalActual/registrarMovimientoCapital,
     // ya usado en cada venta/entrada, pero nunca leído para mostrar el KPI).
-    // Ahora el KPI "Capital Real" se toma automáticamente del ledger UNA VEZ que este
-    // tiene al menos un movimiento registrado (es decir, una vez que se corrió la
-    // sincronización inicial desde el modal de Auditoría de Capital). Hasta ese momento
-    // sigue mostrando exactamente el cálculo viejo — cero cambio de comportamiento para
-    // quien todavía no sincronizó.
+    // Ahora el KPI "Capital Real" se toma automáticamente del ledger UNA VEZ que fue
+    // SEMBRADO con un saldo inicial (evento SALDO_INICIAL, referencia 'INIT') desde el
+    // modal de Auditoría de Capital. Hasta ese momento sigue mostrando exactamente el
+    // cálculo viejo — cero cambio de comportamiento para quien todavía no sincronizó.
+    // CORRECCIÓN (bug real detectado en producción): antes se usaba "CAPITAL_REFS.size > 0"
+    // (¿tiene algún movimiento?) en vez de "¿tiene un saldo inicial sembrado?". Como
+    // RECUPERO_COSTO (cada venta) e INGRESO_MERCADERIA (cada entrada de stock) YA estaban
+    // registrando movimientos en este ledger desde antes de esta sesión —sin que nadie
+    // hubiera sembrado nunca un saldo inicial—, el ledger SIEMPRE tenía movimientos, así
+    // que el KPI se cambió solo al ledger no sembrado (solo el neto de recupero de costo
+    // menos compras de stock desde que se empezó a loguear, no el Capital real) y mostró
+    // un número cercano a $0 en vez del cálculo viejo. Con "CAPITAL_REFS.has('INIT')" el
+    // KPI solo confía en el ledger una vez que de verdad tiene un punto de partida.
     await _capitalCargarEstado(false);
-    const capitalLedgerActivo = CAPITAL_REFS.size > 0;
+    const capitalLedgerActivo = CAPITAL_REFS.has('INIT');
     const capLedger = CAPITAL_SALDO_ACTUAL || 0;
     const capMostrado = capitalLedgerActivo ? capLedger : capJ;
     
@@ -1677,10 +1685,10 @@ async function abrirModalCapital() {
   setText('mc-nuevo', fmt(nuevo));
   setText('mc-diff', fmt(diff));
 
-  if (CAPITAL_REFS.size === 0) {
+  if (!CAPITAL_REFS.has('INIT')) {
     if (estadoEl) {
       estadoEl.style.background = '#f0883e15'; estadoEl.style.color = 'var(--orange)';
-      estadoEl.textContent = 'El Ledger todavía no tiene ningún movimiento. Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo (sin cambios, es el comportamiento seguro). Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger.';
+      estadoEl.textContent = 'El Ledger todavía no tiene un saldo inicial sembrado (puede tener movimientos sueltos de ventas/compras, pero eso no alcanza). Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo. Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger.';
     }
     if (btnSync) btnSync.style.display = 'block';
   } else if (Math.abs(diff) < 1) {
@@ -1704,11 +1712,18 @@ async function sincronizarCapital() {
   setBtn('btn-mc-sync', true, '');
   try {
     await _capitalCargarEstado(true); // fuerza una lectura fresca antes de decidir
-    if (CAPITAL_REFS.size > 0) {
-      toast('El Ledger ya tiene movimientos, no hace falta inicializar de nuevo', 'err');
+    if (CAPITAL_REFS.has('INIT')) {
+      toast('El Ledger ya tiene un saldo inicial, no hace falta inicializar de nuevo', 'err');
     } else {
       const capJActual = (DB.finanzas && typeof DB.finanzas.capJ === 'number') ? DB.finanzas.capJ : 0;
-      await registrarMovimientoCapital('SALDO_INICIAL', capJActual, 'INIT', 'Sincronización inicial: partiendo del cálculo derivado vigente a la fecha de consolidación.');
+      // El Ledger puede ya traer actividad acumulada (RECUPERO_COSTO de ventas,
+      // INGRESO_MERCADERIA de entradas de stock — vienen registrando desde antes de
+      // esta sincronización). Si sembráramos con capJActual "a secas", ese arrastre se
+      // sumaría DE NUEVO por encima del cálculo viejo. Se resta lo ya acumulado para
+      // que, tras sembrar, el Ledger quede exactamente en capJActual — ni un peso más.
+      const yaAcumuladoEnLedger = CAPITAL_SALDO_ACTUAL || 0;
+      const seed = capJActual - yaAcumuladoEnLedger;
+      await registrarMovimientoCapital('SALDO_INICIAL', seed, 'INIT', 'Sincronización inicial: partiendo del cálculo derivado vigente a la fecha de consolidación (arrastre previo del Ledger descontado para no duplicar).');
       toast('✓ Capital inicializado — el KPI ya lee del Ledger');
     }
     await cargarTodo();
