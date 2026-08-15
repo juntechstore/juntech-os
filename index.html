@@ -876,7 +876,7 @@ async function obtenerCapitalActual() {
 // Referencia estable (las filas ya cargadas no se reordenan ni se borran).
 // Monto = cantidad ajustada × costo ACTUAL del producto (automático, sin
 // ingreso manual de monto, según el documento funcional).
-async function sincronizarAjustesComoMovimientosCapital(aRows) {
+async function sincronizarAjustesComoMovimientosCapital(aRows, costoPorProducto) {
   if (!aRows || !aRows.length) return;
   await _capitalCargarEstado(false);
   for (let i = 0; i < aRows.length; i++) {
@@ -887,8 +887,10 @@ async function sincronizarAjustesComoMovimientosCapital(aRows) {
     const nombreProd = str(r[0]);
     const cantidadAjustada = num(r[2]);
     if (!cantidadAjustada) continue;
-    const prodDB = DB.todo.find(p => p.nombre === nombreProd);
-    const costoActual = prodDB ? prodDB.costo : 0;
+    // CORRECCIÓN: antes buscaba el costo en DB.todo, que en este punto de cargarTodo()
+    // todavía no está reconstruido (vacío en la primera carga, "un ciclo viejo" en las
+    // siguientes). Ahora usa el mismo mapa de costos ya disponible en este punto.
+    const costoActual = (costoPorProducto && costoPorProducto[nombreProd]) || 0;
     const monto = cantidadAjustada * costoActual;
     await registrarMovimientoCapital('AJUSTE_INVENTARIO', monto, referencia, 'Ajuste automático de inventario: ' + nombreProd);
   }
@@ -1210,10 +1212,19 @@ async function cargarTodo(){
 
     let aRows = []; try { aRows = await get('AJUSTES!A2:D'); } catch(e) {}
     const stockA = {}; aRows.forEach(r => { if(r[0]) stockA[str(r[0])] = (stockA[str(r[0])] || 0) + num(r[2]); });
+    // Mapa de costo por producto — ya disponible en este punto (antes de reconstruir DB.todo).
+    const costoPorProducto = {};
+    Object.keys(pMap).forEach(n => { costoPorProducto[n] = costoR[n] || pMap[n].costo; });
     // --- MÓDULO CAPITAL (aditivo): AJUSTES no tiene función de guardado propia en la app
     // (se carga directo en la planilla), así que se reconcilia acá, leyendo lo mismo que
     // ya se leyó arriba para el stock. No modifica stockA ni el cálculo de stock existente.
-    try { await sincronizarAjustesComoMovimientosCapital(aRows); } catch(e) { console.error('Capital: fallo la sincronización de ajustes de inventario', e); }
+    try { await sincronizarAjustesComoMovimientosCapital(aRows, costoPorProducto); } catch(e) { console.error('Capital: fallo la sincronización de ajustes de inventario', e); }
+    // --- CONSOLIDACIÓN DE CAPITAL (cierre de brecha): el cálculo viejo de Capital Real
+    // nunca consideraba mermas/sobrantes de inventario — el Ledger nuevo sí (evento
+    // AJUSTE_INVENTARIO). Se replica el mismo total acá para que ambos sistemas
+    // coincidan siempre, sin importar cuál se esté mostrando.
+    let ajusteInventarioTotal = 0;
+    aRows.forEach(r => { if(!r[0]) return; const cant = num(r[2]); if(!cant) return; ajusteInventarioTotal += cant * (costoPorProducto[str(r[0])] || 0); });
 
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
     Object.keys(pMap).forEach(n => {
@@ -1298,12 +1309,15 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan;
     const activosTotales = totalCaja + plataEnCalle; 
-    // CORRECCIÓN: capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como
+    // CORRECCIÓN 1: capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como
     // fondoGan ya se resta de ganD arriba, si no se resta también acá esa plata queda
     // flotando y el residuo se la "come", inflando Capital Real con dinero que en
     // realidad fue a Fondo de Emergencia (doble contabilización). Restándolo acá,
     // mover plata de Ganancia a Fondo no mueve ni un peso el KPI de Capital.
-    const capJ = activosTotales - billJ - ganD - fondoGan;
+    // CORRECCIÓN 2: se suma ajusteInventarioTotal (mismo signo que usa el Ledger nuevo)
+    // para que una merma o un sobrante de stock impacte a los dos sistemas de Capital
+    // por igual, y no solo al Ledger como pasaba antes.
+    const capJ = activosTotales - billJ - ganD - fondoGan + ajusteInventarioTotal;
     
     // --- CONSOLIDACIÓN DE CAPITAL (aditivo) ---
     // Antes convivían dos "verdades" de Capital: este cálculo derivado (capJ) y el
@@ -1688,7 +1702,7 @@ async function abrirModalCapital() {
   if (!CAPITAL_REFS.has('INIT')) {
     if (estadoEl) {
       estadoEl.style.background = '#f0883e15'; estadoEl.style.color = 'var(--orange)';
-      estadoEl.textContent = 'El Ledger todavía no tiene un saldo inicial sembrado (puede tener movimientos sueltos de ventas/compras, pero eso no alcanza). Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo. Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger.';
+      estadoEl.textContent = 'El Ledger todavía no tiene un saldo inicial sembrado (puede tener movimientos sueltos de ventas/compras, pero eso no alcanza). Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo. Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger, y los dos cálculos van a quedar sincronizados de acá en más.';
     }
     if (btnSync) btnSync.style.display = 'block';
   } else if (Math.abs(diff) < 1) {
@@ -1757,8 +1771,19 @@ async function _guardarMovimientoEnCaja(tipo, cat, motivo, monto, metodo) {
   // --- MÓDULO CAPITAL (aditivo): Capitalización aumenta Caja y Capital al mismo tiempo ---
   // El aumento de Caja ya ocurrió arriba (append normal); acá solo se refleja en Capital.
   // Se usa el mismo ID del movimiento de Caja como Referencia única.
-  if (str(cat).toUpperCase().includes('CAPITALIZACION')) {
+  const catUpper = str(cat).toUpperCase();
+  if (catUpper.includes('CAPITALIZACION')) {
     await registrarMovimientoCapital('CAPITALIZACION', monto, idMov, motivo);
+  }
+  // --- CONSOLIDACIÓN DE CAPITAL (cierre de brecha): un depósito/retiro manual de Fondo
+  // de Emergencia (categoría EXACTA 'FONDO EMERGENCIA', la de toda la vida) mueve el
+  // cálculo viejo de Capital Real vía Caja, pero antes no quedaba anotado en el Ledger
+  // nuevo — con el tiempo los dos sistemas se iban a desacomodar. Se excluye a propósito
+  // la variante '(DESDE GANANCIA)' de Distribución de Ganancia, que ya es neutral para
+  // Capital por otro camino y no debe anotarse acá también.
+  if (catUpper === 'FONDO EMERGENCIA') {
+    const signo = tipo === 'INGRESO' ? 1 : -1;
+    await registrarMovimientoCapital('AJUSTE_FONDO_EMERGENCIA', monto*signo, idMov, motivo);
   }
 }
 
