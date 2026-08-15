@@ -210,7 +210,7 @@
     <div class="tab on" id="tab-home">
       <div class="kpi-grid">
         <div class="kpi blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi cyan"><div class="kpi-label">Capital Real</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi cyan" onclick="abrirModalCapital()" style="cursor:pointer;"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
         <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-bar"></div></div>
         <div class="kpi orange"><div class="kpi-label">Billetera Joaco</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
       </div>
@@ -264,9 +264,19 @@
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
-          <div class="field"><label class="f-label">Precio a cobrar</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 3000" onchange="evalMath(this)"></div>
+          <div class="field"><label class="f-label" id="v-precio-label">Precio a cobrar</label><input class="f-in" id="v-precio" type="text" placeholder="Ej: 3000" onchange="evalMath(this)" oninput="previewVentaUSD()"></div>
         </div>
-        <div class="field"><label class="f-label">Precio de Lista (Tachado)</label><input class="f-in" id="v-precio-lista" type="text" placeholder="Opcional. Ej: 5000" onchange="evalMath(this)"></div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="v-curr-ars" onclick="setMonedaVenta('ARS')">$ Venta en Pesos</button>
+          <button type="button" class="curr-btn" id="v-curr-usd" onclick="setMonedaVenta('USD')">u$s Mayorista (USD)</button>
+        </div>
+        <div class="field fx-rate-row" id="v-rate-row">
+          <label class="f-label">Cotización que estás pactando ahora</label>
+          <input class="f-in" id="v-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50" oninput="previewVentaUSD()">
+          <div style="font-size:10px;color:var(--text2);margin-top:5px">Esto define cuántos pesos se registran en Caja/Ganancia/Capital HOY. El dólar queda solo como referencia impresa — nunca se vuelve a recalcular con la cotización de otro día.</div>
+          <div class="usd-tag" id="v-rate-preview" style="margin-top:5px"></div>
+        </div>
+        <div class="field"><label class="f-label" id="v-precio-lista-label">Precio de Lista (Tachado)</label><input class="f-in" id="v-precio-lista" type="text" placeholder="Opcional. Ej: 5000" onchange="evalMath(this)"></div>
         <div class="field"><label class="f-label">Nombre en Ticket (Opcional)</label><input class="f-in" id="v-alias" placeholder="Dejar vacío para nombre original de stock"></div>
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
@@ -616,6 +626,18 @@
 </div>
 
 <div class="modal-bg" id="modal-venta"><div class="modal-box"><div class="modal-ico">✅</div><div class="modal-title">¡Exito!</div><div class="modal-sub">Operación registrada en Google Sheets</div><div class="modal-id" id="modal-ticket">—</div><a id="modal-wsp" href="#" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;border-radius:8px;padding:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px">📲 WhatsApp al cliente</a><button class="btn btn-ghost" onclick="cerrarModal()">Cerrar</button></div></div>
+
+<div class="modal-bg" id="modal-capital">
+  <div class="modal-box" style="max-width:380px; text-align:left;">
+    <div style="font-weight:700; font-size:1.05rem; margin-bottom:14px; color:var(--cyan);">Auditoría de Capital</div>
+    <div class="bal-row"><span class="bal-key">Cálculo viejo (derivado)</span><span class="bal-val" id="mc-viejo">—</span></div>
+    <div class="bal-row"><span class="bal-key">Ledger de Capital</span><span class="bal-val" id="mc-nuevo">—</span></div>
+    <div class="bal-row"><span class="bal-key">Diferencia</span><span class="bal-val" id="mc-diff">—</span></div>
+    <div id="mc-estado" style="font-size:12px; margin:12px 0; padding:10px; border-radius:8px; line-height:1.4;"></div>
+    <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none;">🔄 Inicializar Ledger con este valor</button>
+    <button type="button" class="btn btn-ghost" onclick="cerrarModalCapital()">Cerrar</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -628,6 +650,7 @@ let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
 let monedaEntradaActual = 'ARS';
+let monedaVentaActual = 'ARS'; // Venta Mayorista en USD (Opción A: siempre se convierte a ARS al momento de la venta)
 const TC_MIN_SEGURO = 100;
 
 function getTCActual(){ return COTIZ[COTIZ.elegida] || COTIZ.blue || COTIZ.manual || 0; }
@@ -671,6 +694,40 @@ function setMonedaEntrada(m){
   if(row) row.classList.toggle('on', m==='USD');
   if(lbl) lbl.textContent = m==='USD' ? 'Costo unitario (u$s)' : 'Costo unitario';
   if(m==='USD' && rateInp && !rateInp.value) rateInp.value = getTCActual() || '';
+}
+
+// ================================================================
+// VENTA MAYORISTA EN USD (Opción A — aditivo)
+// ----------------------------------------------------------------
+// El vendedor puede cargar el precio en dólares para una venta puntual,
+// pero TODO lo que toca Caja/Ganancia/Capital/Cuenta Corriente se sigue
+// calculando y guardando en pesos, usando la cotización pactada ESE día
+// (igual que ya funciona en Entrada de Stock). El monto en USD y la
+// cotización usada quedan guardados solo como referencia informativa
+// (columnas N/O de Salidas, y en el remito/carrito) — nunca se vuelven
+// a recalcular con la cotización de otro día, así no hay manera de que
+// el sistema "diga" que deberías tener más pesos de los que realmente
+// entraron ese día.
+// ================================================================
+function setMonedaVenta(m){
+  monedaVentaActual = m;
+  const bA=$('v-curr-ars'), bU=$('v-curr-usd'), row=$('v-rate-row'), lblP=$('v-precio-label'), lblL=$('v-precio-lista-label'), rateInp=$('v-rate-val');
+  if(bA) bA.classList.toggle('on', m==='ARS'); if(bU) bU.classList.toggle('on', m==='USD');
+  if(row) row.classList.toggle('on', m==='USD');
+  if(lblP) lblP.textContent = m==='USD' ? 'Precio a cobrar (u$s)' : 'Precio a cobrar';
+  if(lblL) lblL.textContent = m==='USD' ? 'Precio de Lista (u$s, tachado)' : 'Precio de Lista (Tachado)';
+  if(m==='USD' && rateInp && !rateInp.value) rateInp.value = getTCActual() || '';
+  previewVentaUSD();
+}
+
+function previewVentaUSD(){
+  const precioElem = $('v-precio'), rateElem = $('v-rate-val'), prev = $('v-rate-preview');
+  if(!precioElem || !rateElem || !prev) return;
+  const usd = parseFloat(precioElem.value)||0, tc = parseFloat(rateElem.value)||0;
+  if(monedaVentaActual === 'USD' && usd>0 && tc>0){
+    prev.textContent = `≈ ${fmt(usd*tc)} — esto es lo que se registra en Caja/Ganancia/Capital por esta unidad`;
+    prev.style.color = tc < TC_MIN_SEGURO ? 'var(--red)' : 'var(--purple)';
+  } else prev.textContent = '';
 }
 
 // ================================================================================================
@@ -1241,13 +1298,33 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan;
     const activosTotales = totalCaja + plataEnCalle; 
-    const capJ = activosTotales - billJ - ganD;
+    // CORRECCIÓN: capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como
+    // fondoGan ya se resta de ganD arriba, si no se resta también acá esa plata queda
+    // flotando y el residuo se la "come", inflando Capital Real con dinero que en
+    // realidad fue a Fondo de Emergencia (doble contabilización). Restándolo acá,
+    // mover plata de Ganancia a Fondo no mueve ni un peso el KPI de Capital.
+    const capJ = activosTotales - billJ - ganD - fondoGan;
+    
+    // --- CONSOLIDACIÓN DE CAPITAL (aditivo) ---
+    // Antes convivían dos "verdades" de Capital: este cálculo derivado (capJ) y el
+    // ledger persistente en CapitalMovimientos (obtenerCapitalActual/registrarMovimientoCapital,
+    // ya usado en cada venta/entrada, pero nunca leído para mostrar el KPI).
+    // Ahora el KPI "Capital Real" se toma automáticamente del ledger UNA VEZ que este
+    // tiene al menos un movimiento registrado (es decir, una vez que se corrió la
+    // sincronización inicial desde el modal de Auditoría de Capital). Hasta ese momento
+    // sigue mostrando exactamente el cálculo viejo — cero cambio de comportamiento para
+    // quien todavía no sincronizó.
+    await _capitalCargarEstado(false);
+    const capitalLedgerActivo = CAPITAL_REFS.size > 0;
+    const capLedger = CAPITAL_SALDO_ACTUAL || 0;
+    const capMostrado = capitalLedgerActivo ? capLedger : capJ;
     
     // Se guarda en DB.finanzas (existía vacío, sin uso) para que el módulo de Distribución
-    // de Ganancia pueda validar montos contra la Ganancia Disponible real y vigente.
-    DB.finanzas = { ganD, capJ, fondo, billJ, activosTotales };
+    // de Ganancia pueda validar montos contra la Ganancia Disponible real y vigente, y para
+    // que el modal de Auditoría de Capital pueda comparar ambos valores sin recalcular nada.
+    DB.finanzas = { ganD, capJ, capLedger, capitalLedgerActivo, fondo, billJ, activosTotales };
     
-    setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capJ)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
+    setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capMostrado)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
     setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
     if (typeof dgRecalcular === 'function') dgRecalcular();
     
@@ -1420,11 +1497,24 @@ function selProduct(){
 
 function addToCart(){
   if(!currentProd) return;
-  const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search');
-  const cant = parseFloat(vCant ? vCant.value : 1)||1, precio = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio, precioLista = parseFloat(vPrecioLista ? vPrecioLista.value : currentProd.precio) || currentProd.precio;
+  const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search'), vRate = $('v-rate-val');
+  const cant = parseFloat(vCant ? vCant.value : 1)||1;
+  const precioIngresado = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio;
+  const precioListaIngresado = parseFloat(vPrecioLista ? vPrecioLista.value : currentProd.precio) || currentProd.precio;
+
+  let precio = precioIngresado, precioLista = precioListaIngresado, precioUSD = null, tcUsado = null;
+  if (monedaVentaActual === 'USD') {
+    const tc = parseFloat(vRate ? vRate.value : 0) || 0;
+    if (!tc) { toast('Falta la cotización para esta venta en USD', 'err'); return; }
+    precioUSD = precioIngresado;
+    tcUsado = tc;
+    precio = Math.round(precioIngresado * tc);
+    precioLista = Math.round(precioListaIngresado * tc);
+  }
+
   if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). ¿Agregar igual?')) return;
   
-  cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : '')});
+  cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : ''), precioUSD, tcUsado});
   
   if(vSearch) vSearch.value=''; if(vPrecio) vPrecio.value=''; if(vPrecioLista) vPrecioLista.value=''; if(vGar) vGar.value=''; if(vAlias) vAlias.value=''; if(vCant) vCant.value='1'; 
   const prev=$('prod-prev'); if(prev) prev.style.display='none'; currentProd=null; renderCart();
@@ -1438,7 +1528,8 @@ function renderCart(){
     sub+=item.cant*item.precio; 
     let pTxt = fmt(item.precio);
     if(item.precio < item.precioLista) pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
-    html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; 
+    const usdTag = item.precioUSD ? `<div class="usd-tag">u$s ${item.precioUSD.toLocaleString('en-US',{minimumFractionDigits:2})} — cotización $${item.tcUsado} de ese día</div>` : '';
+    html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${usdTag}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; 
   });
   div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
 }
@@ -1482,6 +1573,7 @@ function prepararRemito(){
     subtotal += item.cant * item.precio;
     let precioTxt = `$${Math.round(item.precio).toLocaleString('es-AR')}`;
     if (item.precio < item.precioLista) precioTxt = `<span style="text-decoration:line-through; color:#888; font-size:10px;">$${Math.round(item.precioLista).toLocaleString('es-AR')}</span><br>$${Math.round(item.precio).toLocaleString('es-AR')}`;
+    if (item.precioUSD) precioTxt += `<br><span style="font-size:9px;color:#888;">(u$s ${item.precioUSD.toLocaleString('en-US',{minimumFractionDigits:2})} a $${item.tcUsado} del día)</span>`;
     tbody.innerHTML += `<tr style="border-bottom: 1px solid #eee;"><td style="padding: 8px; text-align: center;">${item.cant}</td><td style="padding: 8px;">${item.nombre}</td><td style="padding: 8px; text-align: right;">${precioTxt}</td><td style="padding: 8px; text-align: right; font-weight:bold;">$${Math.round(item.cant * item.precio).toLocaleString('es-AR')}</td></tr>`;
   });
   setText('remito-total', Math.round(subtotal - desc).toLocaleString('es-AR')); }
@@ -1530,7 +1622,7 @@ async function procesarVenta(){
       const item = cart[i]; 
       const descuentoProporcional = sub > 0 ? desc * ((item.cant * item.precio) / sub) : 0;
       const subNeto = (item.cant * item.precio) - descuentoProporcional;
-      await append('Salidas!A:M', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-']]);
+      await append('Salidas!A:O', [[item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-', item.precioUSD || '', item.tcUsado || '']]);
       // --- MÓDULO CAPITAL (aditivo): recupero de costo al vender ---
       // Referencia = ticket + índice de línea, siempre única por ítem vendido.
       await registrarMovimientoCapital('RECUPERO_COSTO', item.costo*item.cant, id+'-'+i, 'Recupero de costo — Ticket '+id+' línea '+i+' ('+item.sysName+')');
@@ -1563,11 +1655,69 @@ async function procesarVenta(){
     const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text=' + encodeURIComponent(msgWsp).replace(/%250A/g, '%0A');
     const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
     
-    cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if($('v-desc-p')) $('v-desc-p').value=''; if(vDescMot) vDescMot.value=''; await cargarTodo();
+    cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if($('v-desc-p')) $('v-desc-p').value=''; if(vDescMot) vDescMot.value=''; setMonedaVenta('ARS'); if($('v-rate-val')) $('v-rate-val').value=''; await cargarTodo();
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
 function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
+
+// --- MÓDULO CAPITAL (consolidación): Auditoría / sincronización desde la UI ---
+async function abrirModalCapital() {
+  const m = $('modal-capital'); if (m) m.classList.add('on');
+  setText('mc-viejo', 'Calculando...'); setText('mc-nuevo', 'Calculando...'); setText('mc-diff', '—');
+  const estadoEl = $('mc-estado'), btnSync = $('btn-mc-sync');
+  if (btnSync) btnSync.style.display = 'none';
+
+  await _capitalCargarEstado(false);
+  const viejo = (DB.finanzas && typeof DB.finanzas.capJ === 'number') ? DB.finanzas.capJ : 0;
+  const nuevo = CAPITAL_SALDO_ACTUAL || 0;
+  const diff = viejo - nuevo;
+
+  setText('mc-viejo', fmt(viejo));
+  setText('mc-nuevo', fmt(nuevo));
+  setText('mc-diff', fmt(diff));
+
+  if (CAPITAL_REFS.size === 0) {
+    if (estadoEl) {
+      estadoEl.style.background = '#f0883e15'; estadoEl.style.color = 'var(--orange)';
+      estadoEl.textContent = 'El Ledger todavía no tiene ningún movimiento. Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo (sin cambios, es el comportamiento seguro). Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger.';
+    }
+    if (btnSync) btnSync.style.display = 'block';
+  } else if (Math.abs(diff) < 1) {
+    if (estadoEl) {
+      estadoEl.style.background = '#39d35315'; estadoEl.style.color = 'var(--cyan)';
+      estadoEl.textContent = '✓ El Ledger ya está activo y coincide con el cálculo viejo. El KPI "Capital Real" ya se muestra desde el Ledger.';
+    }
+  } else {
+    if (estadoEl) {
+      estadoEl.style.background = '#f8514915'; estadoEl.style.color = 'var(--red)';
+      estadoEl.textContent = 'El Ledger ya está activo (el KPI ya se muestra desde acá), pero difiere del cálculo viejo. Puede deberse a movimientos previos a la sincronización inicial. Si te parece raro, avisame antes de seguir operando.';
+    }
+  }
+}
+
+function cerrarModalCapital() {
+  const m = $('modal-capital'); if (m) m.classList.remove('on');
+}
+
+async function sincronizarCapital() {
+  setBtn('btn-mc-sync', true, '');
+  try {
+    await _capitalCargarEstado(true); // fuerza una lectura fresca antes de decidir
+    if (CAPITAL_REFS.size > 0) {
+      toast('El Ledger ya tiene movimientos, no hace falta inicializar de nuevo', 'err');
+    } else {
+      const capJActual = (DB.finanzas && typeof DB.finanzas.capJ === 'number') ? DB.finanzas.capJ : 0;
+      await registrarMovimientoCapital('SALDO_INICIAL', capJActual, 'INIT', 'Sincronización inicial: partiendo del cálculo derivado vigente a la fecha de consolidación.');
+      toast('✓ Capital inicializado — el KPI ya lee del Ledger');
+    }
+    await cargarTodo();
+    await abrirModalCapital();
+  } catch (e) {
+    toast('Error: '+e.message, 'err');
+  }
+  setBtn('btn-mc-sync', false, '🔄 Inicializar Ledger con este valor');
+}
 
 async function handleGuardarMov() {
   const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
@@ -1623,11 +1773,16 @@ let DG_MODO = { bill: 'pct', cap: 'pct', fondo: 'pct' };
 // una sola operación sin colisionar. Reutiliza exactamente la misma categoría
 // 'CAPITALIZACION' para que el destino Capital dispare, vía registrarMovimientoCapital,
 // el mismo registro en CapitalMovimientos que ya usa el resto del ERP.
-async function _guardarDistribucionGanancia(idBase, destino, cat, monto, motivo) {
+// IMPORTANTE: "tipo" no es cosmético — el acumulador de Fondo de Emergencia en
+// cargarTodo() interpreta INGRESO como "entra al fondo" y EGRESO como "sale del
+// fondo". Cada destino debe pasar el tipo que corresponde a SU PROPIO acumulador,
+// no al hecho de que la plata "sale" de Ganancia (eso ya lo reflejan guardados/
+// caps/fondoGan, que no miran tipo).
+async function _guardarDistribucionGanancia(idBase, destino, cat, monto, motivo, tipo) {
   if (!(monto > 0)) return;
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   const idMov = idBase + '-' + destino;
-  await append('Caja!A:G', [[idMov, fecha, 'EGRESO', cat, motivo, monto, 'INTERNO']]);
+  await append('Caja!A:G', [[idMov, fecha, tipo, cat, motivo, monto, 'INTERNO']]);
   if (cat === 'CAPITALIZACION') {
     await registrarMovimientoCapital('CAPITALIZACION', monto, idMov, motivo);
   }
@@ -1665,7 +1820,11 @@ function dgRecalcular() {
   const monto = parseFloat(inMonto ? inMonto.value : 0) || 0;
   const { bill, cap, fondo } = dgLeerDestinos(monto);
   const total = bill + cap + fondo;
-  const restante = ganDisp - monto;
+  // CORRECCIÓN: antes esto era "ganDisp - monto" (cuánto queda del pozo total de
+  // Ganancia), que daba 0 apenas se usaba "toda la Ganancia" sin importar cómo se
+  // repartiera entre los 3 destinos. Lo que realmente ayuda mientras se tipea es
+  // cuánto del MONTO A DISTRIBUIR todavía no fue asignado a ningún destino.
+  const restante = monto - total;
 
   setText('dg-gan-disp', fmt(ganDisp));
   setText('dg-r-monto', fmt(monto));
@@ -1681,7 +1840,7 @@ function dgRecalcular() {
   const elTotal = $('dg-r-total');
   if (elTotal) elTotal.style.color = desajustado ? 'var(--red)' : '';
   const elRestante = $('dg-r-restante');
-  if (elRestante) elRestante.className = 'bal-val ' + (excedeGanancia ? 'red' : 'cyan');
+  if (elRestante) elRestante.className = 'bal-val ' + (Math.abs(restante) > 1 ? 'red' : 'cyan');
 
   const btn = $('btn-dist-gan');
   if (btn) btn.disabled = !(monto > 0) || desajustado || excedeGanancia || bill < 0 || cap < 0 || fondo < 0;
@@ -1705,9 +1864,9 @@ async function confirmarDistribucionGanancia() {
   try {
     const idBase = 'DISTGAN-' + Date.now();
     const motivoBase = 'Distribución de Ganancia Disponible';
-    if (bill > 0.5) await _guardarDistribucionGanancia(idBase, 'BILL', 'PASAR GANANCIA A BILLETERA', Math.round(bill), motivoBase + ' → Billetera');
-    if (cap > 0.5) await _guardarDistribucionGanancia(idBase, 'CAP', 'CAPITALIZACION', Math.round(cap), motivoBase + ' → Capital');
-    if (fondo > 0.5) await _guardarDistribucionGanancia(idBase, 'FONDO', 'FONDO EMERGENCIA (DESDE GANANCIA)', Math.round(fondo), motivoBase + ' → Fondo de Emergencia');
+    if (bill > 0.5) await _guardarDistribucionGanancia(idBase, 'BILL', 'PASAR GANANCIA A BILLETERA', Math.round(bill), motivoBase + ' → Billetera', 'EGRESO');
+    if (cap > 0.5) await _guardarDistribucionGanancia(idBase, 'CAP', 'CAPITALIZACION', Math.round(cap), motivoBase + ' → Capital', 'EGRESO');
+    if (fondo > 0.5) await _guardarDistribucionGanancia(idBase, 'FONDO', 'FONDO EMERGENCIA (DESDE GANANCIA)', Math.round(fondo), motivoBase + ' → Fondo de Emergencia', 'INGRESO');
 
     toast('✓ Ganancia distribuida');
     if (inMonto) inMonto.value = '';
