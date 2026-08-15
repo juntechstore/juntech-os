@@ -1738,7 +1738,25 @@ async function sincronizarCapital() {
       const yaAcumuladoEnLedger = CAPITAL_SALDO_ACTUAL || 0;
       const seed = capJActual - yaAcumuladoEnLedger;
       await registrarMovimientoCapital('SALDO_INICIAL', seed, 'INIT', 'Sincronización inicial: partiendo del cálculo derivado vigente a la fecha de consolidación (arrastre previo del Ledger descontado para no duplicar).');
-      toast('✓ Capital inicializado — el KPI ya lee del Ledger');
+
+      // --- VERIFICACIÓN OBLIGATORIA (no confiar ciegamente en el cache en memoria) ---
+      // Se vuelve a leer la hoja real, forzando el refetch, para confirmar que lo que
+      // efectivamente quedó escrito coincide con lo esperado. Si Google Sheets tarda en
+      // reflejar la escritura, o el append falló silenciosamente, ESTO lo detecta acá y
+      // avisa fuerte en vez de dejar el Ledger en un estado a medias sin que nadie lo note.
+      await _capitalCargarEstado(true);
+      if (!CAPITAL_REFS.has('INIT')) {
+        toast('⚠️ La inicialización no se confirmó en la planilla. Probá de nuevo en unos segundos — no toques nada más mientras tanto.', 'err');
+        setBtn('btn-mc-sync', false, '🔄 Inicializar Ledger con este valor');
+        return;
+      }
+      const verificado = CAPITAL_SALDO_ACTUAL || 0;
+      if (Math.abs(verificado - capJActual) > 1) {
+        toast('⚠️ El valor sembrado no coincide con lo esperado ($'+Math.round(verificado).toLocaleString('es-AR')+' vs $'+Math.round(capJActual).toLocaleString('es-AR')+'). Avisame antes de seguir — no confirmes nada más.', 'err');
+        setBtn('btn-mc-sync', false, '🔄 Inicializar Ledger con este valor');
+        return;
+      }
+      toast('✓ Capital inicializado y verificado — el KPI ya lee del Ledger');
     }
     await cargarTodo();
     await abrirModalCapital();
