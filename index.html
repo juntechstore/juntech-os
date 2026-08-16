@@ -1443,7 +1443,18 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     let html=''; for(const k in saldos){ if(saldos[k]!==0) html += `<div class="bal-row"><span class="bal-key">${k}</span><span class="bal-val ${saldos[k]>0?'cyan':'red'}">${fmt(saldos[k])}</span></div>`; }
     setHTML('caja-res', html || '<div class="empty">Sin movimientos</div>');
     
-    let hh=''; historial.slice(-12).reverse().forEach(m => { hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${m.tipo==='INGRESO'?'var(--cyan)':'var(--red)'}">${m.tipo==='INGRESO'?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`; });
+    // Para "PASAR GANANCIA A BILLETERA" y "CAPITALIZACION", el campo tipo (INGRESO/EGRESO)
+    // indica si la plata sale de Caja o no — NO si el destino (Billetera/Capital) sube o
+    // baja (esas dos categorías SIEMPRE suman a su destino, sin importar el tipo). Antes
+    // el log coloreaba/firmaba por tipo a secas, mostrando esos movimientos en rojo con
+    // "-" aunque en realidad estuvieran aumentando Billetera o Capital — confuso, aunque
+    // el monto real en cada KPI siempre estuvo bien calculado.
+    let hh=''; historial.slice(-12).reverse().forEach(m => {
+      const catU = str(m.cat).toUpperCase();
+      const esSiempreGanancia = catU.includes('PASAR GANANCIA') || catU.includes('CAPITALIZACION');
+      const esIngreso = esSiempreGanancia ? true : m.tipo==='INGRESO';
+      hh += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${m.motivo||m.cat}</span><span class="hist-amt" style="color:${esIngreso?'var(--cyan)':'var(--red)'}">${esIngreso?'+':'-'}${fmt(m.monto)}</span></div><div class="hist-meta">${m.cat} - ${m.metodo}</div></div>`;
+    });
     setHTML('home-hist', hh || '<div class="empty">Sin movimientos</div>');
     
     // CARGA DE DIRECTORIO
