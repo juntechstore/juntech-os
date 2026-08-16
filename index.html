@@ -344,6 +344,11 @@
 
         <div class="field"><label class="f-label">Persona / Cliente</label><input class="f-in" id="cta-persona" placeholder="Ej: Papás, Juan Perez" style="text-transform: uppercase;"></div>
 
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="cta-moneda-ars" onclick="ctaSetMoneda('ARS')">$ Pesos</button>
+          <button type="button" class="curr-btn" id="cta-moneda-usd" onclick="ctaSetMoneda('USD')">u$s Dólares</button>
+        </div>
+
         <div id="cta-bloque-cliente">
           <div class="field"><label class="f-label">Tipo de Operación</label>
             <select class="f-in" id="cta-operacion">
@@ -360,10 +365,6 @@
               <option value="YO_DEBO">Yo debo dinero (Deuda)</option>
               <option value="ME_DEBEN">Me deben a mí (Préstamo)</option>
             </select>
-          </div>
-          <div class="curr-toggle">
-            <button type="button" class="curr-btn on" id="cta-moneda-ars" onclick="ctaSetMoneda('ARS')">$ Pesos</button>
-            <button type="button" class="curr-btn" id="cta-moneda-usd" onclick="ctaSetMoneda('USD')">u$s Dólares</button>
           </div>
         </div>
 
@@ -387,9 +388,15 @@
         <div style="background:var(--s2); border-radius:8px; padding:10px; font-size:12px; margin-bottom:12px; text-align:center;">Cuenta: <b id="cta-pago-info">--</b></div>
         <input type="hidden" id="cta-pago-tipo">
         <input type="hidden" id="cta-pago-id">
+        <input type="hidden" id="cta-pago-moneda">
         <div class="f-row">
-          <div class="field"><label class="f-label">Monto del Pago</label><input class="f-in" id="cta-pago-monto" type="text" inputmode="decimal"></div>
-          <div class="field"><label class="f-label">Origen del Dinero</label><select class="f-in" id="cta-pago-origen"></select></div>
+          <div class="field"><label class="f-label" id="cta-pago-monto-label">Monto del Pago</label><input class="f-in" id="cta-pago-monto" type="text" inputmode="decimal"></div>
+          <div class="field"><label class="f-label">Origen del Dinero</label><select class="f-in" id="cta-pago-origen" onchange="ctaActualizarVisibilidadPago()"></select></div>
+        </div>
+        <div class="field fx-rate-row" id="cta-pago-rate-row">
+          <label class="f-label">Cotización de HOY para este pago</label>
+          <input class="f-in" id="cta-pago-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1235.50">
+          <div style="font-size:10px;color:var(--text2);margin-top:5px">Esto es SOLO para convertir a pesos lo que entra/sale de Caja. La deuda en dólares se descuenta siempre por el monto en u$s de arriba, tal cual.</div>
         </div>
         <div class="field"><label class="f-label">Concepto del Pago (Opcional)</label><input class="f-in" id="cta-pago-concepto" placeholder="Ej: Cuota 1/3"></div>
         <button class="btn" id="btn-cta-pago" onclick="confirmarPagoCuenta()" style="background:var(--cyan);color:#fff;margin-top:8px">✓ Confirmar Pago</button>
@@ -1023,13 +1030,16 @@ async function cargarPasivosPersonales() {
 // ================================================================
 
 let CTA_TIPO = 'CLIENTE';
-let CTA_MONEDA_PERSONAL = 'ARS';
+let CTA_MONEDA = 'ARS'; // aplica a Cliente y Personal por igual
 
 function renderCuentasUnificadas() {
   const cuentas = [];
   Object.keys(DB.saldosCC || {}).forEach(p => {
-    const saldo = DB.saldosCC[p];
-    if (Math.abs(saldo) > 0.01) cuentas.push({ tipo:'CLIENTE', id:p, nombre:p, concepto:null, saldo, moneda:'ARS' });
+    const s = DB.saldosCC[p] || {};
+    ['ARS','USD'].forEach(mon => {
+      const saldo = s[mon] || 0;
+      if (Math.abs(saldo) > 0.01) cuentas.push({ tipo:'CLIENTE', id:p, nombre:p, concepto:null, saldo, moneda:mon });
+    });
   });
   Object.keys(DB.pasivos || {}).forEach(id => {
     const d = DB.pasivos[id];
@@ -1047,7 +1057,7 @@ function renderCuentasUnificadas() {
     const color = c.saldo > 0 ? 'blue' : 'red';
     const pill = c.tipo === 'CLIENTE' ? '<span class="pill pill-blue" style="margin-left:6px;">Cliente</span>' : '<span class="pill pill-orange" style="margin-left:6px;">Personal</span>';
     const label = c.concepto ? `${c.concepto} (${c.nombre})` : c.nombre;
-    html += `<div class="bal-row cta-item" data-tipo="${c.tipo}" data-id="${c.id}" onclick="seleccionarCuenta(this,'${c.tipo}','${c.id}')" style="cursor:pointer;"><span class="bal-key">${label}${pill}</span><span class="bal-val ${color}">${signo}${formattedSaldo}</span></div>`;
+    html += `<div class="bal-row cta-item" data-tipo="${c.tipo}" data-id="${c.id}" onclick="seleccionarCuenta(this,'${c.tipo}','${c.id}','${c.moneda}')" style="cursor:pointer;"><span class="bal-key">${label}${pill}</span><span class="bal-val ${color}">${signo}${formattedSaldo}</span></div>`;
   });
   setHTML('cta-lista', html || '<div class="empty">Sin cuentas activas</div>');
 }
@@ -1060,19 +1070,28 @@ function ctaSetTipo(tipo) {
   const bloqueCliente = $('cta-bloque-cliente'), bloquePersonal = $('cta-bloque-personal');
   if (bloqueCliente) bloqueCliente.style.display = tipo==='CLIENTE' ? 'block' : 'none';
   if (bloquePersonal) bloquePersonal.style.display = tipo==='PERSONAL' ? 'block' : 'none';
-  const metodoBox = $('cta-metodo-box'), detalleBox = $('cta-detalle-box');
-  if (metodoBox) metodoBox.style.display = tipo==='CLIENTE' ? 'block' : 'none';
-  if (detalleBox) detalleBox.style.display = tipo==='CLIENTE' ? 'block' : 'none';
-  const lbl = $('cta-monto-label');
-  if (lbl) lbl.textContent = (tipo==='PERSONAL' && CTA_MONEDA_PERSONAL==='USD') ? 'Monto u$s' : 'Monto $';
+  ctaActualizarVisibilidadNueva();
 }
 
 function ctaSetMoneda(m) {
-  CTA_MONEDA_PERSONAL = m;
+  CTA_MONEDA = m;
   const bA = $('cta-moneda-ars'), bU = $('cta-moneda-usd');
   if (bA) bA.classList.toggle('on', m==='ARS');
   if (bU) bU.classList.toggle('on', m==='USD');
-  ctaSetTipo(CTA_TIPO);
+  ctaActualizarVisibilidadNueva();
+}
+
+// Un CARGO/DEUDA en dólares nunca toca Caja al crearse (misma regla que ya regía para
+// Personal): la conversión a pesos recién se define cuando se cobra/paga de verdad
+// (ver confirmarPagoCuenta). Así se evita inventar un tipo de cambio en el momento de
+// simplemente anotar una deuda que todavía nadie cobró ni pagó.
+function ctaActualizarVisibilidadNueva() {
+  const metodoBox = $('cta-metodo-box'), detalleBox = $('cta-detalle-box');
+  const mostrarCaja = CTA_TIPO === 'CLIENTE' && CTA_MONEDA === 'ARS';
+  if (metodoBox) metodoBox.style.display = mostrarCaja ? 'block' : 'none';
+  if (detalleBox) detalleBox.style.display = CTA_TIPO === 'CLIENTE' ? 'block' : 'none';
+  const lbl = $('cta-monto-label');
+  if (lbl) lbl.textContent = CTA_MONEDA === 'USD' ? 'Monto u$s' : 'Monto $';
 }
 
 function ctaLimpiarFormNueva() {
@@ -1088,10 +1107,12 @@ async function guardarCuentaNueva() {
   try {
     if (CTA_TIPO === 'CLIENTE') {
       const operacion = $('cta-operacion').value;
-      const metodo = $('cta-metodo').value;
+      // Un CARGO/ABONO en USD nunca toca Caja al crearse (ver ctaActualizarVisibilidadNueva) —
+      // se fuerza acá también por las dudas, sin depender de que el selector esté oculto.
+      const metodo = CTA_MONEDA === 'USD' ? 'NINGUNA' : $('cta-metodo').value;
       const detalle = $('cta-detalle').value;
       const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-      await append('CuentasCorrientes!A:E', [[fecha, persona, operacion, monto, detalle]]);
+      await append('CuentasCorrientes!A:F', [[fecha, persona, operacion, monto, detalle, CTA_MONEDA]]);
       if (metodo !== 'NINGUNA') {
         const idMov = 'CC-'+Math.floor(Math.random()*9999);
         if (operacion === 'CARGO') await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PRESTAMO CC', 'Préstamo a '+persona, monto, metodo]]);
@@ -1101,14 +1122,13 @@ async function guardarCuentaNueva() {
       const concepto = ($('cta-concepto').value || '').trim();
       if (!concepto) { toast('Falta el concepto', 'err'); setBtn('btn-cta-nueva', false, '💾 Registrar'); return; }
       const relacion = $('cta-relacion').value;
-      const moneda = CTA_MONEDA_PERSONAL;
       const idRows = await get('PasivosPersonales!B2:B');
       let maxId = 0;
       if (idRows) idRows.forEach(row => { const n = parseInt(str(row[0]).replace('PERS-',''),10); if(!isNaN(n) && n>maxId) maxId=n; });
       const nuevoId = 'PERS-' + String(maxId+1).padStart(4,'0');
       const fecha = new Date().toLocaleDateString('es-AR');
       await append('PasivosPersonales!A:I', [[
-        'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, moneda, relacion
+        'TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, CTA_MONEDA, relacion
       ]]);
     }
     toast('✓ Registrado');
@@ -1118,52 +1138,82 @@ async function guardarCuentaNueva() {
   setBtn('btn-cta-nueva', false, '💾 Registrar');
 }
 
-function seleccionarCuenta(el, tipo, id) {
+function seleccionarCuenta(el, tipo, id, moneda) {
   document.querySelectorAll('.cta-item').forEach(item => item.classList.remove('selected'));
   if (el) el.classList.add('selected');
 
   const origenSel = $('cta-pago-origen');
   if (tipo === 'CLIENTE') {
-    setText('cta-pago-info', id);
+    setText('cta-pago-info', id + (moneda === 'USD' ? ' (u$s)' : ''));
     if (origenSel) origenSel.innerHTML = '<option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option><option value="NINGUNA">NINGUNA (Solo apunte interno)</option>';
   } else {
     const d = DB.pasivos[id];
     if (!d) return;
-    setText('cta-pago-info', `${d.concepto} (${d.persona})`);
+    moneda = d.moneda;
+    setText('cta-pago-info', `${d.concepto} (${d.persona})` + (moneda === 'USD' ? ' (u$s)' : ''));
     if (origenSel) origenSel.innerHTML = '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
   }
   $('cta-pago-tipo').value = tipo;
   $('cta-pago-id').value = id;
+  $('cta-pago-moneda').value = moneda;
+  const lbl = $('cta-pago-monto-label');
+  if (lbl) lbl.textContent = moneda === 'USD' ? 'Monto del Pago (u$s)' : 'Monto del Pago';
+  ctaActualizarVisibilidadPago();
   const panel = $('cta-form-pago');
   if (panel) { panel.style.display = 'block'; panel.scrollIntoView({behavior:'smooth', block:'center'}); }
+}
+
+// Muestra el campo de cotización SOLO cuando hace falta: cuenta en USD + un método
+// que sí toca Caja (si es NINGUNA/EXTERNO no hay pesos que convertir, no se pide nada).
+function ctaActualizarVisibilidadPago() {
+  const moneda = $('cta-pago-moneda') ? $('cta-pago-moneda').value : 'ARS';
+  const origen = $('cta-pago-origen') ? $('cta-pago-origen').value : '';
+  const tocaCaja = origen !== 'NINGUNA' && origen !== 'EXTERNO';
+  const row = $('cta-pago-rate-row');
+  if (row) row.classList.toggle('on', moneda === 'USD' && tocaCaja);
 }
 
 function ctaOcultarFormPago() {
   const panel = $('cta-form-pago');
   if (panel) panel.style.display = 'none';
   document.querySelectorAll('.cta-item').forEach(item => item.classList.remove('selected'));
-  const m = $('cta-pago-monto'), c = $('cta-pago-concepto');
-  if (m) m.value = ''; if (c) c.value = '';
+  const m = $('cta-pago-monto'), c = $('cta-pago-concepto'), r = $('cta-pago-rate-val');
+  if (m) m.value = ''; if (c) c.value = ''; if (r) r.value = '';
 }
 
 async function confirmarPagoCuenta() {
   const tipo = $('cta-pago-tipo').value;
   const id = $('cta-pago-id').value;
+  const moneda = $('cta-pago-moneda') ? $('cta-pago-moneda').value : 'ARS';
   const monto = Math.abs(parseFloat(($('cta-pago-monto').value||'').toString().replace(',','.')) || 0);
   const origen = $('cta-pago-origen').value;
   const conceptoPago = ($('cta-pago-concepto').value || '').trim();
 
   if (!id || monto <= 0) { toast('Falta la cuenta o el monto', 'err'); return; }
 
+  // CORRECCIÓN: si la cuenta es en USD y el método elegido SÍ toca Caja, hace falta
+  // convertir a pesos con la cotización de HOY para ese movimiento puntual — antes se
+  // escribía el número de dólares tal cual en Caja, como si fueran pesos (ej. pagar
+  // u$s500 anotaba "$500" en Caja en vez de ≈$620.000). La deuda en sí SIEMPRE se
+  // descuenta por el monto en dólares real, sin convertir — solo cambia lo que entra/
+  // sale de Caja.
+  const tocaCaja = origen !== 'NINGUNA' && origen !== 'EXTERNO';
+  let montoCaja = monto;
+  if (moneda === 'USD' && tocaCaja) {
+    const cot = parseFloat(($('cta-pago-rate-val').value||'').toString().replace(',','.')) || 0;
+    if (!cot) { toast('Falta la cotización para convertir este pago a pesos', 'err'); return; }
+    montoCaja = Math.round(monto * cot);
+  }
+
   setBtn('btn-cta-pago', true, '');
   try {
     if (tipo === 'CLIENTE') {
       const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
       const det = conceptoPago || ('Pago de '+id);
-      await append('CuentasCorrientes!A:E', [[fecha, id, 'ABONO', monto, det]]);
+      await append('CuentasCorrientes!A:F', [[fecha, id, 'ABONO', monto, det, moneda]]);
       if (origen !== 'NINGUNA') {
         const idMov = 'CC-'+Math.floor(Math.random()*9999);
-        await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+id, monto, origen]]);
+        await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+id, montoCaja, origen]]);
       }
     } else {
       const deuda = DB.pasivos[id];
@@ -1179,7 +1229,7 @@ async function confirmarPagoCuenta() {
         const categoria = esUnCobro ? 'PERSONAL (INGRESO)' : 'PERSONAL (GASTO)';
         const metodo = origen === 'JOACO' ? 'TRANSFERENCIA' : origen;
         const detalle = esUnCobro ? `Cobro de ${deuda.persona} (${deuda.concepto})` : `Pago a ${deuda.persona} (${deuda.concepto})`;
-        await _guardarMovimientoEnCaja(tipoCaja, categoria, detalle, monto, metodo);
+        await _guardarMovimientoEnCaja(tipoCaja, categoria, detalle, montoCaja, metodo);
       }
     }
     toast('✓ Pago registrado');
@@ -1188,8 +1238,6 @@ async function confirmarPagoCuenta() {
   } catch(e) { toast('Error: '+e.message, 'err'); }
   setBtn('btn-cta-pago', false, '✓ Confirmar Pago');
 }
-
-// --- Lógica de Auditoría de Stock (V1) ---
 
 // --- Lógica de Auditoría de Stock (V1) ---
 function prepararAuditoria(modo) {
@@ -1284,19 +1332,20 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       }
     });
     
-    let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:E'); } catch(e){}
+    let ccRows = []; try { ccRows = await get('CuentasCorrientes!A2:F'); } catch(e){}
     DB.saldosCC = {}; let plataEnCalle = 0;
     ccRows.forEach(r => {
       if(!r[1]) return;
       const persona = str(r[1]).toUpperCase(), tipo = str(r[2]).toUpperCase(), monto = num(r[3]), detalle = str(r[4]);
-      if(!DB.saldosCC[persona]) DB.saldosCC[persona] = 0;
-      if(tipo === 'CARGO') DB.saldosCC[persona] += monto;
-      if(tipo === 'ABONO') DB.saldosCC[persona] -= monto;
+      const moneda = str(r[5]).toUpperCase() === 'USD' ? 'USD' : 'ARS'; // sin dato = ARS (compatible con filas viejas)
+      if(!DB.saldosCC[persona]) DB.saldosCC[persona] = { ARS: 0, USD: 0 };
+      if(tipo === 'CARGO') DB.saldosCC[persona][moneda] += monto;
+      if(tipo === 'ABONO') DB.saldosCC[persona][moneda] -= monto;
       
       if(!DB.clientes[persona]) DB.clientes[persona] = { totalComprado: 0, items: {}, ultCompraStr: '-', ultCompraTs: 0, historial: [] };
       let pDate = parseExcelDate(r[0]);
       let color = tipo === 'ABONO' ? 'color:#39d353' : 'color:#f85149';
-      DB.clientes[persona].historial.push({ fecha: pDate.s, tipo: tipo, detalle: detalle, monto: monto, estilo: color, ts: pDate.t });
+      DB.clientes[persona].historial.push({ fecha: pDate.s, tipo: tipo, detalle: detalle, monto: monto, moneda, estilo: color, ts: pDate.t });
     });
     
     Object.keys(DB.clientes).forEach(c => { DB.clientes[c].historial.sort((a,b) => a.ts - b.ts); });
@@ -1304,8 +1353,12 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     let deudasACobrar = 0;
     let deudasAPagar = 0;
 
+    // IMPORTANTE: plataEnCalle (que alimenta directamente la fórmula de Capital) suma
+    // SOLO la parte en pesos (ARS). La parte en dólares queda registrada y visible en
+    // "Cuentas Activas" (informativo/activo del negocio), pero nunca se mezcla con el
+    // cálculo de Capital en pesos — misma regla que ya regía para deudas personales.
     Object.keys(DB.saldosCC).forEach(p => {
-      const saldo = DB.saldosCC[p];
+      const saldo = DB.saldosCC[p].ARS || 0;
       if(saldo !== 0){
         if(saldo > 0) deudasACobrar += saldo;
         else deudasAPagar += saldo;
@@ -1480,6 +1533,21 @@ function exportarStockCopiar() {
   navigator.clipboard.writeText(txt).then(() => toast(`✓ Stock copiado (${count} ítems)`)).catch(() => toast('Error al copiar', 'err'));
 }
 
+function verHistorial(nombre, cliId) {
+  const div = $('hist-'+cliId);
+  if (!div) return;
+  if (div.style.display === 'block') { div.style.display = 'none'; return; }
+  const cliente = DB.clientes[nombre];
+  if (!cliente || !cliente.historial.length) { div.innerHTML = '<div class="empty" style="font-size:11px;">Sin historial.</div>'; div.style.display = 'block'; return; }
+  let html = '';
+  cliente.historial.forEach(h => {
+    const montoTxt = h.moneda === 'USD' ? fmtUSD(h.monto) : fmt(h.monto);
+    html += `<div style="display:flex; justify-content:space-between; font-size:11px; padding:4px 0; border-bottom:1px solid var(--border);"><span style="${h.estilo}">${h.fecha} — ${h.tipo}${h.detalle ? ' ('+h.detalle+')' : ''}</span><span style="${h.estilo}">${montoTxt}</span></div>`;
+  });
+  div.innerHTML = html;
+  div.style.display = 'block';
+}
+
 function buscarCliente(val) {
    clearTimeout(timeoutCRM);
    timeoutCRM = setTimeout(() => {
@@ -1493,10 +1561,13 @@ function buscarCliente(val) {
              for(let i in d.items) { if(d.items[i] > maxC) { maxC = d.items[i]; topProd = i; } }
              let dias = '-';
              if(d.ultCompraTs > 0) { const diff = Date.now() - d.ultCompraTs; dias = Math.floor(diff / (1000*60*60*24)); }
-             const saldoCC = DB.saldosCC[c] || 0;
+             const saldosPersona = DB.saldosCC[c] || {ARS:0, USD:0};
+             const saldoCC = saldosPersona.ARS || 0;
+             const saldoCCUSD = saldosPersona.USD || 0;
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+             const ccUsdTxt = saldoCCUSD ? `<br><span style="font-size:11px;">${fmtUSD(Math.abs(saldoCCUSD))} ${saldoCCUSD > 0 ? '(a favor)' : '(deudor)'}</span>` : '';
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}${ccUsdTxt}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
