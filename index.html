@@ -477,6 +477,37 @@
         <button class="btn btn-purple" id="btn-dist-gan" onclick="confirmarDistribucionGanancia()" style="margin-top:10px;">💾 Confirmar Distribución</button>
       </div>
 
+      <div class="card" style="border-left: 4px solid var(--orange)">
+        <div class="card-title" style="color:var(--orange)">💵 Caja en Dólares (Opción B)</div>
+        <div class="bal-row" style="margin-bottom:8px;">
+          <span class="bal-key">Tenés en USD</span>
+          <span class="bal-val orange" id="usd-caja-saldo">—</span>
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Esta plata NUNCA se mezcla con Capital, Ganancia ni Caja en pesos — es un pozo separado, en dólares reales.</div>
+
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="usd-mov-compra" onclick="usdSetModo('COMPRA')">Comprar USD</button>
+          <button type="button" class="curr-btn" id="usd-mov-venta" onclick="usdSetModo('VENTA')">Vender USD</button>
+          <button type="button" class="curr-btn" id="usd-mov-ajuste" onclick="usdSetModo('AJUSTE')">Ajuste</button>
+        </div>
+
+        <div class="field"><label class="f-label" id="usd-monto-label">Monto a comprar (u$s)</label><input class="f-in" id="usd-monto" type="text" inputmode="decimal" placeholder="Ej: 500" oninput="usdPreview()"></div>
+
+        <div class="field fx-rate-row on" id="usd-rate-row">
+          <label class="f-label" id="usd-rate-label">Cotización a la que comprás</label>
+          <input class="f-in" id="usd-rate-val" type="text" inputmode="decimal" placeholder="Ej: 1250" oninput="usdPreview()">
+          <div class="usd-tag" id="usd-preview"></div>
+        </div>
+
+        <div class="field" id="usd-metodo-box"><label class="f-label" id="usd-metodo-label">Con qué pesos pagás</label>
+          <select class="f-in" id="usd-metodo"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option></select>
+        </div>
+
+        <div class="field"><label class="f-label">Motivo (Opcional)</label><input class="f-in" id="usd-motivo" placeholder="Ej: Compra en cueva"></div>
+
+        <button class="btn" id="btn-usd-mov" onclick="confirmarMovimientoUSD()" style="background:var(--orange);color:#fff;">💾 Registrar</button>
+      </div>
+
       <div class="card">
         <div class="card-title">Registrar Movimiento de Caja Ordinario</div>
         <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
@@ -814,27 +845,32 @@ let CAPITAL_HOJA_VERIFICADA = false; // evita repetir la verificación/creación
 // de "existe pero está vacía"), y el append() de esta app tampoco revisaba si la
 // escritura funcionaba — así que cada intento de anotar un movimiento fallaba sin que
 // nadie se enterara, mientras el resto del código asumía que sí se había guardado.
-// Esta función crea la hoja (con sus encabezados) la primera vez que hace falta, así
-// el Ledger deja de fallar en silencio sin que el usuario tenga que hacer nada a mano.
-async function asegurarHojaCapital() {
-  if (CAPITAL_HOJA_VERIFICADA) return;
+// Esta función crea cualquier hoja (con sus encabezados) la primera vez que hace falta,
+// así ningún módulo nuevo puede volver a fallar en silencio por esto.
+let _HOJAS_VERIFICADAS = new Set();
+async function asegurarHoja(nombreHoja, encabezados) {
+  if (_HOJAS_VERIFICADAS.has(nombreHoja)) return;
   try {
     const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties.title`, { headers:{ 'Authorization':'Bearer '+accessToken } });
     const data = await r.json();
-    const existe = (data.sheets || []).some(s => s.properties && s.properties.title === 'CapitalMovimientos');
+    const existe = (data.sheets || []).some(s => s.properties && s.properties.title === nombreHoja);
     if (!existe) {
       const rc = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer '+accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: [{ addSheet: { properties: { title: 'CapitalMovimientos' } } }] })
+        body: JSON.stringify({ requests: [{ addSheet: { properties: { title: nombreHoja } } }] })
       });
-      if (!rc.ok) { console.error('No se pudo crear la hoja CapitalMovimientos', await rc.text()); return; }
-      await append('CapitalMovimientos!A1', [['Fecha','Evento','Monto','Referencia','SaldoResultante','Observaciones']]);
+      if (!rc.ok) { console.error('No se pudo crear la hoja '+nombreHoja, await rc.text()); return; }
+      if (encabezados && encabezados.length) await append(nombreHoja+'!A1', [encabezados]);
     }
-    CAPITAL_HOJA_VERIFICADA = true;
+    _HOJAS_VERIFICADAS.add(nombreHoja);
   } catch (e) {
-    console.error('asegurarHojaCapital falló', e);
+    console.error('asegurarHoja falló para '+nombreHoja, e);
   }
+}
+async function asegurarHojaCapital() {
+  await asegurarHoja('CapitalMovimientos', ['Fecha','Evento','Monto','Referencia','SaldoResultante','Observaciones']);
+  CAPITAL_HOJA_VERIFICADA = true;
 }
 
 // Carga en memoria las referencias existentes y el último saldo persistido.
@@ -1143,15 +1179,16 @@ function seleccionarCuenta(el, tipo, id, moneda) {
   if (el) el.classList.add('selected');
 
   const origenSel = $('cta-pago-origen');
+  const opcionUSD = '<option value="CAJA_USD">💵 CAJA USD (Guardar como dólares reales)</option>';
   if (tipo === 'CLIENTE') {
     setText('cta-pago-info', id + (moneda === 'USD' ? ' (u$s)' : ''));
-    if (origenSel) origenSel.innerHTML = '<option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option><option value="NINGUNA">NINGUNA (Solo apunte interno)</option>';
+    if (origenSel) origenSel.innerHTML = (moneda === 'USD' ? opcionUSD : '') + '<option>NX</option><option>EFECTIVO</option><option>MERCADO PAGO</option><option>TRANSFERENCIA</option><option value="NINGUNA">NINGUNA (Solo apunte interno)</option>';
   } else {
     const d = DB.pasivos[id];
     if (!d) return;
     moneda = d.moneda;
     setText('cta-pago-info', `${d.concepto} (${d.persona})` + (moneda === 'USD' ? ' (u$s)' : ''));
-    if (origenSel) origenSel.innerHTML = '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
+    if (origenSel) origenSel.innerHTML = (moneda === 'USD' ? opcionUSD : '') + '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
   }
   $('cta-pago-tipo').value = tipo;
   $('cta-pago-id').value = id;
@@ -1164,13 +1201,13 @@ function seleccionarCuenta(el, tipo, id, moneda) {
 }
 
 // Muestra el campo de cotización SOLO cuando hace falta: cuenta en USD + un método
-// que sí toca Caja (si es NINGUNA/EXTERNO no hay pesos que convertir, no se pide nada).
+// que convierte a pesos (si es NINGUNA/EXTERNO/CAJA_USD no hay pesos que convertir).
 function ctaActualizarVisibilidadPago() {
   const moneda = $('cta-pago-moneda') ? $('cta-pago-moneda').value : 'ARS';
   const origen = $('cta-pago-origen') ? $('cta-pago-origen').value : '';
-  const tocaCaja = origen !== 'NINGUNA' && origen !== 'EXTERNO';
+  const tocaConversionAPesos = origen !== 'NINGUNA' && origen !== 'EXTERNO' && origen !== 'CAJA_USD';
   const row = $('cta-pago-rate-row');
-  if (row) row.classList.toggle('on', moneda === 'USD' && tocaCaja);
+  if (row) row.classList.toggle('on', moneda === 'USD' && tocaConversionAPesos);
 }
 
 function ctaOcultarFormPago() {
@@ -1191,15 +1228,15 @@ async function confirmarPagoCuenta() {
 
   if (!id || monto <= 0) { toast('Falta la cuenta o el monto', 'err'); return; }
 
-  // CORRECCIÓN: si la cuenta es en USD y el método elegido SÍ toca Caja, hace falta
-  // convertir a pesos con la cotización de HOY para ese movimiento puntual — antes se
-  // escribía el número de dólares tal cual en Caja, como si fueran pesos (ej. pagar
-  // u$s500 anotaba "$500" en Caja en vez de ≈$620.000). La deuda en sí SIEMPRE se
-  // descuenta por el monto en dólares real, sin convertir — solo cambia lo que entra/
-  // sale de Caja.
-  const tocaCaja = origen !== 'NINGUNA' && origen !== 'EXTERNO';
+  // CORRECCIÓN: si la cuenta es en USD y el método elegido convierte a pesos, hace
+  // falta la cotización de HOY para ese movimiento puntual — antes se escribía el
+  // número de dólares tal cual en Caja, como si fueran pesos (ej. pagar u$s500
+  // anotaba "$500" en Caja en vez de ≈$620.000). La deuda en sí SIEMPRE se descuenta
+  // por el monto en dólares real, sin convertir. "CAJA_USD" (Opción B) tampoco
+  // necesita cotización: los dólares se guardan como dólares, no se convierten a nada.
+  const tocaPesoCaja = origen !== 'NINGUNA' && origen !== 'EXTERNO' && origen !== 'CAJA_USD';
   let montoCaja = monto;
-  if (moneda === 'USD' && tocaCaja) {
+  if (moneda === 'USD' && tocaPesoCaja) {
     const cot = parseFloat(($('cta-pago-rate-val').value||'').toString().replace(',','.')) || 0;
     if (!cot) { toast('Falta la cotización para convertir este pago a pesos', 'err'); return; }
     montoCaja = Math.round(monto * cot);
@@ -1207,11 +1244,15 @@ async function confirmarPagoCuenta() {
 
   setBtn('btn-cta-pago', true, '');
   try {
+    if (origen === 'CAJA_USD') { await asegurarHoja('CajaUSD', ['Fecha','Tipo','Categoria','Motivo','Monto']); }
+
     if (tipo === 'CLIENTE') {
       const fecha = new Date().toLocaleDateString('es-AR')+' '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
       const det = conceptoPago || ('Pago de '+id);
       await append('CuentasCorrientes!A:F', [[fecha, id, 'ABONO', monto, det, moneda]]);
-      if (origen !== 'NINGUNA') {
+      if (origen === 'CAJA_USD') {
+        await append('CajaUSD!A:E', [[fecha, 'INGRESO', 'COBRO CC', det, monto]]);
+      } else if (origen !== 'NINGUNA') {
         const idMov = 'CC-'+Math.floor(Math.random()*9999);
         await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'COBRO CC', 'Pago de '+id, montoCaja, origen]]);
       }
@@ -1223,7 +1264,10 @@ async function confirmarPagoCuenta() {
       await append('PasivosPersonales!A:I', [[
         'TPER-'+Date.now(), id, fecha, 'PAGO', concepto, deuda.persona, -monto, deuda.moneda, deuda.relacion
       ]]);
-      if (origen !== 'EXTERNO') {
+      if (origen === 'CAJA_USD') {
+        const detalle = `${deuda.relacion === 'ME_DEBEN' ? 'Cobro' : 'Pago'} de ${deuda.persona} (${deuda.concepto})`;
+        await append('CajaUSD!A:E', [[fecha, deuda.relacion === 'ME_DEBEN' ? 'INGRESO' : 'EGRESO', 'PERSONAL', detalle, monto]]);
+      } else if (origen !== 'EXTERNO') {
         const esUnCobro = deuda.relacion === 'ME_DEBEN';
         const tipoCaja = esUnCobro ? 'INGRESO' : 'EGRESO';
         const categoria = esUnCobro ? 'PERSONAL (INGRESO)' : 'PERSONAL (GASTO)';
@@ -1234,6 +1278,7 @@ async function confirmarPagoCuenta() {
     }
     toast('✓ Pago registrado');
     ctaOcultarFormPago();
+    if (origen === 'CAJA_USD') await actualizarSaldoCajaUSD();
     await cargarTodo();
   } catch(e) { toast('Error: '+e.message, 'err'); }
   setBtn('btn-cta-pago', false, '✓ Confirmar Pago');
@@ -1439,6 +1484,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capMostrado)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
     setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
     if (typeof dgRecalcular === 'function') dgRecalcular();
+    if (typeof actualizarSaldoCajaUSD === 'function') actualizarSaldoCajaUSD();
     
     let html=''; for(const k in saldos){ if(saldos[k]!==0) html += `<div class="bal-row"><span class="bal-key">${k}</span><span class="bal-val ${saldos[k]>0?'cyan':'red'}">${fmt(saldos[k])}</span></div>`; }
     setHTML('caja-res', html || '<div class="empty">Sin movimientos</div>');
@@ -2056,6 +2102,111 @@ async function confirmarDistribucionGanancia() {
 }
 // ================================================================
 // FIN MÓDULO DISTRIBUCIÓN DE GANANCIA
+// ================================================================
+
+// ================================================================
+// MÓDULO CAJA EN DÓLARES (Opción B — aditivo, primera pieza)
+// ----------------------------------------------------------------
+// Pozo de dólares REALES, completamente separado de Capital/Ganancia/Caja
+// en pesos — nunca se mezclan, nunca se convierte "para atrás". Vive en su
+// propia hoja "CajaUSD" (se crea sola si no existe, mismo mecanismo que
+// CapitalMovimientos). Dos operaciones por ahora:
+//   - "Comprar USD": salen pesos de la Caja de siempre (EGRESO normal, como
+//     cualquier gasto) y entran dólares acá, a la cotización que pagaste.
+//   - "Ajuste": para dólares que YA tenías (no vinieron de una conversión
+//     recién hecha) — se anotan directo, sin tocar la Caja en pesos para
+//     nada. Esto es lo que resuelve "esta plata no entra en ningún lado".
+// ================================================================
+let USD_MODO = 'COMPRA';
+
+function usdSetModo(m) {
+  USD_MODO = m;
+  const bC = $('usd-mov-compra'), bV = $('usd-mov-venta'), bA = $('usd-mov-ajuste');
+  if (bC) bC.classList.toggle('on', m==='COMPRA');
+  if (bV) bV.classList.toggle('on', m==='VENTA');
+  if (bA) bA.classList.toggle('on', m==='AJUSTE');
+
+  const lbl = $('usd-monto-label');
+  if (lbl) lbl.textContent = m==='COMPRA' ? 'Monto a comprar (u$s)' : (m==='VENTA' ? 'Monto a vender (u$s)' : 'Cuánto u$s ya tenés');
+
+  const rateRow = $('usd-rate-row'), rateLbl = $('usd-rate-label'), metodoBox = $('usd-metodo-box'), metodoLbl = $('usd-metodo-label');
+  const tocaConversion = m==='COMPRA' || m==='VENTA';
+  if (rateRow) rateRow.classList.toggle('on', tocaConversion);
+  if (rateLbl) rateLbl.textContent = m==='COMPRA' ? 'Cotización a la que comprás' : 'Cotización a la que vendés';
+  if (metodoBox) metodoBox.style.display = tocaConversion ? 'block' : 'none';
+  if (metodoLbl) metodoLbl.textContent = m==='COMPRA' ? 'Con qué pesos pagás' : 'A qué caja entran los pesos';
+  usdPreview();
+}
+
+function usdPreview() {
+  const prev = $('usd-preview');
+  if (!prev) return;
+  const monto = parseFloat(($('usd-monto').value||'').toString().replace(',','.'))||0;
+  const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.'))||0;
+  if (monto>0 && tc>0) {
+    if (USD_MODO==='COMPRA') prev.textContent = `Vas a pagar ≈ ${fmt(monto*tc)} pesos`;
+    else if (USD_MODO==='VENTA') prev.textContent = `Vas a recibir ≈ ${fmt(monto*tc)} pesos`;
+    else prev.textContent = '';
+  } else prev.textContent = '';
+}
+
+async function cargarSaldoCajaUSD() {
+  await asegurarHoja('CajaUSD', ['Fecha','Tipo','Categoria','Motivo','Monto']);
+  let rows = []; try { rows = await get('CajaUSD!A2:E'); } catch(e) {}
+  let saldo = 0;
+  rows.forEach(r => { if(!r[0]) return; const tipo=str(r[1]).toUpperCase(), monto=num(r[4]); saldo += tipo==='INGRESO'?monto:-monto; });
+  return saldo;
+}
+
+async function actualizarSaldoCajaUSD() {
+  try {
+    const saldo = await cargarSaldoCajaUSD();
+    setText('usd-caja-saldo', fmtUSD(saldo));
+  } catch(e) { console.error('No se pudo cargar el saldo de CajaUSD', e); }
+}
+
+async function confirmarMovimientoUSD() {
+  const monto = Math.abs(parseFloat(($('usd-monto').value||'').toString().replace(',','.')) || 0);
+  if (!(monto > 0)) { toast('Ingresá un monto', 'err'); return; }
+
+  setBtn('btn-usd-mov', true, '');
+  try {
+    await asegurarHoja('CajaUSD', ['Fecha','Tipo','Categoria','Motivo','Monto']);
+    const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
+    const motivo = ($('usd-motivo').value || '').trim();
+
+    if (USD_MODO === 'COMPRA') {
+      const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.')) || 0;
+      if (!tc) { toast('Falta la cotización', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
+      const metodo = $('usd-metodo').value;
+      const montoPesos = Math.round(monto * tc);
+      await append('CajaUSD!A:E', [[fecha, 'INGRESO', 'COMPRA DE DOLARES', motivo || ('Compra a $'+tc), monto]]);
+      const idMov = 'USD-'+Date.now();
+      await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'COMPRA DE DOLARES', motivo || ('Compra de u$s'+monto+' a $'+tc), montoPesos, metodo]]);
+    } else if (USD_MODO === 'VENTA') {
+      const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.')) || 0;
+      if (!tc) { toast('Falta la cotización', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
+      const saldoActual = await cargarSaldoCajaUSD();
+      if (monto > saldoActual + 0.01) { toast('No tenés esa cantidad de dólares disponibles', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
+      const metodo = $('usd-metodo').value;
+      const montoPesos = Math.round(monto * tc);
+      await append('CajaUSD!A:E', [[fecha, 'EGRESO', 'VENTA DE DOLARES', motivo || ('Venta a $'+tc), monto]]);
+      const idMov = 'USD-'+Date.now();
+      await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'VENTA DE DOLARES', motivo || ('Venta de u$s'+monto+' a $'+tc), montoPesos, metodo]]);
+    } else {
+      await append('CajaUSD!A:E', [[fecha, 'INGRESO', 'AJUSTE MANUAL', motivo || 'Ajuste: dólares que ya tenías', monto]]);
+    }
+
+    toast('✓ Registrado');
+    $('usd-monto').value = ''; $('usd-motivo').value = ''; $('usd-rate-val').value = '';
+    usdPreview();
+    await actualizarSaldoCajaUSD();
+    if (USD_MODO === 'COMPRA' || USD_MODO === 'VENTA') await cargarTodo(); // la pata en pesos sí afecta Caja/Balances
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-usd-mov', false, '💾 Registrar');
+}
+// ================================================================
+// FIN MÓDULO CAJA EN DÓLARES
 // ================================================================
 
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
