@@ -672,7 +672,14 @@
     <div class="bal-row"><span class="bal-key">Ledger de Capital</span><span class="bal-val" id="mc-nuevo">—</span></div>
     <div class="bal-row"><span class="bal-key">Diferencia</span><span class="bal-val" id="mc-diff">—</span></div>
     <div id="mc-estado" style="font-size:12px; margin:12px 0; padding:10px; border-radius:8px; line-height:1.4;"></div>
-    <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none;">🔄 Inicializar Ledger con este valor</button>
+    <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:14px 0 6px 0; font-weight:700;">Cómo se compone el cálculo viejo</div>
+    <div class="bal-row"><span class="bal-key">Efectivo + Cobrar (activos)</span><span class="bal-val" id="mc-activos">—</span></div>
+    <div class="bal-row"><span class="bal-key">− Billetera Joaco</span><span class="bal-val" id="mc-bill">—</span></div>
+    <div class="bal-row"><span class="bal-key">− Ganancia Disponible</span><span class="bal-val" id="mc-gan">—</span></div>
+    <div class="bal-row"><span class="bal-key">− Fondo (desde Ganancia)</span><span class="bal-val" id="mc-fondogan">—</span></div>
+    <div class="bal-row"><span class="bal-key">+ Ajuste de Inventario</span><span class="bal-val" id="mc-ajuste">—</span></div>
+    <div style="font-size:10px;color:var(--text2);margin-top:6px;">"Ajuste de Inventario" es la plata que representa mercadería de más o de menos encontrada en conteos de stock — nunca aparece en ningún otro casillero, por eso si sumás los 4 KPI de Home a mano, esta es la diferencia que "falta".</div>
+    <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none; margin-top:12px;">🔄 Inicializar Ledger con este valor</button>
     <button type="button" class="btn btn-ghost" onclick="cerrarModalCapital()">Cerrar</button>
   </div>
 </div>
@@ -1479,7 +1486,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     // Se guarda en DB.finanzas (existía vacío, sin uso) para que el módulo de Distribución
     // de Ganancia pueda validar montos contra la Ganancia Disponible real y vigente, y para
     // que el modal de Auditoría de Capital pueda comparar ambos valores sin recalcular nada.
-    DB.finanzas = { ganD, capJ, capLedger, capitalLedgerActivo, fondo, billJ, activosTotales };
+    DB.finanzas = { ganD, capJ, capLedger, capitalLedgerActivo, fondo, fondoGan, billJ, activosTotales, ajusteInventarioTotal };
     
     setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capMostrado)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
     setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
@@ -1863,6 +1870,13 @@ async function abrirModalCapital() {
   setText('mc-viejo', fmt(viejo));
   setText('mc-nuevo', fmt(nuevo));
   setText('mc-diff', fmt(diff));
+
+  const F = DB.finanzas || {};
+  setText('mc-activos', fmt(F.activosTotales || 0));
+  setText('mc-bill', fmt(F.billJ || 0));
+  setText('mc-gan', fmt(F.ganD || 0));
+  setText('mc-fondogan', fmt(F.fondoGan || 0));
+  setText('mc-ajuste', fmt(F.ajusteInventarioTotal || 0));
 
   if (!CAPITAL_REFS.has('INIT')) {
     if (estadoEl) {
