@@ -679,6 +679,7 @@
     <div class="bal-row"><span class="bal-key">− Fondo (desde Ganancia)</span><span class="bal-val" id="mc-fondogan">—</span></div>
     <div class="bal-row"><span class="bal-key">+ Ajuste de Inventario</span><span class="bal-val" id="mc-ajuste">—</span></div>
     <div style="font-size:10px;color:var(--text2);margin-top:6px;">"Ajuste de Inventario" es la plata que representa mercadería de más o de menos encontrada en conteos de stock — nunca aparece en ningún otro casillero, por eso si sumás los 4 KPI de Home a mano, esta es la diferencia que "falta".</div>
+    <div id="mc-check" style="font-size:12px; font-weight:700; margin-top:12px; padding:10px; border-radius:8px; background:var(--s2); line-height:1.4;">—</div>
     <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none; margin-top:12px;">🔄 Inicializar Ledger con este valor</button>
     <button type="button" class="btn btn-ghost" onclick="cerrarModalCapital()">Cerrar</button>
   </div>
@@ -1877,6 +1878,22 @@ async function abrirModalCapital() {
   setText('mc-gan', fmt(F.ganD || 0));
   setText('mc-fondogan', fmt(F.fondoGan || 0));
   setText('mc-ajuste', fmt(F.ajusteInventarioTotal || 0));
+
+  // VERIFICACIÓN AUTOMÁTICA: reconstruye Activos Totales a partir de los 5 términos y
+  // lo compara contra el número real. Así nadie tiene que volver a sumar los 4 KPI de
+  // Home a mano (y olvidarse del Ajuste de Inventario, que no tiene su propio KPI).
+  const reconstruido = (F.capJ||0) + (F.billJ||0) + (F.ganD||0) + (F.fondoGan||0) - (F.ajusteInventarioTotal||0);
+  const diffCheck = (F.activosTotales||0) - reconstruido;
+  const elCheck = $('mc-check');
+  if (elCheck) {
+    if (Math.abs(diffCheck) < 2) {
+      elCheck.style.color = 'var(--cyan)';
+      elCheck.textContent = '✓ Cierra perfecto: los 5 términos de arriba explican el 100% de tus Activos Totales ('+fmt(F.activosTotales||0)+'). No falta ni sobra nada.';
+    } else {
+      elCheck.style.color = 'var(--red)';
+      elCheck.textContent = '⚠️ No cierra: los 5 términos suman '+fmt(reconstruido)+' pero tus Activos Totales son '+fmt(F.activosTotales||0)+' (diferencia de '+fmt(diffCheck)+'). Avisame con este número antes de seguir operando.';
+    }
+  }
 
   if (!CAPITAL_REFS.has('INIT')) {
     if (estadoEl) {
