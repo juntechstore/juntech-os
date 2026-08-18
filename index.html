@@ -426,7 +426,6 @@
         <div class="field">
           <label class="f-label">Monto a distribuir ($)</label>
           <input class="f-in" id="dg-monto" type="text" inputmode="decimal" placeholder="Ej: 100000" oninput="dgRecalcular()">
-          <div style="font-size:10px;color:var(--text2);margin-top:5px">Podés poner un monto negativo (ej: -44000) para corregir/revertir un error, restando de cada destino en vez de sumar.</div>
         </div>
         <button type="button" class="btn btn-ghost" onclick="dgUsarTodaGanancia()" style="border-color:var(--purple); color:var(--purple); margin-bottom:14px; font-size:0.85rem;">Usar toda la Ganancia Disponible</button>
 
@@ -2097,11 +2096,7 @@ let DG_MODO = { bill: 'pct', cap: 'pct', fondo: 'pct' };
 // no al hecho de que la plata "sale" de Ganancia (eso ya lo reflejan guardados/
 // caps/fondoGan, que no miran tipo).
 async function _guardarDistribucionGanancia(idBase, destino, cat, monto, motivo, tipo) {
-  // Antes esto exigía monto > 0, bloqueando escribir un destino negativo
-  // (necesario en modo corrección/reversa). El motor de abajo (guardados/caps/
-  // fondoGan/registrarMovimientoCapital) ya suma el monto tal cual, con signo,
-  // así que un monto negativo revierte correctamente lo que corresponda.
-  if (!monto || Math.abs(monto) < 0.5) return;
+  if (!(monto > 0)) return;
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   const idMov = idBase + '-' + destino;
   await append('Caja!A:G', [[idMov, fecha, tipo, cat, motivo, monto, 'INTERNO']]);
@@ -2113,10 +2108,7 @@ async function _guardarDistribucionGanancia(idBase, destino, cat, monto, motivo,
 function dgUsarTodaGanancia() {
   const ganDisp = (DB.finanzas && typeof DB.finanzas.ganD === 'number') ? DB.finanzas.ganD : 0;
   const inMonto = $('dg-monto');
-  // Antes se recortaba a 0 con Math.max(0, ...), lo que impedía usar este botón
-  // para revertir una Ganancia Disponible negativa (por un error de carga). Ahora
-  // se usa el valor real, positivo o negativo, tal cual está.
-  if (inMonto) inMonto.value = Math.round(ganDisp);
+  if (inMonto) inMonto.value = Math.max(0, Math.round(ganDisp));
   dgRecalcular();
 }
 
@@ -2130,8 +2122,6 @@ function dgSetModo(destino, modo) {
 }
 
 // Resuelve los 3 destinos a pesos, según el modo (%/​$) elegido por destino.
-// Con un monto negativo (corrección/reversa) y porcentajes positivos, esto ya
-// da destinos negativos solo: monto(-) * pct(+) / 100 = negativo. Sin cambios acá.
 function dgLeerDestinos(monto) {
   const leer = (destino) => {
     const el = $('dg-'+destino+'-val');
@@ -2141,22 +2131,16 @@ function dgLeerDestinos(monto) {
   return { bill: leer('bill'), cap: leer('cap'), fondo: leer('fondo') };
 }
 
-// Un destino tiene signo válido si coincide con el signo del monto a distribuir
-// (o es ~0). Reemplaza al viejo "bill < 0 || cap < 0 || fondo < 0", que bloqueaba
-// cualquier destino negativo — necesario para permitir distribuir en modo
-// corrección (monto negativo, destinos negativos) sin permitir mezclar signos
-// dentro de la misma operación (eso sí seguiría siendo un error de carga).
-function dgSignoValido(x, monto) {
-  if (Math.abs(x) < 0.5) return true;
-  return monto >= 0 ? x >= -0.5 : x <= 0.5;
-}
-
 function dgRecalcular() {
   const ganDisp = (DB.finanzas && typeof DB.finanzas.ganD === 'number') ? DB.finanzas.ganD : 0;
   const inMonto = $('dg-monto');
   const monto = parseFloat(inMonto ? inMonto.value : 0) || 0;
   const { bill, cap, fondo } = dgLeerDestinos(monto);
   const total = bill + cap + fondo;
+  // CORRECCIÓN: antes esto era "ganDisp - monto" (cuánto queda del pozo total de
+  // Ganancia), que daba 0 apenas se usaba "toda la Ganancia" sin importar cómo se
+  // repartiera entre los 3 destinos. Lo que realmente ayuda mientras se tipea es
+  // cuánto del MONTO A DISTRIBUIR todavía no fue asignado a ningún destino.
   const restante = monto - total;
 
   setText('dg-gan-disp', fmt(ganDisp));
@@ -2167,28 +2151,16 @@ function dgRecalcular() {
   setText('dg-r-total', fmt(total));
   setText('dg-r-restante', fmt(restante));
 
-  // "Desajustado" (la suma de destinos no coincide con el monto) ahora se chequea
-  // también para montos negativos — antes "monto > 0" hacía que esta validación
-  // se saltara por completo en modo corrección.
-  const desajustado = monto !== 0 && Math.abs(total - monto) > 1; // tolerancia de redondeo ($1)
-
-  // "Excede Ganancia" generalizado: el monto a distribuir tiene que estar entre
-  // 0 y Ganancia Disponible, sin importar de qué lado del cero esté ganDisp.
-  // Si Ganancia Disponible es -44.000 (un error a corregir), esto permite
-  // cualquier monto entre -44.000 y 0 (revertir hasta el total del error, nunca
-  // más que eso, y nunca "de más" hacia un superávit ficticio).
-  const lo = Math.min(0, ganDisp), hi = Math.max(0, ganDisp);
-  const excedeGanancia = monto < lo - 0.5 || monto > hi + 0.5;
+  const desajustado = monto > 0 && Math.abs(total - monto) > 1; // tolerancia de redondeo ($1)
+  const excedeGanancia = monto > ganDisp + 0.5;
 
   const elTotal = $('dg-r-total');
   if (elTotal) elTotal.style.color = desajustado ? 'var(--red)' : '';
   const elRestante = $('dg-r-restante');
   if (elRestante) elRestante.className = 'bal-val ' + (Math.abs(restante) > 1 ? 'red' : 'cyan');
 
-  const signoInvalido = !dgSignoValido(bill, monto) || !dgSignoValido(cap, monto) || !dgSignoValido(fondo, monto);
-
   const btn = $('btn-dist-gan');
-  if (btn) btn.disabled = monto === 0 || desajustado || excedeGanancia || signoInvalido;
+  if (btn) btn.disabled = !(monto > 0) || desajustado || excedeGanancia || bill < 0 || cap < 0 || fondo < 0;
 }
 
 async function confirmarDistribucionGanancia() {
@@ -2196,19 +2168,11 @@ async function confirmarDistribucionGanancia() {
   const inMonto = $('dg-monto');
   const monto = parseFloat(inMonto ? inMonto.value : 0) || 0;
 
-  if (!monto) { toast('Ingresá un monto a distribuir', 'err'); return; }
-
-  // Generalizado para permitir corrección/reversa: el monto tiene que estar entre
-  // 0 y Ganancia Disponible, del lado que sea. Si Ganancia Disponible es -44.000
-  // (un error a corregir), esto permite montos entre -44.000 y 0 — revertir hasta
-  // el total del error, nunca más que eso.
-  const lo = Math.min(0, ganDisp), hi = Math.max(0, ganDisp);
-  if (monto < lo - 0.5 || monto > hi + 0.5) { toast('El monto tiene que estar entre 0 y la Ganancia Disponible ('+fmt(ganDisp)+')', 'err'); return; }
+  if (!(monto > 0)) { toast('Ingresá un monto a distribuir', 'err'); return; }
+  if (monto > ganDisp + 0.5) { toast('No podés distribuir más que la Ganancia Disponible', 'err'); return; }
 
   const { bill, cap, fondo } = dgLeerDestinos(monto);
-  if (!dgSignoValido(bill, monto) || !dgSignoValido(cap, monto) || !dgSignoValido(fondo, monto)) {
-    toast('Los montos por destino no pueden tener signo opuesto al monto a distribuir', 'err'); return;
-  }
+  if (bill < 0 || cap < 0 || fondo < 0) { toast('Los montos por destino no pueden ser negativos', 'err'); return; }
 
   const total = bill + cap + fondo;
   if (Math.abs(total - monto) > 1) { toast('La suma de los destinos debe ser igual al monto a distribuir', 'err'); return; }
@@ -2216,13 +2180,12 @@ async function confirmarDistribucionGanancia() {
   setBtn('btn-dist-gan', true, '');
   try {
     const idBase = 'DISTGAN-' + Date.now();
-    const esCorreccion = monto < 0;
-    const motivoBase = esCorreccion ? 'Corrección de Ganancia Disponible (reversa)' : 'Distribución de Ganancia Disponible';
-    if (Math.abs(bill) > 0.5) await _guardarDistribucionGanancia(idBase, 'BILL', 'PASAR GANANCIA A BILLETERA', Math.round(bill), motivoBase + ' → Billetera', 'EGRESO');
-    if (Math.abs(cap) > 0.5) await _guardarDistribucionGanancia(idBase, 'CAP', 'CAPITALIZACION', Math.round(cap), motivoBase + ' → Capital', 'EGRESO');
-    if (Math.abs(fondo) > 0.5) await _guardarDistribucionGanancia(idBase, 'FONDO', 'FONDO EMERGENCIA (DESDE GANANCIA)', Math.round(fondo), motivoBase + ' → Fondo de Emergencia', 'INGRESO');
+    const motivoBase = 'Distribución de Ganancia Disponible';
+    if (bill > 0.5) await _guardarDistribucionGanancia(idBase, 'BILL', 'PASAR GANANCIA A BILLETERA', Math.round(bill), motivoBase + ' → Billetera', 'EGRESO');
+    if (cap > 0.5) await _guardarDistribucionGanancia(idBase, 'CAP', 'CAPITALIZACION', Math.round(cap), motivoBase + ' → Capital', 'EGRESO');
+    if (fondo > 0.5) await _guardarDistribucionGanancia(idBase, 'FONDO', 'FONDO EMERGENCIA (DESDE GANANCIA)', Math.round(fondo), motivoBase + ' → Fondo de Emergencia', 'INGRESO');
 
-    toast(esCorreccion ? '✓ Ganancia corregida' : '✓ Ganancia distribuida');
+    toast('✓ Ganancia distribuida');
     if (inMonto) inMonto.value = '';
     ['bill','cap','fondo'].forEach(d => { const el = $('dg-'+d+'-val'); if (el) el.value = ''; });
     await cargarTodo();
