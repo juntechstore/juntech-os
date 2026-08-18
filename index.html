@@ -677,10 +677,17 @@
     <div class="bal-row"><span class="bal-key">− Billetera Joaco</span><span class="bal-val" id="mc-bill">—</span></div>
     <div class="bal-row"><span class="bal-key">− Ganancia Disponible</span><span class="bal-val" id="mc-gan">—</span></div>
     <div class="bal-row"><span class="bal-key">− Fondo (desde Ganancia)</span><span class="bal-val" id="mc-fondogan">—</span></div>
-    <div class="bal-row"><span class="bal-key">+ Ajuste de Inventario</span><span class="bal-val" id="mc-ajuste">—</span></div>
-    <div style="font-size:10px;color:var(--text2);margin-top:6px;">"Ajuste de Inventario" es la plata que representa mercadería de más o de menos encontrada en conteos de stock — nunca aparece en ningún otro casillero, por eso si sumás los 4 KPI de Home a mano, esta es la diferencia que "falta".</div>
     <div id="mc-check" style="font-size:12px; font-weight:700; margin-top:12px; padding:10px; border-radius:8px; background:var(--s2); line-height:1.4;">—</div>
     <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none; margin-top:12px;">🔄 Inicializar Ledger con este valor</button>
+
+    <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:16px 0 6px 0; font-weight:700; border-top:1px solid var(--border); padding-top:12px;">Corrección Manual del Ledger</div>
+    <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">Para casos puntuales (ej: un costo mal cargado en una venta vieja). Suma o resta directo del Ledger — nunca toca Caja, porque no hay plata real moviéndose, solo se corrige un número mal escrito.</div>
+    <div class="f-row">
+      <div class="field"><label class="f-label">Monto (+ suma, − resta)</label><input class="f-in" id="mc-corr-monto" type="text" inputmode="decimal" placeholder="Ej: 25000 o -25000"></div>
+    </div>
+    <div class="field"><label class="f-label">Motivo</label><input class="f-in" id="mc-corr-motivo" placeholder="Ej: Corrección costo AirPods, ventas de tal fecha"></div>
+    <button type="button" class="btn" onclick="aplicarCorreccionManualCapital()" style="background:var(--orange); color:#fff;">✏️ Aplicar Corrección</button>
+
     <button type="button" class="btn btn-ghost" onclick="cerrarModalCapital()">Cerrar</button>
   </div>
 </div>
@@ -935,13 +942,18 @@ async function registrarMovimientoCapital(evento, monto, referencia, observacion
   await _capitalCargarEstado(false);
   if (CAPITAL_REFS.has(referencia)) return; // ya registrado: no duplicar (requisito de deduplicación)
 
-  const nuevoSaldo = (CAPITAL_SALDO_ACTUAL || 0) + monto;
+  // CAMBIO DE CRITERIO: los ajustes de inventario (mermas/sobrantes de stock) quedan
+  // anotados acá como historial/auditoría, pero NO mueven el saldo de Capital que se
+  // muestra. Capital Real es siempre, sin excepción: Efectivo+Cobrar − Billetera −
+  // Ganancia − Fondo. Nada más se resta ni se suma por fuera de esos 4 términos.
+  const cuenta = evento !== 'AJUSTE_INVENTARIO';
+  const nuevoSaldo = cuenta ? (CAPITAL_SALDO_ACTUAL || 0) + monto : (CAPITAL_SALDO_ACTUAL || 0);
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   try {
     await append('CapitalMovimientos!A:F', [[fecha, evento, monto, referencia, nuevoSaldo, observaciones || '']]);
     // Se actualiza el cache recién si el append tuvo éxito
     CAPITAL_REFS.add(referencia);
-    CAPITAL_SALDO_ACTUAL = nuevoSaldo;
+    if (cuenta) CAPITAL_SALDO_ACTUAL = nuevoSaldo;
   } catch (e) {
     // Si falla el registro del movimiento de Capital, NO se interrumpe el
     // flujo que lo originó (venta, entrada, etc.): ese flujo ya se completó
@@ -991,6 +1003,24 @@ async function sincronizarAjustesComoMovimientosCapital(aRows, costoPorProducto)
 // Uso: inicializarCapital(150000, 'Saldo inicial al corte del 04/08/2026')
 async function inicializarCapital(saldoInicial, observaciones) {
   await registrarMovimientoCapital('SALDO_INICIAL', saldoInicial, 'INIT', observaciones || 'Inicialización del sistema de Capital');
+}
+
+// CORRECCIÓN ÚNICA (cambio de criterio): antes de esta versión, los ajustes de
+// inventario (AJUSTE_INVENTARIO) sí restaban del saldo de Capital guardado en el
+// Ledger. Eso quedó grabado en el saldo acumulado de filas ya existentes. Esta
+// función revierte ese efecto UNA SOLA VEZ (referencia fija, no se repite nunca
+// más), sumando de vuelta exactamente lo que esos ajustes habían restado — así
+// Capital Real vuelve a ser siempre Efectivo+Cobrar − Billetera − Ganancia − Fondo,
+// sin que un ajuste de stock lo mueva ni un peso, ni ahora ni en el pasado.
+async function corregirAjustesInventarioEnLedger() {
+  const REF = 'CORRECCION-AJUSTES-INVENTARIO-V1';
+  await _capitalCargarEstado(false);
+  if (CAPITAL_REFS.has(REF)) return; // ya corregido, no se repite
+  let rows = []; try { rows = await get('CapitalMovimientos!A2:F'); } catch(e) {}
+  let totalAjustesYaAplicados = 0;
+  rows.forEach(r => { if (str(r[1]).toUpperCase() === 'AJUSTE_INVENTARIO') totalAjustesYaAplicados += num(r[2]); });
+  if (Math.abs(totalAjustesYaAplicados) < 1) { CAPITAL_REFS.add(REF); return; } // nada que corregir
+  await registrarMovimientoCapital('CORRECCION_CRITERIO', -totalAjustesYaAplicados, REF, 'Corrección única: Capital Real deja de verse afectado por ajustes de inventario (quedan solo como historial).');
 }
 
 // Herramienta de auditoría manual (NO se ejecuta en cada carga de la app).
@@ -1452,15 +1482,16 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan;
     const activosTotales = totalCaja + plataEnCalle; 
-    // CORRECCIÓN 1: capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como
-    // fondoGan ya se resta de ganD arriba, si no se resta también acá esa plata queda
-    // flotando y el residuo se la "come", inflando Capital Real con dinero que en
-    // realidad fue a Fondo de Emergencia (doble contabilización). Restándolo acá,
-    // mover plata de Ganancia a Fondo no mueve ni un peso el KPI de Capital.
-    // CORRECCIÓN 2: se suma ajusteInventarioTotal (mismo signo que usa el Ledger nuevo)
-    // para que una merma o un sobrante de stock impacte a los dos sistemas de Capital
-    // por igual, y no solo al Ledger como pasaba antes.
-    const capJ = activosTotales - billJ - ganD - fondoGan + ajusteInventarioTotal;
+    // capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como fondoGan ya
+    // se resta de ganD arriba, si no se resta también acá esa plata queda flotando y
+    // el residuo se la "come", inflando Capital Real con dinero que en realidad fue a
+    // Fondo de Emergencia (doble contabilización). Restándolo acá, mover plata de
+    // Ganancia a Fondo no mueve ni un peso el KPI de Capital.
+    // A PEDIDO EXPLÍCITO: Capital Real NO incluye ajustes de inventario (mermas/
+    // sobrantes de stock) — esos solo corrigen el conteo de stock, nunca la plata.
+    // ajusteInventarioTotal se sigue calculando (queda de historial/auditoría) pero
+    // ya no forma parte de esta fórmula.
+    const capJ = activosTotales - billJ - ganD - fondoGan;
     
     // --- CONSOLIDACIÓN DE CAPITAL (aditivo) ---
     // Antes convivían dos "verdades" de Capital: este cálculo derivado (capJ) y el
@@ -1480,6 +1511,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     // un número cercano a $0 en vez del cálculo viejo. Con "CAPITAL_REFS.has('INIT')" el
     // KPI solo confía en el ledger una vez que de verdad tiene un punto de partida.
     await _capitalCargarEstado(false);
+    if (typeof corregirAjustesInventarioEnLedger === 'function') { try { await corregirAjustesInventarioEnLedger(); } catch(e) { console.error(e); } }
     const capitalLedgerActivo = CAPITAL_REFS.has('INIT');
     const capLedger = CAPITAL_SALDO_ACTUAL || 0;
     const capMostrado = capitalLedgerActivo ? capLedger : capJ;
@@ -1877,21 +1909,20 @@ async function abrirModalCapital() {
   setText('mc-bill', fmt(F.billJ || 0));
   setText('mc-gan', fmt(F.ganD || 0));
   setText('mc-fondogan', fmt(F.fondoGan || 0));
-  setText('mc-ajuste', fmt(F.ajusteInventarioTotal || 0));
 
-  // VERIFICACIÓN AUTOMÁTICA: reconstruye Activos Totales a partir de los 5 términos y
-  // lo compara contra el número real. Así nadie tiene que volver a sumar los 4 KPI de
-  // Home a mano (y olvidarse del Ajuste de Inventario, que no tiene su propio KPI).
-  const reconstruido = (F.capJ||0) + (F.billJ||0) + (F.ganD||0) + (F.fondoGan||0) - (F.ajusteInventarioTotal||0);
+  // VERIFICACIÓN AUTOMÁTICA: Capital + Billetera + Ganancia + Fondo debe ser SIEMPRE
+  // igual a Activos Totales (Efectivo + A Cobrar). Sin excepciones, sin quintos
+  // términos invisibles. Así nadie tiene que volver a sumar nada a mano.
+  const reconstruido = (F.capJ||0) + (F.billJ||0) + (F.ganD||0) + (F.fondoGan||0);
   const diffCheck = (F.activosTotales||0) - reconstruido;
   const elCheck = $('mc-check');
   if (elCheck) {
     if (Math.abs(diffCheck) < 2) {
       elCheck.style.color = 'var(--cyan)';
-      elCheck.textContent = '✓ Cierra perfecto: los 5 términos de arriba explican el 100% de tus Activos Totales ('+fmt(F.activosTotales||0)+'). No falta ni sobra nada.';
+      elCheck.textContent = '✓ Cierra perfecto: Capital + Billetera + Ganancia + Fondo = tus Activos Totales ('+fmt(F.activosTotales||0)+'). No falta ni sobra nada.';
     } else {
       elCheck.style.color = 'var(--red)';
-      elCheck.textContent = '⚠️ No cierra: los 5 términos suman '+fmt(reconstruido)+' pero tus Activos Totales son '+fmt(F.activosTotales||0)+' (diferencia de '+fmt(diffCheck)+'). Avisame con este número antes de seguir operando.';
+      elCheck.textContent = '⚠️ No cierra: la suma da '+fmt(reconstruido)+' pero tus Activos Totales son '+fmt(F.activosTotales||0)+' (diferencia de '+fmt(diffCheck)+'). Avisame con este número antes de seguir operando.';
     }
   }
 
@@ -1960,6 +1991,38 @@ async function sincronizarCapital() {
     toast('Error: '+e.message, 'err');
   }
   setBtn('btn-mc-sync', false, '🔄 Inicializar Ledger con este valor');
+}
+
+// Corrección manual puntual del Ledger (nunca toca Caja: no hay plata real
+// moviéndose, solo se corrige un número que quedó mal escrito por otra causa,
+// ej. un costo de producto mal cargado en ventas viejas).
+async function aplicarCorreccionManualCapital() {
+  const montoEl = $('mc-corr-monto'), motivoEl = $('mc-corr-motivo');
+  const monto = parseFloat((montoEl.value||'').toString().replace(',','.')) || 0;
+  const motivo = (motivoEl.value || '').trim();
+  if (!monto) { toast('Ingresá un monto (puede ser negativo)', 'err'); return; }
+  if (!motivo) { toast('Ingresá un motivo, para que quede claro en el historial', 'err'); return; }
+
+  const signo = monto > 0 ? '+' : '';
+  if (!confirm('¿Confirmás aplicar '+signo+fmt(monto)+' al Ledger de Capital?\n\nMotivo: '+motivo+'\n\nEsto NO toca Caja ni Ganancia — solo corrige el número de Capital.')) return;
+
+  try {
+    const ref = 'CORR-MANUAL-'+Date.now();
+    await registrarMovimientoCapital('CORRECCION_MANUAL', monto, ref, motivo);
+    // Misma verificación forzada que usa sincronizarCapital: confirma contra la
+    // planilla real antes de decir que salió bien.
+    await _capitalCargarEstado(true);
+    if (!CAPITAL_REFS.has(ref)) {
+      toast('⚠️ La corrección no se confirmó en la planilla. Probá de nuevo en unos segundos.', 'err');
+      return;
+    }
+    toast('✓ Corrección aplicada y verificada');
+    montoEl.value = ''; motivoEl.value = '';
+    await cargarTodo();
+    await abrirModalCapital();
+  } catch (e) {
+    toast('Error: '+e.message, 'err');
+  }
 }
 
 async function handleGuardarMov() {
@@ -2242,18 +2305,31 @@ async function confirmarMovimientoUSD() {
 
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
 function addEntrada(){ 
-  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'); 
+  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'), eRate=$('e-rate-val'); 
   if(!eP||!eC||!eCo) return; 
-  const n=eP.value, c=parseFloat(eC.value)||0, co=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
+  const n=eP.value, c=parseFloat(eC.value)||0, costoIngresado=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-'; 
   if(!n||c<=0) return; 
-  entradaCart.push({nombre:n, cant:c, costo:co, prov:prov}); 
+
+  let co = costoIngresado, costoUSD = null, tcUsado = null;
+  if (monedaEntradaActual === 'USD') {
+    const tc = parseFloat(eRate ? eRate.value : 0) || 0;
+    if (!tc) { toast('Falta la cotización para esta compra en USD', 'err'); return; }
+    costoUSD = costoIngresado;
+    tcUsado = tc;
+    co = Math.round(costoIngresado * tc);
+  }
+
+  entradaCart.push({nombre:n, cant:c, costo:co, prov:prov, costoUSD, tcUsado}); 
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
   renderEntrada(); 
 }
 function renderEntrada(){ 
   const d=$('entrada-items'); if(!d) return; 
   if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } 
-  d.innerHTML = entradaCart.map((i,idx)=>`<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span></div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`).join(''); 
+  d.innerHTML = entradaCart.map((i,idx)=>{
+    const usdTag = i.costoUSD ? `<br><span style="font-size:10px;color:var(--purple);">u$s ${i.costoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}/u — cotización $${i.tcUsado} de ese día</span>` : '';
+    return `<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span>${usdTag}</div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`;
+  }).join(''); 
   const b=$('btn-entrada'); if(b) b.disabled=false; 
 }
 function delEntrada(i){ entradaCart.splice(i,1); renderEntrada(); }
