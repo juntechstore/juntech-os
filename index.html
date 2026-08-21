@@ -511,6 +511,11 @@
           <select class="f-in" id="usd-metodo"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option></select>
         </div>
 
+        <div class="field" id="usd-fondo-box" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="usd-desde-fondo" style="width:16px; height:16px;">
+          <label for="usd-desde-fondo" style="font-size:12px; color:var(--text2); margin:0;">Esta plata sale del Fondo de Emergencia</label>
+        </div>
+
         <div class="field"><label class="f-label">Motivo (Opcional)</label><input class="f-in" id="usd-motivo" placeholder="Ej: Compra en cueva"></div>
 
         <button class="btn" id="btn-usd-mov" onclick="confirmarMovimientoUSD()" style="background:var(--orange);color:#fff;">💾 Registrar</button>
@@ -684,7 +689,7 @@
     <div class="bal-row"><span class="bal-key">Efectivo + Cobrar (activos)</span><span class="bal-val" id="mc-activos">—</span></div>
     <div class="bal-row"><span class="bal-key">− Billetera Joaco</span><span class="bal-val" id="mc-bill">—</span></div>
     <div class="bal-row"><span class="bal-key">− Ganancia Disponible</span><span class="bal-val" id="mc-gan">—</span></div>
-    <div class="bal-row"><span class="bal-key">− Fondo (desde Ganancia)</span><span class="bal-val" id="mc-fondogan">—</span></div>
+    <div class="bal-row"><span class="bal-key">− Fondo de Emergencia</span><span class="bal-val" id="mc-fondogan">—</span></div>
     <div id="mc-check" style="font-size:12px; font-weight:700; margin-top:12px; padding:10px; border-radius:8px; background:var(--s2); line-height:1.4;">—</div>
     <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none; margin-top:12px;">🔄 Inicializar Ledger con este valor</button>
 
@@ -950,11 +955,12 @@ async function registrarMovimientoCapital(evento, monto, referencia, observacion
   await _capitalCargarEstado(false);
   if (CAPITAL_REFS.has(referencia)) return; // ya registrado: no duplicar (requisito de deduplicación)
 
-  // CAMBIO DE CRITERIO: los ajustes de inventario (mermas/sobrantes de stock) quedan
-  // anotados acá como historial/auditoría, pero NO mueven el saldo de Capital que se
-  // muestra. Capital Real es siempre, sin excepción: Efectivo+Cobrar − Billetera −
-  // Ganancia − Fondo. Nada más se resta ni se suma por fuera de esos 4 términos.
-  const cuenta = evento !== 'AJUSTE_INVENTARIO';
+  // CAMBIO DE CRITERIO: los ajustes de inventario (mermas/sobrantes de stock) y los
+  // movimientos de Fondo de Emergencia quedan anotados acá como historial/auditoría,
+  // pero NO mueven el saldo de Capital que se muestra. Capital Real es siempre, sin
+  // excepción: Efectivo+Cobrar − Billetera − Ganancia − Fondo. Nada más se resta ni
+  // se suma por fuera de esos 4 términos.
+  const cuenta = evento !== 'AJUSTE_INVENTARIO' && evento !== 'AJUSTE_FONDO_EMERGENCIA';
   const nuevoSaldo = cuenta ? (CAPITAL_SALDO_ACTUAL || 0) + monto : (CAPITAL_SALDO_ACTUAL || 0);
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   try {
@@ -1029,6 +1035,21 @@ async function corregirAjustesInventarioEnLedger() {
   rows.forEach(r => { if (str(r[1]).toUpperCase() === 'AJUSTE_INVENTARIO') totalAjustesYaAplicados += num(r[2]); });
   if (Math.abs(totalAjustesYaAplicados) < 1) { CAPITAL_REFS.add(REF); return; } // nada que corregir
   await registrarMovimientoCapital('CORRECCION_CRITERIO', -totalAjustesYaAplicados, REF, 'Corrección única: Capital Real deja de verse afectado por ajustes de inventario (quedan solo como historial).');
+}
+
+// CORRECCIÓN ÚNICA (mismo mecanismo que la de arriba, para el mismo tipo de
+// problema): un retiro/depósito MANUAL de Fondo de Emergencia (vía Caja, categoría
+// exacta "FONDO EMERGENCIA") ya había restado/sumado del saldo de Capital guardado
+// en el Ledger, antes de este cambio de criterio. Se revierte UNA SOLA VEZ.
+async function corregirAjustesFondoEmergenciaEnLedger() {
+  const REF = 'CORRECCION-FONDO-EMERGENCIA-V1';
+  await _capitalCargarEstado(false);
+  if (CAPITAL_REFS.has(REF)) return; // ya corregido, no se repite
+  let rows = []; try { rows = await get('CapitalMovimientos!A2:F'); } catch(e) {}
+  let totalYaAplicado = 0;
+  rows.forEach(r => { if (str(r[1]).toUpperCase() === 'AJUSTE_FONDO_EMERGENCIA') totalYaAplicado += num(r[2]); });
+  if (Math.abs(totalYaAplicado) < 1) { CAPITAL_REFS.add(REF); return; } // nada que corregir
+  await registrarMovimientoCapital('CORRECCION_CRITERIO', -totalYaAplicado, REF, 'Corrección única: Capital Real deja de verse afectado por movimientos de Fondo de Emergencia (quedan solo como historial).');
 }
 
 // Herramienta de auditoría manual (NO se ejecuta en cada carga de la app).
@@ -1493,16 +1514,22 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     const billJ = ingP - gastP + guardados;
     const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan;
     const activosTotales = totalCaja + plataEnCalle; 
-    // capJ es un residuo (todo lo que no es Billetera ni Ganancia). Como fondoGan ya
-    // se resta de ganD arriba, si no se resta también acá esa plata queda flotando y
-    // el residuo se la "come", inflando Capital Real con dinero que en realidad fue a
-    // Fondo de Emergencia (doble contabilización). Restándolo acá, mover plata de
-    // Ganancia a Fondo no mueve ni un peso el KPI de Capital.
+    // capJ es un residuo (todo lo que no es Billetera ni Ganancia).
     // A PEDIDO EXPLÍCITO: Capital Real NO incluye ajustes de inventario (mermas/
     // sobrantes de stock) — esos solo corrigen el conteo de stock, nunca la plata.
     // ajusteInventarioTotal se sigue calculando (queda de historial/auditoría) pero
     // ya no forma parte de esta fórmula.
-    const capJ = activosTotales - billJ - ganD - fondoGan;
+    // CAMBIO DE CRITERIO: se resta "fondo" completo (no solo fondoGan) para que
+    // CUALQUIER movimiento de Fondo de Emergencia — venga de Distribución de
+    // Ganancia o de un movimiento manual de Caja — sea siempre neutral para
+    // Capital Real. Antes, un retiro manual de Fondo (vía Caja, categoría exacta
+    // "FONDO EMERGENCIA") reducía Caja y por lo tanto Capital Real también,
+    // tratando a Fondo como si fuera parte de Capital en vez de un casillero
+    // aparte. Con "fondo" completo, Fondo de Emergencia y Capital Real quedan
+    // siempre como 2 casilleros independientes, sin importar el origen del
+    // movimiento — así "Capital + Billetera + Ganancia + Fondo" sigue cerrando
+    // exacto contra los Activos Totales en cualquier escenario.
+    const capJ = activosTotales - billJ - ganD - fondo;
     
     // --- CONSOLIDACIÓN DE CAPITAL (aditivo) ---
     // Antes convivían dos "verdades" de Capital: este cálculo derivado (capJ) y el
@@ -1523,6 +1550,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     // KPI solo confía en el ledger una vez que de verdad tiene un punto de partida.
     await _capitalCargarEstado(false);
     if (typeof corregirAjustesInventarioEnLedger === 'function') { try { await corregirAjustesInventarioEnLedger(); } catch(e) { console.error(e); } }
+    if (typeof corregirAjustesFondoEmergenciaEnLedger === 'function') { try { await corregirAjustesFondoEmergenciaEnLedger(); } catch(e) { console.error(e); } }
     const capitalLedgerActivo = CAPITAL_REFS.has('INIT');
     const capLedger = CAPITAL_SALDO_ACTUAL || 0;
     const capMostrado = capitalLedgerActivo ? capLedger : capJ;
@@ -1919,12 +1947,12 @@ async function abrirModalCapital() {
   setText('mc-activos', fmt(F.activosTotales || 0));
   setText('mc-bill', fmt(F.billJ || 0));
   setText('mc-gan', fmt(F.ganD || 0));
-  setText('mc-fondogan', fmt(F.fondoGan || 0));
+  setText('mc-fondogan', fmt(F.fondo || 0));
 
   // VERIFICACIÓN AUTOMÁTICA: Capital + Billetera + Ganancia + Fondo debe ser SIEMPRE
   // igual a Activos Totales (Efectivo + A Cobrar). Sin excepciones, sin quintos
   // términos invisibles. Así nadie tiene que volver a sumar nada a mano.
-  const reconstruido = (F.capJ||0) + (F.billJ||0) + (F.ganD||0) + (F.fondoGan||0);
+  const reconstruido = (F.capJ||0) + (F.billJ||0) + (F.ganD||0) + (F.fondo||0);
   const diffCheck = (F.activosTotales||0) - reconstruido;
   const elCheck = $('mc-check');
   if (elCheck) {
@@ -2234,12 +2262,13 @@ function usdSetModo(m) {
   const lbl = $('usd-monto-label');
   if (lbl) lbl.textContent = m==='COMPRA' ? 'Monto a comprar (u$s)' : (m==='VENTA' ? 'Monto a vender (u$s)' : 'Cuánto u$s ya tenés');
 
-  const rateRow = $('usd-rate-row'), rateLbl = $('usd-rate-label'), metodoBox = $('usd-metodo-box'), metodoLbl = $('usd-metodo-label');
+  const rateRow = $('usd-rate-row'), rateLbl = $('usd-rate-label'), metodoBox = $('usd-metodo-box'), metodoLbl = $('usd-metodo-label'), fondoBox = $('usd-fondo-box');
   const tocaConversion = m==='COMPRA' || m==='VENTA';
   if (rateRow) rateRow.classList.toggle('on', tocaConversion);
   if (rateLbl) rateLbl.textContent = m==='COMPRA' ? 'Cotización a la que comprás' : 'Cotización a la que vendés';
   if (metodoBox) metodoBox.style.display = tocaConversion ? 'block' : 'none';
   if (metodoLbl) metodoLbl.textContent = m==='COMPRA' ? 'Con qué pesos pagás' : 'A qué caja entran los pesos';
+  if (fondoBox) fondoBox.style.display = m==='COMPRA' ? 'flex' : 'none';
   usdPreview();
 }
 
@@ -2299,10 +2328,18 @@ async function confirmarMovimientoUSD() {
       const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.')) || 0;
       if (!tc) { toast('Falta la cotización', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
       const metodo = $('usd-metodo').value;
+      const desdeFondo = $('usd-desde-fondo') && $('usd-desde-fondo').checked;
       const montoPesos = Math.round(monto * tc);
       await append('CajaUSD!A:F', [[fecha, 'INGRESO', 'COMPRA DE DOLARES', motivo || ('Compra a $'+tc), monto, subBilletera]]);
-      const idMov = 'USD-'+Date.now();
-      await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'COMPRA DE DOLARES', motivo || ('Compra de u$s'+monto+' a $'+tc), montoPesos, metodo]]);
+      if (desdeFondo) {
+        // Categoría EXACTA 'FONDO EMERGENCIA' — así reduce el Fondo (no una compra
+        // común) y de paso queda anotado también en el Ledger de Capital como
+        // historial (sin mover el saldo, por el cambio de criterio ya aplicado).
+        await _guardarMovimientoEnCaja('EGRESO', 'FONDO EMERGENCIA', motivo || ('Compra de u$s'+monto+' a $'+tc+' (desde Fondo de Emergencia)'), montoPesos, metodo);
+      } else {
+        const idMov = 'USD-'+Date.now();
+        await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'COMPRA DE DOLARES', motivo || ('Compra de u$s'+monto+' a $'+tc), montoPesos, metodo]]);
+      }
     } else if (USD_MODO === 'VENTA') {
       const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.')) || 0;
       if (!tc) { toast('Falta la cotización', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
@@ -2318,7 +2355,7 @@ async function confirmarMovimientoUSD() {
     }
 
     toast('✓ Registrado');
-    $('usd-monto').value = ''; $('usd-motivo').value = ''; $('usd-rate-val').value = '';
+    $('usd-monto').value = ''; $('usd-motivo').value = ''; $('usd-rate-val').value = ''; if ($('usd-desde-fondo')) $('usd-desde-fondo').checked = false;
     usdPreview();
     await actualizarSaldoCajaUSD();
     if (USD_MODO === 'COMPRA' || USD_MODO === 'VENTA') await cargarTodo(); // la pata en pesos sí afecta Caja/Balances
