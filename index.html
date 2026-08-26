@@ -702,6 +702,10 @@
     <div id="mc-check" style="font-size:12px; font-weight:700; margin-top:12px; padding:10px; border-radius:8px; background:var(--s2); line-height:1.4;">—</div>
     <button type="button" class="btn btn-purple" id="btn-mc-sync" onclick="sincronizarCapital()" style="display:none; margin-top:12px;">🔄 Inicializar Ledger con este valor</button>
 
+    <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:16px 0 6px 0; font-weight:700; border-top:1px solid var(--border); padding-top:12px;">Si esto te resulta confuso</div>
+    <button type="button" class="btn" onclick="activarModoSimpleCapital()" style="background:var(--cyan); color:#000; font-weight:700;">🔙 Volver al cálculo simple (sin Ledger)</button>
+    <div style="font-size:10px;color:var(--text2);margin:6px 0 14px 0;">Apaga todo esto y vuelve a mostrar el cálculo de toda la vida (Efectivo+Cobrar − Billetera − Ganancia − Fondo). No borra ni cambia ningún dato — solo cambia qué número se muestra en este dispositivo.</div>
+
     <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:16px 0 6px 0; font-weight:700; border-top:1px solid var(--border); padding-top:12px;">Corrección Manual del Ledger</div>
     <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">Para casos puntuales (ej: un costo mal cargado en una venta vieja). Suma o resta directo del Ledger — nunca toca Caja, porque no hay plata real moviéndose, solo se corrige un número mal escrito.</div>
 
@@ -1575,7 +1579,13 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     await _capitalCargarEstado(false);
     if (typeof corregirAjustesInventarioEnLedger === 'function') { try { await corregirAjustesInventarioEnLedger(); } catch(e) { console.error(e); } }
     if (typeof corregirAjustesFondoEmergenciaEnLedger === 'function') { try { await corregirAjustesFondoEmergenciaEnLedger(); } catch(e) { console.error(e); } }
-    const capitalLedgerActivo = CAPITAL_REFS.has('INIT');
+    // MODO SIMPLE (interruptor de emergencia): si el usuario decide volver al
+    // cálculo de siempre (sin Ledger, sin correcciones manuales), esta bandera
+    // local (guardada en este dispositivo, no en la planilla) hace que el KPI
+    // ignore el Ledger completamente y muestre siempre capJ — el mismo cálculo
+    // que funcionó toda la vida. No borra ni modifica ningún dato financiero.
+    const modoSimple = localStorage.getItem('CAPITAL_MODO_SIMPLE') === 'true';
+    const capitalLedgerActivo = !modoSimple && CAPITAL_REFS.has('INIT');
     const capLedger = CAPITAL_SALDO_ACTUAL || 0;
     const capMostrado = capitalLedgerActivo ? capLedger : capJ;
     
@@ -1952,6 +1962,14 @@ async function procesarVenta(){
 function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
 
 // --- MÓDULO CAPITAL (consolidación): Auditoría / sincronización desde la UI ---
+function activarModoSimpleCapital() {
+  if (!confirm('¿Volver al cálculo simple de siempre?\n\nEsto apaga el Ledger y las correcciones — el KPI "Capital Real" va a mostrar el mismo cálculo de toda la vida, sin nada raro. No se borra ningún dato.')) return;
+  localStorage.setItem('CAPITAL_MODO_SIMPLE', 'true');
+  toast('✓ Listo — mostrando el cálculo simple');
+  cerrarModalCapital();
+  cargarTodo();
+}
+
 async function abrirModalCapital() {
   const m = $('modal-capital'); if (m) m.classList.add('on');
   setText('mc-viejo', 'Calculando...'); setText('mc-nuevo', 'Calculando...'); setText('mc-diff', '—');
