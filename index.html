@@ -706,6 +706,7 @@
     <button type="button" class="btn" onclick="activarModoSimpleCapital()" style="background:var(--cyan); color:#000; font-weight:700;">🔙 Volver al cálculo simple (sin Ledger)</button>
     <div style="font-size:10px;color:var(--text2);margin:6px 0 14px 0;">Apaga todo esto y vuelve a mostrar el cálculo de toda la vida (Efectivo+Cobrar − Billetera − Ganancia − Fondo). No borra ni cambia ningún dato — solo cambia qué número se muestra en este dispositivo.</div>
 
+    <div id="mc-seccion-ledger">
     <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:16px 0 6px 0; font-weight:700; border-top:1px solid var(--border); padding-top:12px;">Corrección Manual del Ledger</div>
     <div style="font-size:10px;color:var(--text2);margin-bottom:8px;">Para casos puntuales (ej: un costo mal cargado en una venta vieja). Suma o resta directo del Ledger — nunca toca Caja, porque no hay plata real moviéndose, solo se corrige un número mal escrito.</div>
 
@@ -727,6 +728,7 @@
     </div>
     <div class="field"><label class="f-label">Motivo</label><input class="f-in" id="mc-corr-motivo" placeholder="Ej: Corrección costo AirPods, ventas de tal fecha"></div>
     <button type="button" class="btn" onclick="aplicarCorreccionManualCapital()" style="background:var(--orange); color:#fff;">✏️ Aplicar Corrección</button>
+    </div>
 
     <button type="button" class="btn btn-ghost" onclick="cerrarModalCapital()">Cerrar</button>
   </div>
@@ -1980,6 +1982,7 @@ async function abrirModalCapital() {
   const viejo = (DB.finanzas && typeof DB.finanzas.capJ === 'number') ? DB.finanzas.capJ : 0;
   const nuevo = CAPITAL_SALDO_ACTUAL || 0;
   const diff = viejo - nuevo;
+  const modoSimple = localStorage.getItem('CAPITAL_MODO_SIMPLE') === 'true';
 
   setText('mc-viejo', fmt(viejo));
   setText('mc-nuevo', fmt(nuevo));
@@ -2007,7 +2010,18 @@ async function abrirModalCapital() {
     }
   }
 
-  if (!CAPITAL_REFS.has('INIT')) {
+  // Oculta/muestra todo lo relacionado al Ledger según el modo. En Modo Simple,
+  // nada de esto aplica — el KPI ya viene del cálculo derivado (arriba, "viejo"),
+  // así que comparar contra el Ledger o pedir correcciones es puro ruido.
+  const seccionLedger = $('mc-seccion-ledger');
+  if (seccionLedger) seccionLedger.style.display = modoSimple ? 'none' : 'block';
+
+  if (modoSimple) {
+    if (estadoEl) {
+      estadoEl.style.background = '#39d35315'; estadoEl.style.color = 'var(--cyan)';
+      estadoEl.textContent = '✓ Estás en Modo Simple. El KPI "Capital Real" muestra el cálculo de siempre ('+fmt(viejo)+'), calculado en vivo a partir de Caja, Cuentas y Ganancia. El Ledger está completamente apagado — no afecta nada.';
+    }
+  } else if (!CAPITAL_REFS.has('INIT')) {
     if (estadoEl) {
       estadoEl.style.background = '#f0883e15'; estadoEl.style.color = 'var(--orange)';
       estadoEl.textContent = 'El Ledger todavía no tiene un saldo inicial sembrado (puede tener movimientos sueltos de ventas/compras, pero eso no alcanza). Por eso el KPI "Capital Real" sigue mostrando el cálculo viejo. Podés inicializarlo ahora con el valor actual — a partir de ahí, el KPI va a leer del Ledger, y los dos cálculos van a quedar sincronizados de acá en más.';
