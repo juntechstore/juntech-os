@@ -227,10 +227,16 @@
            <span class="bal-val blue" id="h-cc-cobrar">—</span>
         </div>
         <div class="bal-row">
-           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés al mundo)</span>
+           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés a clientes)</span>
            <span class="bal-val red" id="h-cc-pagar">—</span>
         </div>
         <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
+      </div>
+
+      <div class="card" style="border-left: 4px solid var(--purple)">
+        <div class="card-title" style="color:var(--purple)">Resumen de Deudas (Todo junto)</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Suma clientes + personales + proveedores, por moneda. Esto es lo que hay en la pestaña Cuentas, resumido.</div>
+        <div id="h-deudas-resumen"></div>
       </div>
       
       <div class="card">
@@ -1165,6 +1171,27 @@ async function cargarPasivosPersonales() {
 let CTA_TIPO = 'CLIENTE';
 let CTA_MONEDA = 'ARS'; // aplica a Cliente y Personal por igual
 
+// Junta clientes + personales (ambas direcciones) en un resumen por moneda,
+// para que nada quede "escondido" — esto es lo que faltaba en el Home.
+function renderResumenDeudasHome(cuentas) {
+  const box = $('h-deudas-resumen');
+  if (!box) return;
+  const totales = { ARS: { teDeben: 0, debes: 0 }, USD: { teDeben: 0, debes: 0 } };
+  cuentas.forEach(c => {
+    const t = totales[c.moneda] || totales.ARS;
+    if (c.saldo > 0) t.teDeben += c.saldo; else t.debes += Math.abs(c.saldo);
+  });
+  let html = '';
+  ['ARS','USD'].forEach(mon => {
+    const t = totales[mon];
+    if (t.teDeben < 0.01 && t.debes < 0.01) return;
+    const f = mon === 'USD' ? fmtUSD : fmt;
+    html += `<div class="bal-row"><span class="bal-key">Te deben (${mon})</span><span class="bal-val blue">${f(t.teDeben)}</span></div>`;
+    html += `<div class="bal-row"><span class="bal-key">Debés (${mon})</span><span class="bal-val red">${f(t.debes)}</span></div>`;
+  });
+  box.innerHTML = html || '<div class="empty" style="font-size:12px;">Sin deudas activas de ningún tipo.</div>';
+}
+
 function renderCuentasUnificadas() {
   const cuentas = [];
   Object.keys(DB.saldosCC || {}).forEach(p => {
@@ -1182,6 +1209,7 @@ function renderCuentasUnificadas() {
     }
   });
   cuentas.sort((a,b) => Math.abs(b.saldo) - Math.abs(a.saldo));
+  renderResumenDeudasHome(cuentas);
 
   let html = '';
   cuentas.forEach(c => {
