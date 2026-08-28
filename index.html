@@ -212,7 +212,7 @@
         <div class="kpi blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
         <div class="kpi cyan" onclick="abrirModalCapital()" style="cursor:pointer;"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
         <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi orange"><div class="kpi-label">Billetera Joaco</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi orange"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
       </div>
 
       <div class="card">
@@ -440,7 +440,7 @@
 
         <div class="field">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-            <label class="f-label" style="margin:0;">💰 Billetera Joaco / Personal</label>
+            <label class="f-label" style="margin:0;">💰 Billetera Personal</label>
             <div style="display:flex; gap:6px;">
               <button type="button" class="curr-btn on" id="dg-mode-bill-pct" onclick="dgSetModo('bill','pct')" style="padding:4px 10px; font-size:11px; flex:none;">%</button>
               <button type="button" class="curr-btn" id="dg-mode-bill-monto" onclick="dgSetModo('bill','monto')" style="padding:4px 10px; font-size:11px; flex:none;">$</button>
@@ -533,7 +533,7 @@
         <div class="field"><label class="f-label">Categoría</label>
           <select class="f-in" id="c-cat">
             <optgroup label="JUNTECH"><option>GASTO OPERATIVO</option><option>COMPRA STOCK</option><option>CAPITALIZACION</option><option>FONDO EMERGENCIA</option></optgroup>
-            <optgroup label="JOACO PERSONAL"><option>PERSONAL (INGRESO)</option><option>PERSONAL (GASTO)</option><option>PASAR GANANCIA A BILLETERA</option></optgroup>
+            <optgroup label="PERSONAL"><option>PERSONAL (INGRESO)</option><option>PERSONAL (GASTO)</option><option>PASAR GANANCIA A BILLETERA</option></optgroup>
             <optgroup label="OTRO"><option>APORTE DE CAPITAL (EXTERNO)</option></optgroup>
           </select>
         </div>
@@ -562,10 +562,8 @@
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="e-cant" type="number" min="1" oninput="previewEntradaImpacto()"></div>
-          <div class="field"><label class="f-label" id="e-costo-label">Costo unitario (para margen)</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)" oninput="previewEntradaImpacto()"></div>
+          <div class="field"><label class="f-label" id="e-costo-label">Costo unitario</label><input class="f-in" id="e-costo" type="text" onchange="evalMath(this)" oninput="previewEntradaImpacto()"></div>
         </div>
-        <div class="field"><label class="f-label" id="e-costo-real-label">Costo REAL pagado por unidad (opcional)</label><input class="f-in" id="e-costo-real" type="text" placeholder="Dejalo vacío si es igual al de arriba" onchange="evalMath(this)" oninput="previewEntradaImpacto()"></div>
-        <div style="font-size:10px;color:var(--text2);margin:-8px 0 12px 0;">Si inflás el "Costo unitario" a propósito (para el margen), poné acá lo que REALMENTE pagaste — eso es lo único que va a descontar de Capital y Caja.</div>
         <div class="field"><label class="f-label">Caja física afectada</label>
           <select class="f-in" id="e-metodo" onchange="previewEntradaImpacto()">
             <option value="NINGUNA">NINGUNA (A crédito con el proveedor)</option>
@@ -702,7 +700,7 @@
     <div id="mc-estado" style="font-size:12px; margin:12px 0; padding:10px; border-radius:8px; line-height:1.4;"></div>
     <div style="font-size:11px; color:var(--text2); text-transform:uppercase; margin:14px 0 6px 0; font-weight:700;">Cómo se compone el cálculo viejo</div>
     <div class="bal-row"><span class="bal-key">Efectivo + Cobrar (activos)</span><span class="bal-val" id="mc-activos">—</span></div>
-    <div class="bal-row"><span class="bal-key">− Billetera Joaco</span><span class="bal-val" id="mc-bill">—</span></div>
+    <div class="bal-row"><span class="bal-key">− Billetera Personal</span><span class="bal-val" id="mc-bill">—</span></div>
     <div class="bal-row"><span class="bal-key">− Ganancia Disponible</span><span class="bal-val" id="mc-gan">—</span></div>
     <div class="bal-row"><span class="bal-key">− Fondo de Emergencia</span><span class="bal-val" id="mc-fondogan">—</span></div>
     <div id="mc-check" style="font-size:12px; font-weight:700; margin-top:12px; padding:10px; border-radius:8px; background:var(--s2); line-height:1.4;">—</div>
@@ -880,7 +878,7 @@ async function updateCell(range,values){ await fetch(`https://sheets.googleapis.
 // viejo (capJ, dentro de cargarTodo()).
 //
 // PRINCIPIOS DE DISEÑO (ver documento funcional aprobado):
-//  - Es independiente de Caja, Ganancia Disponible, Billetera Joaco
+//  - Es independiente de Caja, Ganancia Disponible, Billetera Personal
 //    y Fondo de Emergencia. Ninguna función de este módulo debe
 //    tocar esos KPIs, ni viceversa.
 //  - Cada movimiento requiere una Referencia única. Si esa Referencia
@@ -1313,7 +1311,7 @@ function seleccionarCuenta(el, tipo, id, moneda) {
     if (!d) return;
     moneda = d.moneda;
     setText('cta-pago-info', `${d.concepto} (${d.persona})` + (moneda === 'USD' ? ' (u$s)' : ''));
-    if (origenSel) origenSel.innerHTML = (moneda === 'USD' ? opcionUSD : '') + '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA JOACO</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
+    if (origenSel) origenSel.innerHTML = (moneda === 'USD' ? opcionUSD : '') + '<option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option><option value="JOACO">BILLETERA PERSONAL</option><option value="EXTERNO">EXTERNO (No registrar en Caja)</option>';
   }
   $('cta-pago-tipo').value = tipo;
   $('cta-pago-id').value = id;
@@ -1564,7 +1562,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       else { 
         if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
         else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
-        if(tipo==='EGRESO'){ if(cat.includes('GASTO')) gastosJ+=monto; if(cat.includes('RETIRO JOACO')) retirosJ+=monto; }
+        if(tipo==='EGRESO'){ if(cat.includes('GASTO')) gastosJ+=monto; if(cat.includes('RETIRO PERSONAL')) retirosJ+=monto; }
       }
       historial.push({tipo, cat:str(r[3]), motivo:str(r[4]), monto, metodo});
     });
@@ -2211,7 +2209,7 @@ async function _guardarMovimientoEnCaja(tipo, cat, motivo, monto, metodo) {
 // MÓDULO DISTRIBUCIÓN DE GANANCIA (aditivo)
 // ----------------------------------------------------------------
 // Redistribuye dinero que sale exclusivamente de Ganancia Disponible hacia
-// hasta 3 destinos: Billetera Joaco/Personal, Capital y Fondo de Emergencia.
+// hasta 3 destinos: Billetera Personal, Capital y Fondo de Emergencia.
 // NO es una venta ni un gasto y NO debe tocar Caja (totalCaja/saldos):
 //  - Billetera  → reutiliza la categoría existente 'PASAR GANANCIA A BILLETERA'
 //    (ya excluida de Caja en cargarTodo(), ya resta de Ganancia vía "guardados").
@@ -2478,22 +2476,18 @@ function previewEntradaImpacto() {
   const box = $('e-preview-impacto');
   if (!box) return;
   const cant = parseFloat($('e-cant') ? $('e-cant').value : 0) || 0;
-  const costoMargen = parseFloat($('e-costo') ? $('e-costo').value : 0) || 0;
-  const costoRealInput = parseFloat($('e-costo-real') ? $('e-costo-real').value : '') || 0;
+  const costo = parseFloat($('e-costo') ? $('e-costo').value : 0) || 0;
   const metodo = $('e-metodo') ? $('e-metodo').value : 'NINGUNA';
 
-  if (!(cant > 0) || !(costoMargen > 0)) { box.style.display = 'none'; return; }
+  if (!(cant > 0) || !(costo > 0)) { box.style.display = 'none'; return; }
 
-  const costoReal = costoRealInput > 0 ? costoRealInput : costoMargen;
   const esUSD = monedaEntradaActual === 'USD';
   const tc = esUSD ? (parseFloat($('e-rate-val') ? $('e-rate-val').value : 0) || 0) : 1;
-  const totalRealPesos = esUSD ? Math.round(cant * costoReal * tc) : Math.round(cant * costoReal);
+  const totalPesos = esUSD ? Math.round(cant * costo * tc) : Math.round(cant * costo);
 
-  let html = `Esto va a descontar <b>${fmt(totalRealPesos)}</b> de Capital`;
+  let html = `Esto va a descontar <b>${fmt(totalPesos)}</b> de Capital`;
   html += metodo !== 'NINGUNA' ? ` y de <b>${metodo}</b> en Caja.` : `, sin tocar Caja (a crédito).`;
-  if (costoRealInput > 0 && Math.abs(costoRealInput - costoMargen) > 0.001) {
-    html += `<br><span style="color:var(--orange)">⚠️ Estás usando un costo de margen distinto al real — solo el real (${costoReal}${esUSD?' u$s':''}/u) afecta Capital.</span>`;
-  } else if (esUSD && tc <= 0) {
+  if (esUSD && tc <= 0) {
     html += `<br><span style="color:var(--red)">⚠️ Falta la cotización — no se puede calcular el impacto todavía.</span>`;
   }
   box.innerHTML = html;
@@ -2501,23 +2495,22 @@ function previewEntradaImpacto() {
 }
 
 function addEntrada(){ 
-  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eCoReal=$('e-costo-real'), eProv=$('e-prov'), eRate=$('e-rate-val'), eMet=$('e-metodo'); 
+  const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'), eRate=$('e-rate-val'), eMet=$('e-metodo'); 
   if(!eP||!eC||!eCo) return; 
-  const n=eP.value, c=parseFloat(eC.value)||0, costoIngresado=parseFloat(eCo.value)||0, costoRealIngresado=parseFloat(eCoReal ? eCoReal.value : '')||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-', metodo=eMet?eMet.value:'NINGUNA'; 
+  const n=eP.value, c=parseFloat(eC.value)||0, costoIngresado=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-', metodo=eMet?eMet.value:'NINGUNA'; 
   if(!n||c<=0) return; 
 
-  let co = costoIngresado, costoReal = costoRealIngresado > 0 ? costoRealIngresado : costoIngresado, costoUSD = null, tcUsado = null;
+  let co = costoIngresado, costoUSD = null, tcUsado = null;
   if (monedaEntradaActual === 'USD') {
     const tc = parseFloat(eRate ? eRate.value : 0) || 0;
     if (!tc) { toast('Falta la cotización para esta compra en USD', 'err'); return; }
     costoUSD = costoIngresado;
     tcUsado = tc;
     co = Math.round(costoIngresado * tc);
-    costoReal = Math.round(costoReal * tc);
   }
 
-  entradaCart.push({nombre:n, cant:c, costo:co, costoReal, metodo, prov:prov, costoUSD, tcUsado}); 
-  eP.value=''; eC.value=''; eCo.value=''; if(eCoReal) eCoReal.value=''; if(eProv) eProv.value=''; 
+  entradaCart.push({nombre:n, cant:c, costo:co, metodo, prov:prov, costoUSD, tcUsado}); 
+  eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value=''; 
   renderEntrada(); 
 }
 function renderEntrada(){ 
@@ -2525,9 +2518,8 @@ function renderEntrada(){
   if(!entradaCart.length){ d.innerHTML=''; const btn=$('btn-entrada'); if(btn) btn.disabled=true; return; } 
   d.innerHTML = entradaCart.map((i,idx)=>{
     const usdTag = i.costoUSD ? `<br><span style="font-size:10px;color:var(--purple);">u$s ${i.costoUSD.toLocaleString('en-US',{minimumFractionDigits:2})}/u — cotización $${i.tcUsado} de ese día</span>` : '';
-    const realTag = (i.costoReal !== i.costo) ? `<br><span style="font-size:10px;color:var(--orange);">Real pagado: ${fmt(i.costoReal)}/u</span>` : '';
     const metodoTag = i.metodo && i.metodo !== 'NINGUNA' ? `<br><span style="font-size:10px;color:var(--text2)">Caja: ${i.metodo}</span>` : `<br><span style="font-size:10px;color:var(--text2)">A crédito (no toca Caja)</span>`;
-    return `<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span>${realTag}${metodoTag}${usdTag}</div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`;
+    return `<div class="cart-item"><div class="cart-name" style="line-height:1.2">${i.cant}x ${i.nombre}<br><span style="font-size:10px;color:var(--text2)">Prov: ${i.prov}</span>${metodoTag}${usdTag}</div><span class="cart-price" style="color:var(--text)">${fmt(i.costo)}/u</span><button class="cart-del" onclick="delEntrada(${idx})">✕</button></div>`;
   }).join(''); 
   const b=$('btn-entrada'); if(b) b.disabled=false; 
 }
@@ -2545,17 +2537,14 @@ async function guardarEntrada(){
        if(prodDB && prodDB.fila && i.costo > 0 && i.costo !== prodDB.costo) {
            await updateCell(`Productos!E${prodDB.fila}:E${prodDB.fila}`, [[i.costo]]);
        }
-       // --- MÓDULO CAPITAL: el ingreso de mercadería descuenta de Capital lo que
-       // REALMENTE se pagó (i.costoReal), no el "costo unitario" que puede estar
-       // inflado a propósito para calcular márgenes de venta. Ese costo inflado
-       // sigue guardándose sin cambios en Entradas/Productos — solo el impacto en
-       // Capital usa el número real.
-       const montoReal = i.cant * i.costoReal;
-       await registrarMovimientoCapital('INGRESO_MERCADERIA', -montoReal, loteEntradaId+'-'+idxEntrada, 'Ingreso de mercadería: '+i.nombre+' (prov: '+i.prov+')');
+       // --- MÓDULO CAPITAL: registro de historial (no afecta Capital Real en Modo
+       // Simple, que es el que se usa por defecto — ver Auditoría de Capital).
+       const monto = i.cant * i.costo;
+       await registrarMovimientoCapital('INGRESO_MERCADERIA', -monto, loteEntradaId+'-'+idxEntrada, 'Ingreso de mercadería: '+i.nombre+' (prov: '+i.prov+')');
        // Si se indicó una Caja física, también se registra la salida real de
        // pesos ahí — antes esto nunca se preguntaba (era "un evento aparte").
        if (i.metodo && i.metodo !== 'NINGUNA') {
-         await append('Caja!A:G', [[loteEntradaId+'-CAJA-'+idxEntrada, fecha, 'EGRESO', 'COMPRA STOCK', 'Compra de stock: '+i.nombre+' (prov: '+i.prov+')', montoReal, i.metodo]]);
+         await append('Caja!A:G', [[loteEntradaId+'-CAJA-'+idxEntrada, fecha, 'EGRESO', 'COMPRA STOCK', 'Compra de stock: '+i.nombre+' (prov: '+i.prov+')', monto, i.metodo]]);
        }
     }
     entradaCart=[]; renderEntrada(); await cargarTodo(); 
