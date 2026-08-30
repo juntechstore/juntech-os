@@ -517,9 +517,12 @@
           <select class="f-in" id="usd-metodo"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option></select>
         </div>
 
-        <div class="field" id="usd-fondo-box" style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="usd-desde-fondo" style="width:16px; height:16px;">
-          <label for="usd-desde-fondo" style="font-size:12px; color:var(--text2); margin:0;">Esta plata sale del Fondo de Emergencia</label>
+        <div class="field" id="usd-fondo-box"><label class="f-label">¿De dónde sale esta plata?</label>
+          <select class="f-in" id="usd-origen-fondos">
+            <option value="CAPITAL">Capital del negocio (normal)</option>
+            <option value="FONDO">Fondo de Emergencia</option>
+            <option value="BILLETERA">Billetera Personal</option>
+          </select>
         </div>
 
         <div class="field"><label class="f-label">Motivo (Opcional)</label><input class="f-in" id="usd-motivo" placeholder="Ej: Compra en cueva"></div>
@@ -2430,14 +2433,17 @@ async function confirmarMovimientoUSD() {
       const tc = parseFloat(($('usd-rate-val').value||'').toString().replace(',','.')) || 0;
       if (!tc) { toast('Falta la cotización', 'err'); setBtn('btn-usd-mov', false, '💾 Registrar'); return; }
       const metodo = $('usd-metodo').value;
-      const desdeFondo = $('usd-desde-fondo') && $('usd-desde-fondo').checked;
+      const origenFondos = $('usd-origen-fondos') ? $('usd-origen-fondos').value : 'CAPITAL';
       const montoPesos = Math.round(monto * tc);
       await append('CajaUSD!A:F', [[fecha, 'INGRESO', 'COMPRA DE DOLARES', motivo || ('Compra a $'+tc), monto, subBilletera]]);
-      if (desdeFondo) {
-        // Categoría EXACTA 'FONDO EMERGENCIA' — así reduce el Fondo (no una compra
-        // común) y de paso queda anotado también en el Ledger de Capital como
-        // historial (sin mover el saldo, por el cambio de criterio ya aplicado).
+      if (origenFondos === 'FONDO') {
+        // Categoría EXACTA 'FONDO EMERGENCIA' — reduce el Fondo (no Capital) y
+        // queda anotado también en el Ledger como historial (sin mover el saldo).
         await _guardarMovimientoEnCaja('EGRESO', 'FONDO EMERGENCIA', motivo || ('Compra de u$s'+monto+' a $'+tc+' (desde Fondo de Emergencia)'), montoPesos, metodo);
+      } else if (origenFondos === 'BILLETERA') {
+        // 'PERSONAL (GASTO)' — reduce Billetera Personal en vez de Capital, mismo
+        // principio matemático que Fondo de Emergencia (queda neutral en Capital).
+        await _guardarMovimientoEnCaja('EGRESO', 'PERSONAL (GASTO)', motivo || ('Compra de u$s'+monto+' a $'+tc+' (desde Billetera Personal)'), montoPesos, metodo);
       } else {
         const idMov = 'USD-'+Date.now();
         await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'COMPRA DE DOLARES', motivo || ('Compra de u$s'+monto+' a $'+tc), montoPesos, metodo]]);
@@ -2457,7 +2463,7 @@ async function confirmarMovimientoUSD() {
     }
 
     toast('✓ Registrado');
-    $('usd-monto').value = ''; $('usd-motivo').value = ''; $('usd-rate-val').value = ''; if ($('usd-desde-fondo')) $('usd-desde-fondo').checked = false;
+    $('usd-monto').value = ''; $('usd-motivo').value = ''; $('usd-rate-val').value = ''; if ($('usd-origen-fondos')) $('usd-origen-fondos').value = 'CAPITAL';
     usdPreview();
     await actualizarSaldoCajaUSD();
     if (USD_MODO === 'COMPRA' || USD_MODO === 'VENTA') await cargarTodo(); // la pata en pesos sí afecta Caja/Balances
