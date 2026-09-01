@@ -1240,7 +1240,13 @@ function parseExcelDate(val){
     return { s: d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}), t: d.getTime() };
   } else {
     let t = 0;
-    try { let parts = v.split(' ')[0].split('/'); if(parts.length===3) t = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`).getTime(); } catch(e){}
+    try {
+      let parts = v.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        const dia = parseInt(parts[0], 10), mes = parseInt(parts[1], 10), anio = parseInt(parts[2], 10);
+        if (dia && mes && anio) t = new Date(anio, mes - 1, dia).getTime();
+      }
+    } catch(e){}
     return { s: v, t: t };
   }
 }
