@@ -617,6 +617,38 @@
       </div>
 
     </div>
+
+    <div class="tab" id="tab-reportes">
+      <div class="card">
+        <div class="card-title" style="color:var(--cyan)">Período del Reporte</div>
+        <div class="curr-toggle" style="flex-wrap:wrap;">
+          <button type="button" class="curr-btn on" id="rep-periodo-7d" onclick="repSetPeriodo('7d')" style="flex:1 1 45%;">Últimos 7 días</button>
+          <button type="button" class="curr-btn" id="rep-periodo-1m" onclick="repSetPeriodo('1m')" style="flex:1 1 45%;">Último mes</button>
+          <button type="button" class="curr-btn" id="rep-periodo-3m" onclick="repSetPeriodo('3m')" style="flex:1 1 45%;">Últimos 3 meses</button>
+          <button type="button" class="curr-btn" id="rep-periodo-custom" onclick="repSetPeriodo('custom')" style="flex:1 1 45%;">Rango personalizado</button>
+        </div>
+        <div class="f-row" id="rep-rango-box" style="display:none;">
+          <div class="field"><label class="f-label">Desde</label><input class="f-in" id="rep-desde" type="date"></div>
+          <div class="field"><label class="f-label">Hasta</label><input class="f-in" id="rep-hasta" type="date"></div>
+        </div>
+        <button class="btn btn-white" onclick="generarReporteVentas()">📊 Generar Reporte</button>
+      </div>
+
+      <div class="card" id="rep-resultado-card" style="display:none;">
+        <div class="card-title" style="color:var(--purple)"><span id="rep-titulo">Reporte</span></div>
+        <div class="kpi-grid">
+          <div class="kpi blue"><div class="kpi-label">Total Vendido</div><div class="kpi-val" id="rep-vendido">—</div><div class="kpi-bar"></div></div>
+          <div class="kpi cyan"><div class="kpi-label">Ganancia Bruta</div><div class="kpi-val" id="rep-ganancia">—</div><div class="kpi-bar"></div></div>
+        </div>
+        <div class="bal-row"><span class="bal-key">Cantidad de Ventas (tickets)</span><span class="bal-val" id="rep-tickets">—</span></div>
+        <div class="bal-row"><span class="bal-key">Unidades Vendidas</span><span class="bal-val" id="rep-unidades">—</span></div>
+        <div class="bal-row"><span class="bal-key">Ticket Promedio</span><span class="bal-val" id="rep-promedio">—</span></div>
+        <div class="bal-row"><span class="bal-key">Margen sobre lo vendido</span><span class="bal-val" id="rep-margen">—</span></div>
+
+        <div class="card-title" style="color:var(--orange); margin-top:16px; font-size:0.9rem;">Top 5 Productos del Período</div>
+        <div id="rep-top-productos"></div>
+      </div>
+    </div>
   </div> 
 </div> 
 
@@ -635,6 +667,9 @@
   </button>
   <button class="nav-btn" onclick="goTab('stock',this)">
     <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Stock
+  </button>
+  <button class="nav-btn" onclick="goTab('reportes',this)">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reportes
   </button>
 </div>
 
@@ -843,6 +878,91 @@ const fmtUSD = n => 'u$s ' + (n||0).toLocaleString('en-US', {minimumFractionDigi
 
 function toast(msg, tipo='ok'){ const t = $('toast'); if(!t) return; t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
 function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); const tab = $('tab-'+id); if(tab) tab.classList.add('on'); if(el) el.classList.add('on'); }
+
+// ================================================================
+// MÓDULO REPORTES (aditivo) — se basa 100% en Salidas + SalidasHistorial,
+// no toca ningún otro cálculo del sistema (Ganancia Disponible, Capital, etc.
+// siguen calculándose exactamente igual que siempre, en paralelo).
+// ================================================================
+let REP_PERIODO = '7d';
+
+function repSetPeriodo(p) {
+  REP_PERIODO = p;
+  ['7d','1m','3m','custom'].forEach(k => { const b = $('rep-periodo-'+k); if (b) b.classList.toggle('on', k===p); });
+  const rangoBox = $('rep-rango-box');
+  if (rangoBox) rangoBox.style.display = p==='custom' ? 'flex' : 'none';
+}
+
+function repCalcularRango() {
+  const ahora = new Date();
+  let desde, hasta = new Date(ahora);
+  hasta.setHours(23,59,59,999);
+  if (REP_PERIODO === '7d') { desde = new Date(ahora); desde.setDate(desde.getDate()-7); desde.setHours(0,0,0,0); }
+  else if (REP_PERIODO === '1m') { desde = new Date(ahora); desde.setMonth(desde.getMonth()-1); desde.setHours(0,0,0,0); }
+  else if (REP_PERIODO === '3m') { desde = new Date(ahora); desde.setMonth(desde.getMonth()-3); desde.setHours(0,0,0,0); }
+  else {
+    const dEl = $('rep-desde'), hEl = $('rep-hasta');
+    if (!dEl.value || !hEl.value) { toast('Elegí las dos fechas', 'err'); return null; }
+    desde = new Date(dEl.value+'T00:00:00');
+    hasta = new Date(hEl.value+'T23:59:59');
+  }
+  return { desde: desde.getTime(), hasta: hasta.getTime() };
+}
+
+async function generarReporteVentas() {
+  const rango = repCalcularRango();
+  if (!rango) return;
+
+  let sRows = [], sRowsHist = [];
+  try { sRows = await get('Salidas!A2:O'); } catch(e) {}
+  try { sRowsHist = await get('SalidasHistorial!A2:O'); } catch(e) {}
+  const todas = sRows.concat(sRowsHist);
+
+  let totalVendido = 0, totalCosto = 0, unidades = 0;
+  const tickets = new Set();
+  const productos = {};
+
+  todas.forEach(r => {
+    if (!r[0]) return;
+    const fecha = parseExcelDate(r[5]);
+    if (!fecha.t || fecha.t < rango.desde || fecha.t > rango.hasta) return;
+    const cant = num(r[2]), subNeto = num(r[4]), costoTotal = num(r[7]);
+    totalVendido += subNeto;
+    totalCosto += costoTotal;
+    unidades += cant;
+    const nombre = str(r[0]);
+    productos[nombre] = (productos[nombre] || 0) + cant;
+    // Aproxima "tickets": todas las líneas de una misma venta comparten fecha (al
+    // minuto) y cliente exactos — no hay un ID de ticket guardado en Salidas.
+    tickets.add(fecha.s + '|' + str(r[9]));
+  });
+
+  const ganancia = totalVendido - totalCosto;
+  const margen = totalVendido > 0 ? (ganancia / totalVendido * 100) : 0;
+  const numTickets = tickets.size;
+  const promedio = numTickets > 0 ? totalVendido / numTickets : 0;
+
+  setText('rep-vendido', fmt(totalVendido));
+  setText('rep-ganancia', fmt(ganancia));
+  setText('rep-tickets', numTickets);
+  setText('rep-unidades', Math.round(unidades));
+  setText('rep-promedio', fmt(promedio));
+  setText('rep-margen', margen.toFixed(1) + '%');
+
+  const labels = { '7d':'Últimos 7 días', '1m':'Último mes', '3m':'Últimos 3 meses', 'custom':'Rango personalizado' };
+  setText('rep-titulo', 'Reporte: ' + labels[REP_PERIODO]);
+
+  const top = Object.entries(productos).sort((a,b) => b[1]-a[1]).slice(0,5);
+  let html = '';
+  top.forEach(([nombre, cant]) => { html += `<div class="bal-row"><span class="bal-key">${nombre}</span><span class="bal-val">${Math.round(cant)} u</span></div>`; });
+  setHTML('rep-top-productos', html || '<div class="empty" style="font-size:12px;">Sin ventas en este período.</div>');
+
+  const card = $('rep-resultado-card');
+  if (card) card.style.display = 'block';
+}
+// ================================================================
+// FIN MÓDULO REPORTES
+// ================================================================
 function setBtn(id, loading, label){ const b = $(id); if(!b) return; b.disabled = loading; b.textContent = loading ? 'Procesando...' : label; }
 function evalMath(el) { if(!el || !el.value) return; let v = el.value.toString().replace(/,/g, '.'); if(/[+\-*/]/.test(v)) { try { let res = new Function('return ' + v)(); if(!isNaN(res)) el.value = Math.round(res); } catch(e){} } }
 
