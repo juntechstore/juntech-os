@@ -623,10 +623,12 @@
         <div class="card-title" style="color:var(--cyan)">Período del Reporte</div>
         <div class="curr-toggle" style="flex-wrap:wrap;">
           <button type="button" class="curr-btn on" id="rep-periodo-7d" onclick="repSetPeriodo('7d')" style="flex:1 1 45%;">Últimos 7 días</button>
-          <button type="button" class="curr-btn" id="rep-periodo-1m" onclick="repSetPeriodo('1m')" style="flex:1 1 45%;">Último mes</button>
+          <button type="button" class="curr-btn" id="rep-periodo-1m" onclick="repSetPeriodo('1m')" style="flex:1 1 45%;">Último mes (30 días)</button>
           <button type="button" class="curr-btn" id="rep-periodo-3m" onclick="repSetPeriodo('3m')" style="flex:1 1 45%;">Últimos 3 meses</button>
-          <button type="button" class="curr-btn" id="rep-periodo-custom" onclick="repSetPeriodo('custom')" style="flex:1 1 45%;">Rango personalizado</button>
+          <button type="button" class="curr-btn" id="rep-periodo-mes" onclick="repSetPeriodo('mes')" style="flex:1 1 45%;">Mes específico</button>
+          <button type="button" class="curr-btn" id="rep-periodo-custom" onclick="repSetPeriodo('custom')" style="flex:1 1 100%;">Rango personalizado</button>
         </div>
+        <div class="field" id="rep-mes-box" style="display:none;"><label class="f-label">Elegí el mes</label><input class="f-in" id="rep-mes" type="month"></div>
         <div class="f-row" id="rep-rango-box" style="display:none;">
           <div class="field"><label class="f-label">Desde</label><input class="f-in" id="rep-desde" type="date"></div>
           <div class="field"><label class="f-label">Hasta</label><input class="f-in" id="rep-hasta" type="date"></div>
@@ -644,6 +646,9 @@
         <div class="bal-row"><span class="bal-key">Unidades Vendidas</span><span class="bal-val" id="rep-unidades">—</span></div>
         <div class="bal-row"><span class="bal-key">Ticket Promedio</span><span class="bal-val" id="rep-promedio">—</span></div>
         <div class="bal-row"><span class="bal-key">Margen sobre lo vendido</span><span class="bal-val" id="rep-margen">—</span></div>
+
+        <div class="card-title" style="color:var(--blue); margin-top:16px; font-size:0.9rem;">Ventas por Día</div>
+        <div id="rep-chart" style="overflow-x:auto; margin-bottom:8px;"></div>
 
         <div class="card-title" style="color:var(--orange); margin-top:16px; font-size:0.9rem;">Top 5 Productos del Período</div>
         <div id="rep-top-productos"></div>
@@ -888,9 +893,10 @@ let REP_PERIODO = '7d';
 
 function repSetPeriodo(p) {
   REP_PERIODO = p;
-  ['7d','1m','3m','custom'].forEach(k => { const b = $('rep-periodo-'+k); if (b) b.classList.toggle('on', k===p); });
-  const rangoBox = $('rep-rango-box');
+  ['7d','1m','3m','mes','custom'].forEach(k => { const b = $('rep-periodo-'+k); if (b) b.classList.toggle('on', k===p); });
+  const rangoBox = $('rep-rango-box'), mesBox = $('rep-mes-box');
   if (rangoBox) rangoBox.style.display = p==='custom' ? 'flex' : 'none';
+  if (mesBox) mesBox.style.display = p==='mes' ? 'block' : 'none';
 }
 
 function repCalcularRango() {
@@ -900,6 +906,14 @@ function repCalcularRango() {
   if (REP_PERIODO === '7d') { desde = new Date(ahora); desde.setDate(desde.getDate()-7); desde.setHours(0,0,0,0); }
   else if (REP_PERIODO === '1m') { desde = new Date(ahora); desde.setMonth(desde.getMonth()-1); desde.setHours(0,0,0,0); }
   else if (REP_PERIODO === '3m') { desde = new Date(ahora); desde.setMonth(desde.getMonth()-3); desde.setHours(0,0,0,0); }
+  else if (REP_PERIODO === 'mes') {
+    const mEl = $('rep-mes');
+    if (!mEl.value) { toast('Elegí un mes', 'err'); return null; }
+    const [anio, mes] = mEl.value.split('-').map(n => parseInt(n, 10));
+    // Mes completo, sin ambigüedad: día 1 a las 00:00 hasta el último día a las 23:59.
+    desde = new Date(anio, mes - 1, 1, 0, 0, 0, 0);
+    hasta = new Date(anio, mes, 0, 23, 59, 59, 999); // día 0 del mes siguiente = último día de este mes
+  }
   else {
     const dEl = $('rep-desde'), hEl = $('rep-hasta');
     if (!dEl.value || !hEl.value) { toast('Elegí las dos fechas', 'err'); return null; }
@@ -907,6 +921,45 @@ function repCalcularRango() {
     hasta = new Date(hEl.value+'T23:59:59');
   }
   return { desde: desde.getTime(), hasta: hasta.getTime() };
+}
+
+// Gráfico de barras simple en SVG puro (sin librerías). "porDia" es un mapa
+// timestamp-de-medianoche -> total vendido ese día. Rellena los días sin
+// ventas con 0, para que el eje X sea continuo y no salten fechas.
+function renderGraficoVentas(porDia, rango) {
+  const cont = $('rep-chart');
+  if (!cont) return;
+
+  const dias = [];
+  for (let t = rango.desde; t <= rango.hasta; t += 86400000) {
+    const key = new Date(t).setHours(0,0,0,0);
+    dias.push({ key, total: porDia[key] || 0 });
+  }
+
+  if (!dias.length) { cont.innerHTML = '<div class="empty" style="font-size:12px;">Sin datos para graficar.</div>'; return; }
+
+  const max = Math.max(...dias.map(d => d.total), 1);
+  const anchoBarra = dias.length > 40 ? 10 : (dias.length > 15 ? 18 : 32);
+  const gap = 4;
+  const alturaMax = 120;
+  const anchoTotal = dias.length * (anchoBarra + gap) + gap;
+  const svgAncho = Math.max(anchoTotal, 300);
+
+  let barras = '';
+  dias.forEach((d, i) => {
+    const x = gap + i * (anchoBarra + gap);
+    const h = Math.round((d.total / max) * alturaMax);
+    const y = alturaMax - h + 20;
+    const fechaObj = new Date(d.key);
+    const etiqueta = fechaObj.getDate() + '/' + (fechaObj.getMonth()+1);
+    const color = d.total > 0 ? 'var(--cyan)' : 'var(--border)';
+    barras += `<rect x="${x}" y="${y}" width="${anchoBarra}" height="${Math.max(h,2)}" fill="${color}" rx="2"><title>${etiqueta}: ${fmt(d.total)}</title></rect>`;
+    if (dias.length <= 20 || i % Math.ceil(dias.length/15) === 0) {
+      barras += `<text x="${x + anchoBarra/2}" y="${alturaMax+34}" font-size="9" fill="var(--text2)" text-anchor="middle">${etiqueta}</text>`;
+    }
+  });
+
+  cont.innerHTML = `<svg width="${svgAncho}" height="160" viewBox="0 0 ${svgAncho} 160" style="display:block;">${barras}</svg>`;
 }
 
 async function generarReporteVentas() {
@@ -921,6 +974,7 @@ async function generarReporteVentas() {
   let totalVendido = 0, totalCosto = 0, unidades = 0;
   const tickets = new Set();
   const productos = {};
+  const porDia = {}; // clave: timestamp del día (medianoche) -> total vendido ese día
 
   todas.forEach(r => {
     if (!r[0]) return;
@@ -935,7 +989,11 @@ async function generarReporteVentas() {
     // Aproxima "tickets": todas las líneas de una misma venta comparten fecha (al
     // minuto) y cliente exactos — no hay un ID de ticket guardado en Salidas.
     tickets.add(fecha.s + '|' + str(r[9]));
+    const diaKey = new Date(fecha.t).setHours(0,0,0,0);
+    porDia[diaKey] = (porDia[diaKey] || 0) + subNeto;
   });
+
+  renderGraficoVentas(porDia, rango);
 
   const ganancia = totalVendido - totalCosto;
   const margen = totalVendido > 0 ? (ganancia / totalVendido * 100) : 0;
@@ -949,7 +1007,8 @@ async function generarReporteVentas() {
   setText('rep-promedio', fmt(promedio));
   setText('rep-margen', margen.toFixed(1) + '%');
 
-  const labels = { '7d':'Últimos 7 días', '1m':'Último mes', '3m':'Últimos 3 meses', 'custom':'Rango personalizado' };
+  const mesLabel = REP_PERIODO === 'mes' && $('rep-mes').value ? new Date($('rep-mes').value+'-02').toLocaleDateString('es-AR',{month:'long',year:'numeric'}) : '';
+  const labels = { '7d':'Últimos 7 días', '1m':'Último mes (30 días)', '3m':'Últimos 3 meses', 'mes': mesLabel, 'custom':'Rango personalizado' };
   setText('rep-titulo', 'Reporte: ' + labels[REP_PERIODO]);
 
   const top = Object.entries(productos).sort((a,b) => b[1]-a[1]).slice(0,5);
