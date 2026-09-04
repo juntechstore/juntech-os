@@ -2145,7 +2145,18 @@ async function procesarVenta(){
     }
     
     if(metodo === 'CUENTA CORRIENTE'){ 
-       await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
+       // Si TODA la venta fue cotizada en USD (sin descuento en pesos de por medio),
+       // la deuda queda en dólares reales — no se congela a la cotización de hoy,
+       // así el cobro futuro refleja el valor real en dólares, no el peso del día
+       // de la venta. Si hay descuento en pesos o algún ítem mixto en ARS, se sigue
+       // registrando en pesos exactamente como siempre (sin cambios).
+       const todoEnUSD = desc === 0 && cart.length > 0 && cart.every(i => i.precioUSD);
+       if (todoEnUSD) {
+         const totalUSD = cart.reduce((s,i) => s + i.precioUSD*i.cant, 0);
+         await append('CuentasCorrientes!A:F', [[fechaStr, cli, 'CARGO', totalUSD, 'Ticket Venta '+id+' (mayorista u$s)', 'USD']]);
+       } else {
+         await append('CuentasCorrientes!A:E', [[fechaStr, cli, 'CARGO', total, 'Ticket Venta '+id]]); 
+       }
     } else if(metodo === 'PAGO MIXTO (Efectivo/CC)') {
        const deudCalle = total - montoEfectivo; 
        if(montoEfectivo > 0) {
