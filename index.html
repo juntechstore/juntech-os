@@ -654,6 +654,61 @@
         <div id="rep-top-productos"></div>
       </div>
     </div>
+
+    <div class="tab" id="tab-garantias">
+      <div class="kpi-grid">
+        <div class="kpi red"><div class="kpi-label">Pérdida Neta Garantías</div><div class="kpi-val" id="gar-perdida-neta">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi orange"><div class="kpi-label">Costo Total Cubierto</div><div class="kpi-val" id="gar-costo-total">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi cyan"><div class="kpi-label">Recuperado de Proveedores</div><div class="kpi-val" id="gar-recuperado">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi blue"><div class="kpi-label">Garantías Cubiertas</div><div class="kpi-val" id="gar-cantidad">—</div><div class="kpi-bar"></div></div>
+      </div>
+
+      <div class="card" style="border-left:4px solid var(--red)">
+        <div class="card-title" style="color:var(--red)">Registrar Garantía Cubierta</div>
+
+        <div class="field">
+          <label class="f-label">Producto que falló</label>
+          <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="gar-prod-fallo" list="gar-lista-fallo" placeholder="Buscar producto..." autocomplete="off"><datalist id="gar-lista-fallo"></datalist></div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="gar-cant" type="number" value="1" min="1"></div>
+          <div class="field"><label class="f-label">Cliente (Opcional)</label><input class="f-in" id="gar-cliente" placeholder="Ej: Juan Perez" style="text-transform:uppercase;"></div>
+        </div>
+
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="gar-res-dinero" onclick="garSetResolucion('DINERO')">💵 Devolver Plata</button>
+          <button type="button" class="curr-btn" id="gar-res-producto" onclick="garSetResolucion('PRODUCTO')">📦 Dar Otro Producto</button>
+        </div>
+
+        <div class="field" id="gar-bloque-dinero">
+          <label class="f-label">Monto a devolver</label>
+          <input class="f-in" id="gar-monto-dinero" type="text" inputmode="decimal" placeholder="Ej: 15000" onchange="evalMath(this)">
+        </div>
+
+        <div class="field" id="gar-bloque-producto" style="display:none;">
+          <label class="f-label">Producto de reemplazo (se descuenta del stock)</label>
+          <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="gar-prod-reemplazo" list="gar-lista-reemplazo" placeholder="Buscar producto..." autocomplete="off"><datalist id="gar-lista-reemplazo"></datalist></div>
+        </div>
+
+        <div class="field">
+          <label class="f-label">¿De dónde sale el costo?</label>
+          <select class="f-in" id="gar-fuente">
+            <option value="BILLETERA">Billetera Personal</option>
+            <option value="GANANCIA">Ganancia Disponible</option>
+            <option value="CAPITAL">Capital</option>
+          </select>
+        </div>
+
+        <div class="field"><label class="f-label">Motivo / Qué falló</label><input class="f-in" id="gar-motivo" placeholder="Ej: Se rompió el conector"></div>
+
+        <button class="btn btn-red" id="btn-gar-registrar" onclick="registrarGarantia()">🛡️ Registrar Garantía</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--purple)">Historial de Garantías</div>
+        <div id="gar-historial"><div class="empty">Cargando...</div></div>
+      </div>
+    </div>
   </div> 
 </div> 
 
@@ -675,6 +730,9 @@
   </button>
   <button class="nav-btn" onclick="goTab('reportes',this)">
     <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reportes
+  </button>
+  <button class="nav-btn" onclick="goTab('garantias',this)">
+    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Garantías
   </button>
 </div>
 
@@ -787,7 +845,7 @@ const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercon
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[], pasivos: {}}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null, ppDeudaSeleccionada = null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[], pasivos: {}, garantias: []}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null, ppDeudaSeleccionada = null;
 
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
@@ -1467,7 +1525,7 @@ async function guardarCuentaNueva() {
       }
     } else {
       const concepto = ($('cta-concepto').value || '').trim();
-      if (!concepto) { toast('Falta el concepto', 'err'); setBtn('btn-cta-nueva', false, '💾 Registrar'); return; }
+      if (!concepto) { toast('Falta el concepto', 'err'); setBtn('btn-cta-nueva', false, ''); return; }
       const relacion = $('cta-relacion').value;
       const idRows = await get('PasivosPersonales!B2:B');
       let maxId = 0;
@@ -1731,7 +1789,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
 
     const cRows = await get('Caja!A2:G');
     const saldos = {EFECTIVO:0,'MERCADO PAGO':0,NX:0,TRANSFERENCIA:0,OTRO:0};
-    let totalCaja=0, gastosJ=0, retirosJ=0, guardados=0, caps=0, ingP=0, gastP=0, fondo=0, fondoGan=0;
+    let totalCaja=0, gastosJ=0, retirosJ=0, guardados=0, caps=0, ingP=0, gastP=0, fondo=0, fondoGan=0, recGarantiaGan=0;
     const historial = [];
     cRows.forEach(r => {
       if(!r[0]) return;
@@ -1747,6 +1805,12 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       // categoría común "FONDO EMERGENCIA", que sí la toca) y acumulamos para descontarlo de
       // Ganancia Disponible más abajo. No modifica el comportamiento de la categoría vieja.
       else if(cat.includes('FONDO EMERGENCIA') && cat.includes('DESDE GANANCIA')){ fondoGan+=monto; }
+      // --- MÓDULO GARANTÍAS (aditivo): recupero de proveedor cuando la garantía se cubrió
+      // con Ganancia Disponible. Es plata real entrando (por eso sí toca Caja), y además
+      // repone Ganancia Disponible directamente — a diferencia de una categoría genérica,
+      // que la plata recuperada quedaría "flotando" en Capital (residuo) en vez de volver
+      // a la Ganancia de la que salió. No toca ninguna otra categoría existente.
+      else if(cat.includes('GARANTIA') && cat.includes('RECUPERO GANANCIA')){ recGarantiaGan+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
       else { 
         if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
         else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
@@ -1756,7 +1820,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     });
     
     const billJ = ingP - gastP + guardados;
-    const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan;
+    const ganD = ganV - gastosJ - retirosJ - guardados - caps - fondoGan + recGarantiaGan;
     const activosTotales = totalCaja + plataEnCalle; 
     // capJ es un residuo (todo lo que no es Billetera ni Ganancia).
     // A PEDIDO EXPLÍCITO: Capital Real NO incluye ajustes de inventario (mermas/
@@ -1847,6 +1911,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     renderCatalogo(); // Rellena el catálogo de Stock
     
     await cargarPasivosPersonales();
+    try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
@@ -1859,6 +1924,7 @@ function poblarListas(){
   if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
+  poblarListasGarantia();
 }
 
 // --- LÓGICA DE CATÁLOGO Y SELECCIÓN ---
@@ -2668,6 +2734,261 @@ async function confirmarMovimientoUSD() {
 }
 // ================================================================
 // FIN MÓDULO CAJA EN DÓLARES
+// ================================================================
+
+// ================================================================
+// MÓDULO GARANTÍAS (aditivo) — cobertura de fallas propias
+// ----------------------------------------------------------------
+// Registra en una hoja propia "Garantias" cada vez que un producto falla y
+// vos lo cubrís (devolviendo plata o entregando otro producto). El producto
+// que falló SIEMPRE se descuenta del stock (vía AJUSTES, igual que cualquier
+// otro ajuste de inventario — no toca ninguna cifra financiera, mismo criterio
+// ya usado en toda la app para mermas/sobrantes). Si la cobertura es con OTRO
+// PRODUCTO, ese repuesto también se descuenta del stock de la misma forma.
+//
+// IMPACTO FINANCIERO (de dónde sale el costo):
+//  - REEMBOLSO EN PLATA: sale plata real de Caja, así que sí impacta la
+//    Billetera/Ganancia/Capital elegida, reutilizando las mismas categorías
+//    ya usadas en el resto del ERP (PERSONAL (GASTO) para Billetera, una
+//    categoría con "GASTO" para Ganancia, una categoría genérica para
+//    Capital).
+//  - ENTREGA DE OTRO PRODUCTO: no sale plata real (es stock que ya estaba
+//    comprado), así que — mismo criterio que ya rige para ajustes de
+//    inventario en este ERP ("A pedido explícito: Capital Real no incluye
+//    ajustes de inventario") — no se toca ningún KPI financiero. El costo
+//    igual queda registrado en la hoja Garantias y se ve reflejado en el
+//    resumen propio de este módulo ("Costo Total Cubierto" / "Pérdida Neta"),
+//    que es donde el usuario pidió verlo.
+//
+// REEMBOLSO DEL PROVEEDOR: se puede marcar como Pendiente o Recibido. Al
+// marcarlo Recibido, esa plata SIEMPRE se registra como ingreso real en la
+// misma Fuente (Billetera/Ganancia/Capital) que se eligió al cubrir la
+// garantía — sin importar si el costo original tocó Caja o no, porque el
+// dinero del proveedor sí es plata real entrando.
+// ================================================================
+
+let DB_GAR_HOJA_LISTA = false;
+let GAR_RESOLUCION = 'DINERO';
+
+async function asegurarHojaGarantias() {
+  if (DB_GAR_HOJA_LISTA) return;
+  await asegurarHoja('Garantias', ['ID','Fecha','Producto','SKU','CostoUnitario','Cliente','TipoResolucion','MontoCosto','ProductoReemplazo','Fuente','EstadoProveedor','MontoProveedor','FechaRecibidoProveedor','Motivo']);
+  DB_GAR_HOJA_LISTA = true;
+}
+
+function garSetResolucion(tipo) {
+  GAR_RESOLUCION = tipo;
+  const bD = $('gar-res-dinero'), bP = $('gar-res-producto');
+  if (bD) bD.classList.toggle('on', tipo === 'DINERO');
+  if (bP) bP.classList.toggle('on', tipo === 'PRODUCTO');
+  const bloqueD = $('gar-bloque-dinero'), bloqueP = $('gar-bloque-producto');
+  if (bloqueD) bloqueD.style.display = tipo === 'DINERO' ? 'block' : 'none';
+  if (bloqueP) bloqueP.style.display = tipo === 'PRODUCTO' ? 'block' : 'none';
+}
+
+function poblarListasGarantia() {
+  const lF = $('gar-lista-fallo'), lR = $('gar-lista-reemplazo');
+  if (lF) lF.innerHTML = ''; if (lR) lR.innerHTML = '';
+  (DB.todo || []).forEach(p => {
+    if (lF) { const o = document.createElement('option'); o.value = p.nombre; lF.appendChild(o); }
+  });
+  (DB.prods || []).forEach(p => {
+    if (lR) { const o = document.createElement('option'); o.value = p.nombre; lR.appendChild(o); }
+  });
+}
+
+// Descuenta stock reutilizando AJUSTES (mismo mecanismo ya usado en toda la
+// app para correcciones de inventario — ver lectura en cargarTodo: stockA,
+// que lee r[0]=producto y r[2]=cantidad).
+async function descontarStockPorGarantia(nombreProducto, cantidad, motivo) {
+  await asegurarHoja('AJUSTES', ['Producto','Motivo','Cantidad','Fecha']);
+  const fecha = new Date().toLocaleDateString('es-AR');
+  await append('AJUSTES!A:D', [[nombreProducto, motivo, -Math.abs(cantidad), fecha]]);
+}
+
+// Registra el impacto financiero del COSTO — solo aplica cuando sale plata
+// real (resolución = REEMBOLSO DINERO). Reutiliza 'PERSONAL (GASTO)' para
+// Billetera (categoría ya existente y probada); usa categorías nuevas,
+// documentadas arriba, para Ganancia y Capital, sin tocar el comportamiento
+// de ninguna categoría vieja.
+async function registrarCostoGarantia(fuente, monto, motivo, idGarantia) {
+  const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
+  const idMov = idGarantia + '-COSTO';
+  if (fuente === 'BILLETERA') {
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PERSONAL (GASTO)', motivo, monto, 'EFECTIVO']]);
+  } else if (fuente === 'GANANCIA') {
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA (GASTO GANANCIA)', motivo, monto, 'EFECTIVO']]);
+  } else { // CAPITAL
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA (COSTO CAPITAL)', motivo, monto, 'EFECTIVO']]);
+    await registrarMovimientoCapital('GARANTIA', -monto, idMov, motivo);
+  }
+}
+
+// Registra el ingreso cuando el proveedor efectivamente reembolsa. Siempre es
+// plata real entrando, así que siempre impacta Caja — y va a la MISMA Fuente
+// que se eligió al cubrir la garantía (sin importar si el costo original
+// había tocado Caja o no: ver nota del módulo más arriba).
+async function registrarReembolsoProveedor(fuente, monto, motivo, idGarantia, metodo) {
+  const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
+  const idMov = idGarantia + '-REEMB';
+  const met = metodo || 'EFECTIVO';
+  if (fuente === 'BILLETERA') {
+    await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'PERSONAL (INGRESO)', motivo, monto, met]]);
+  } else if (fuente === 'GANANCIA') {
+    await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'GARANTIA (RECUPERO GANANCIA)', motivo, monto, met]]);
+  } else { // CAPITAL
+    await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'GARANTIA (REEMBOLSO CAPITAL)', motivo, monto, met]]);
+    await registrarMovimientoCapital('GARANTIA', monto, idMov, motivo);
+  }
+}
+
+async function registrarGarantia() {
+  const inputFallo = $('gar-prod-fallo');
+  const nombreFallo = (inputFallo ? inputFallo.value : '').trim();
+  const cant = parseFloat($('gar-cant').value) || 1;
+  const cliente = ($('gar-cliente').value || '').trim().toUpperCase();
+  const fuente = $('gar-fuente').value;
+  const motivo = ($('gar-motivo').value || '').trim() || 'Garantía cubierta';
+
+  if (!nombreFallo) { toast('Elegí el producto que falló', 'err'); return; }
+  const prodFallo = (DB.todo || []).find(p => p.nombre === nombreFallo);
+  if (!prodFallo) { toast('Ese producto no está en el catálogo', 'err'); return; }
+
+  let montoCosto = 0, productoReemplazo = '';
+  if (GAR_RESOLUCION === 'DINERO') {
+    montoCosto = Math.abs(parseFloat(($('gar-monto-dinero').value||'').toString().replace(',','.')) || 0);
+    if (montoCosto <= 0) { toast('Ingresá el monto a devolver', 'err'); return; }
+  } else {
+    productoReemplazo = ($('gar-prod-reemplazo').value || '').trim();
+    if (!productoReemplazo) { toast('Elegí el producto de reemplazo', 'err'); return; }
+    const prodRepu = (DB.todo || []).find(p => p.nombre === productoReemplazo);
+    if (!prodRepu) { toast('Ese producto de reemplazo no está en el catálogo', 'err'); return; }
+    montoCosto = (prodRepu.costo || 0) * cant;
+  }
+
+  setBtn('btn-gar-registrar', true, '');
+  try {
+    const id = 'GAR-' + Date.now();
+    const fecha = new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+    // 1) Stock: el producto que falló siempre sale del stock vendible.
+    await descontarStockPorGarantia(nombreFallo, cant, 'Garantía: producto fallado ('+id+')');
+    // Si la cobertura es con otro producto, ese repuesto también sale del stock.
+    if (GAR_RESOLUCION === 'PRODUCTO') {
+      await descontarStockPorGarantia(productoReemplazo, cant, 'Garantía: reemplazo entregado ('+id+')');
+    }
+
+    // 2) Impacto financiero: solo si hubo plata real de por medio (reembolso en dinero).
+    if (GAR_RESOLUCION === 'DINERO') {
+      await registrarCostoGarantia(fuente, montoCosto, 'Garantía '+id+' — '+nombreFallo+(cliente?' ('+cliente+')':''), id);
+    }
+
+    // 3) Registro en la hoja propia del módulo (siempre, sin importar el tipo).
+    await append('Garantias!A:N', [[
+      id, fecha, nombreFallo, prodFallo.sku||'-', prodFallo.costo||0, cliente||'-',
+      GAR_RESOLUCION, montoCosto, productoReemplazo||'-', fuente, 'SIN_RECLAMO', 0, '-', motivo
+    ]]);
+
+    toast('✓ Garantía registrada');
+    if(inputFallo) inputFallo.value=''; $('gar-cant').value='1'; $('gar-cliente').value='';
+    $('gar-monto-dinero').value=''; $('gar-prod-reemplazo').value=''; $('gar-motivo').value='';
+    garSetResolucion('DINERO');
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-gar-registrar', false, '🛡️ Registrar Garantía');
+}
+
+async function cargarGarantias() {
+  await asegurarHojaGarantias();
+  let rows = [];
+  try { rows = await get('Garantias!A2:N'); } catch(e) {}
+  DB.garantias = rows.filter(r => r[0]).map((r, i) => ({
+    id: str(r[0]), fecha: str(r[1]), producto: str(r[2]), sku: str(r[3]), costoUnitario: num(r[4]),
+    cliente: str(r[5]), tipo: str(r[6]), montoCosto: num(r[7]), productoReemplazo: str(r[8]),
+    fuente: str(r[9]), estadoProveedor: str(r[10]) || 'SIN_RECLAMO', montoProveedor: num(r[11]),
+    fechaRecibido: str(r[12]), motivo: str(r[13]), fila: i + 2
+  }));
+  renderGarantias();
+}
+
+function renderGarantias() {
+  const div = $('gar-historial');
+  if (!div) return;
+  const lista = DB.garantias || [];
+
+  const costoTotal = lista.reduce((s,g) => s + g.montoCosto, 0);
+  const recuperado = lista.filter(g => g.estadoProveedor === 'RECIBIDO').reduce((s,g) => s + g.montoProveedor, 0);
+  const perdidaNeta = costoTotal - recuperado;
+
+  setText('gar-costo-total', fmt(costoTotal));
+  setText('gar-recuperado', fmt(recuperado));
+  setText('gar-perdida-neta', fmt(perdidaNeta));
+  setText('gar-cantidad', lista.length);
+
+  if (!lista.length) { div.innerHTML = '<div class="empty">Todavía no registraste garantías</div>'; return; }
+
+  const fuenteLabel = { BILLETERA: 'Billetera', GANANCIA: 'Ganancia', CAPITAL: 'Capital' };
+  const estadoPill = { SIN_RECLAMO: 'pill-muted', PENDIENTE: 'pill-orange', RECIBIDO: 'pill-cyan' };
+  const estadoTxt = { SIN_RECLAMO: 'Sin reclamo', PENDIENTE: 'Reclamo pendiente', RECIBIDO: 'Reembolsado' };
+
+  let html = '';
+  lista.slice().reverse().forEach(g => {
+    const resTxt = g.tipo === 'DINERO' ? ('Devolvió '+fmt(g.montoCosto)) : ('Reemplazo: '+g.productoReemplazo);
+    html += `<div class="hist-item">
+      <div class="hist-top"><span class="hist-mot">${g.producto}${g.cliente && g.cliente!=='-' ? ' — '+g.cliente : ''}</span><span class="hist-amt" style="color:var(--red)">-${fmt(g.montoCosto)}</span></div>
+      <div class="hist-meta">${g.fecha} · ${resTxt} · Fuente: ${fuenteLabel[g.fuente]||g.fuente}</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;">
+        <span class="pill ${estadoPill[g.estadoProveedor]||'pill-muted'}">${estadoTxt[g.estadoProveedor]||g.estadoProveedor}${g.estadoProveedor==='RECIBIDO' ? ' ('+fmt(g.montoProveedor)+')' : ''}</span>
+        <div style="display:flex; gap:6px;">
+          ${g.estadoProveedor === 'SIN_RECLAMO' ? `<button class="btn btn-ghost" style="margin:0; padding:5px 9px; font-size:10px;" onclick="marcarReclamoPendiente('${g.id}')">Reclamar</button>` : ''}
+          ${g.estadoProveedor !== 'RECIBIDO' ? `<button class="btn btn-ghost" style="margin:0; padding:5px 9px; font-size:10px; border-color:var(--cyan); color:var(--cyan);" onclick="marcarReclamoRecibido('${g.id}')">Marcar Recibido</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  div.innerHTML = html;
+}
+
+async function marcarReclamoPendiente(id) {
+  const g = (DB.garantias || []).find(x => x.id === id);
+  if (!g) return;
+  const montoTxt = prompt('¿Cuánto te reconoce el proveedor por "'+g.producto+'"?', Math.round(g.montoCosto));
+  if (montoTxt === null) return;
+  const monto = Math.abs(parseFloat(montoTxt.toString().replace(',','.')) || 0);
+  if (monto <= 0) { toast('Monto inválido', 'err'); return; }
+  try {
+    await updateCell(`Garantias!K${g.fila}:L${g.fila}`, [['PENDIENTE', monto]]);
+    toast('✓ Reclamo registrado como pendiente');
+    await cargarGarantias();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+async function marcarReclamoRecibido(id) {
+  const g = (DB.garantias || []).find(x => x.id === id);
+  if (!g) return;
+  const montoBase = g.montoProveedor > 0 ? g.montoProveedor : g.montoCosto;
+  const montoTxt = prompt('¿Cuánto te reembolsó el proveedor por "'+g.producto+'"?', Math.round(montoBase));
+  if (montoTxt === null) return;
+  const monto = Math.abs(parseFloat(montoTxt.toString().replace(',','.')) || 0);
+  if (monto <= 0) { toast('Monto inválido', 'err'); return; }
+  let metodoTxt = prompt('¿A dónde entró esa plata? Escribí: EFECTIVO, MP, TRANSF o NX', 'EFECTIVO');
+  if (metodoTxt === null) return;
+  metodoTxt = metodoTxt.toUpperCase();
+  let metodo = 'EFECTIVO';
+  if (metodoTxt.includes('MP') || metodoTxt.includes('MERCADO')) metodo = 'MERCADO PAGO';
+  else if (metodoTxt.includes('TRANS')) metodo = 'TRANSFERENCIA';
+  else if (metodoTxt.includes('NX')) metodo = 'NX';
+
+  try {
+    const fechaHoy = new Date().toLocaleDateString('es-AR');
+    await updateCell(`Garantias!K${g.fila}:M${g.fila}`, [['RECIBIDO', monto, fechaHoy]]);
+    await registrarReembolsoProveedor(g.fuente, monto, 'Reembolso proveedor — Garantía '+g.id+' ('+g.producto+')', g.id, metodo);
+    toast('✓ Reembolso registrado');
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+// ================================================================
+// FIN MÓDULO GARANTÍAS
 // ================================================================
 
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
