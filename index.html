@@ -540,13 +540,21 @@
 
       <div class="card">
         <div class="card-title">Registrar Movimiento de Caja Ordinario</div>
-        <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
+        <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo" onchange="actualizarVisibilidadFijoVar()"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
         <div class="field"><label class="f-label">Categoría</label>
-          <select class="f-in" id="c-cat">
+          <select class="f-in" id="c-cat" onchange="actualizarVisibilidadFijoVar()">
             <optgroup label="JUNTECH"><option>GASTO OPERATIVO</option><option>COMPRA STOCK</option><option>CAPITALIZACION</option><option>FONDO EMERGENCIA</option></optgroup>
             <optgroup label="PERSONAL"><option>PERSONAL (INGRESO)</option><option>PERSONAL (GASTO)</option><option>PASAR GANANCIA A BILLETERA</option></optgroup>
             <optgroup label="OTRO"><option>APORTE DE CAPITAL (EXTERNO)</option></optgroup>
           </select>
+        </div>
+        <div class="field" id="c-fijovar-row" style="display:none;">
+          <label class="f-label">Tipo de Gasto</label>
+          <div class="curr-toggle" style="margin-bottom:0;">
+            <button type="button" class="curr-btn on" id="c-fijovar-variable" onclick="gastoSetTipo('VARIABLE')">Variable</button>
+            <button type="button" class="curr-btn" id="c-fijovar-fijo" onclick="gastoSetTipo('FIJO')">Fijo</button>
+          </div>
+          <div style="font-size:10px;color:var(--text2);margin-top:5px">Se guarda como etiqueta dentro de la Categoría (ej: GASTO OPERATIVO [FIJO]), para poder separarlos después en Reportes.</div>
         </div>
         <div class="field"><label class="f-label">Detalle</label><input class="f-in" id="c-motivo" placeholder="Describí el movimiento"></div>
         <div class="f-row">
@@ -669,6 +677,9 @@
 
         <div class="card-title" style="color:var(--orange); margin-top:16px; font-size:0.9rem;">Top 5 Productos del Período</div>
         <div id="rep-top-productos"></div>
+
+        <div class="card-title" style="color:var(--red); margin-top:16px; font-size:0.9rem;">Gastos Operativos: Fijos vs Variables</div>
+        <div id="rep-gastos-fv"></div>
       </div>
     </div>
 
@@ -1091,6 +1102,31 @@ async function generarReporteVentas() {
   let html = '';
   top.forEach(([nombre, cant]) => { html += `<div class="bal-row"><span class="bal-key">${nombre}</span><span class="bal-val">${Math.round(cant)} u</span></div>`; });
   setHTML('rep-top-productos', html || '<div class="empty" style="font-size:12px;">Sin ventas en este período.</div>');
+
+  // --- MÓDULO GASTOS FIJOS VS VARIABLES (aditivo) ---
+  // Lee "Caja" (no toca ningún otro cálculo del sistema) y separa los EGRESOS
+  // de categoría "GASTO OPERATIVO" según el sufijo [FIJO]/[VARIABLE] guardado
+  // en la propia Categoría al cargarlos. Movimientos viejos, cargados antes de
+  // esta función, quedan aparte como "Sin clasificar" en vez de perderse.
+  let cRowsRep = []; try { cRowsRep = await get('Caja!A2:G'); } catch(e) {}
+  let gastosFijos = 0, gastosVariables = 0, gastosSinClasificar = 0;
+  cRowsRep.forEach(r => {
+    if (!r[0]) return;
+    const fechaMov = parseExcelDate(r[1]);
+    if (!fechaMov.t || fechaMov.t < rango.desde || fechaMov.t > rango.hasta) return;
+    const tipoMov = str(r[2]).toUpperCase(), catMov = str(r[3]).toUpperCase(), montoMov = num(r[5]);
+    if (tipoMov !== 'EGRESO' || !catMov.includes('GASTO OPERATIVO')) return;
+    if (catMov.includes('[FIJO]')) gastosFijos += montoMov;
+    else if (catMov.includes('[VARIABLE]')) gastosVariables += montoMov;
+    else gastosSinClasificar += montoMov;
+  });
+  const totalGastosOp = gastosFijos + gastosVariables + gastosSinClasificar;
+  let htmlGastos = '';
+  htmlGastos += `<div class="bal-row"><span class="bal-key">Fijos</span><span class="bal-val red">${fmt(gastosFijos)}</span></div>`;
+  htmlGastos += `<div class="bal-row"><span class="bal-key">Variables</span><span class="bal-val red">${fmt(gastosVariables)}</span></div>`;
+  if (gastosSinClasificar > 0) htmlGastos += `<div class="bal-row"><span class="bal-key">Sin clasificar (cargados antes)</span><span class="bal-val">${fmt(gastosSinClasificar)}</span></div>`;
+  htmlGastos += `<div class="tot-row"><span class="tot-label">Total Gastos Operativos</span><span class="tot-val" style="font-size:1.1rem;">${fmt(totalGastosOp)}</span></div>`;
+  setHTML('rep-gastos-fv', totalGastosOp > 0 ? htmlGastos : '<div class="empty" style="font-size:12px;">Sin gastos operativos en este período.</div>');
 
   const card = $('rep-resultado-card');
   if (card) card.style.display = 'block';
@@ -2523,10 +2559,45 @@ async function aplicarCorreccionManualCapital() {
   }
 }
 
+// ================================================================
+// MÓDULO GASTOS FIJOS VS VARIABLES (aditivo)
+// ----------------------------------------------------------------
+// No agrega columnas a "Caja": la clasificación se guarda como sufijo
+// dentro del campo Categoría existente (ej. "GASTO OPERATIVO [FIJO]"),
+// así se puede filtrar después con el mismo patrón .includes() que ya
+// usa todo el resto del código para leer categorías. Solo se ofrece
+// para la categoría "GASTO OPERATIVO" en movimientos tipo EGRESO — se
+// deja afuera "FONDO EMERGENCIA" a propósito porque en otro lado del
+// código se compara esa categoría con igualdad exacta
+// (catUpper === 'FONDO EMERGENCIA'); agregarle un sufijo ahí rompería
+// esa comparación y el Ledger de Capital dejaría de verse afectado
+// correctamente por esos movimientos.
+// ================================================================
+let GASTO_TIPO = 'VARIABLE';
+
+function gastoSetTipo(tipo) {
+  GASTO_TIPO = tipo;
+  const bV = $('c-fijovar-variable'), bF = $('c-fijovar-fijo');
+  if (bV) bV.classList.toggle('on', tipo === 'VARIABLE');
+  if (bF) bF.classList.toggle('on', tipo === 'FIJO');
+}
+
+function actualizarVisibilidadFijoVar() {
+  const tipo = $('c-tipo') ? $('c-tipo').value : '';
+  const cat = $('c-cat') ? $('c-cat').value : '';
+  const row = $('c-fijovar-row');
+  if (row) row.style.display = (tipo === 'EGRESO' && cat === 'GASTO OPERATIVO') ? 'block' : 'none';
+}
+// ================================================================
+// FIN MÓDULO GASTOS FIJOS VS VARIABLES
+// ================================================================
+
 async function handleGuardarMov() {
   const t=$('c-tipo'), c=$('c-cat'), mot=$('c-motivo'), mon=$('c-monto'), met=$('c-met');
   if(!mot || !mon) return;
-  const tipo=t.value, cat=c.value, motivo=mot.value, monto=parseFloat(mon.value)||0, metodo=met.value;
+  const tipo=t.value, motivo=mot.value, monto=parseFloat(mon.value)||0, metodo=met.value;
+  let cat=c.value;
+  if (tipo === 'EGRESO' && cat === 'GASTO OPERATIVO') cat += (GASTO_TIPO === 'FIJO' ? ' [FIJO]' : ' [VARIABLE]');
   if(!motivo||monto<=0) { toast('Faltan datos', 'err'); return; }
   
   setBtn('btn-mov',true,'');
@@ -3193,6 +3264,12 @@ async function crearProductoDB(){
   }
   setBtn('btn-crear-prod', false, '✨ Guardar en Base de Datos');
 }
+
+// Estado inicial del selector Fijo/Variable: los valores por defecto de los
+// combos (EGRESO + GASTO OPERATIVO) ya cumplen la condición para mostrarlo,
+// así que se sincroniza una vez al cargar el script, sin esperar a que el
+// usuario toque los selects.
+try { actualizarVisibilidadFijoVar(); } catch(e) {}
 </script>
 </body>
 </html>
