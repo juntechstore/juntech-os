@@ -249,6 +249,14 @@
         <div class="bal-row"><span class="bal-key">Total unidades</span><span class="bal-val blue" id="h-units">—</span></div>
         <div class="bal-row"><span class="bal-key">Valor al costo</span><span class="bal-val" id="h-valor">—</span></div>
       </div>
+
+      <div class="card" style="border-left: 4px solid var(--orange)" id="card-alertas-stock">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="card-title" style="margin:0; color:var(--orange)">⚠️ Alertas de Stock Bajo</span>
+          <span class="pill pill-orange" id="alertas-count">0</span>
+        </div>
+        <div id="home-alertas"><div class="empty">Cargando...</div></div>
+      </div>
     </div>
 
     <div class="tab" id="tab-sell">
@@ -550,7 +558,16 @@
     </div>
 
    <div class="tab" id="tab-stock">
-      
+
+      <div class="card" style="border-left: 4px solid var(--orange)">
+        <div class="card-title" style="color:var(--orange)">⚠️ Alertas de Stock Bajo — Config</div>
+        <div class="field">
+          <label class="f-label">Umbral global de respaldo (para productos sin umbral propio)</label>
+          <input class="f-in" id="umbral-global-input" type="number" min="0" placeholder="Ej: 3" onchange="guardarUmbralGlobal(this.value)">
+          <div style="font-size:10px;color:var(--text2);margin-top:5px">Se usa para cualquier producto que no tenga su propio umbral cargado (lo cargás en el listado del catálogo, más abajo).</div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">Entrada de Stock (Compra)</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
@@ -849,6 +866,7 @@ let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}
 
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
+let UMBRAL_GLOBAL_DEFAULT = 3; // valor de respaldo para productos sin umbral propio cargado en Productos!G
 let monedaEntradaActual = 'ARS';
 let monedaVentaActual = 'ARS'; // Venta Mayorista en USD (Opción A: siempre se convierte a ARS al momento de la venta)
 const TC_MIN_SEGURO = 100;
@@ -1689,12 +1707,81 @@ function prepararAuditoria(modo) {
   // Futuro: else if (modo === 'digital') { ... }
 }
 
+// ================================================================
+// MÓDULO ALERTAS DE STOCK BAJO (aditivo)
+// ----------------------------------------------------------------
+// Umbral por producto (columna G de "Productos", opcional) con un umbral
+// global de respaldo (hoja "Config", clave UMBRAL_STOCK_GLOBAL) para los
+// productos que no tienen umbral propio cargado. No modifica el cálculo
+// de stock existente (stockE - stockS + stockA) ni ninguna otra lógica:
+// solo lee un valor de referencia y compara contra el stock ya calculado.
+// ================================================================
+
+async function cargarConfigUmbral() {
+  await asegurarHoja('Config', ['Clave','Valor']);
+  try {
+    const rows = await get('Config!A2:B');
+    const fila = rows.find(r => str(r[0]).toUpperCase() === 'UMBRAL_STOCK_GLOBAL');
+    if (fila && fila[1] !== undefined && str(fila[1]) !== '') {
+      UMBRAL_GLOBAL_DEFAULT = num(fila[1]);
+    } else {
+      // No existe todavía: se siembra con el valor por defecto actual, para
+      // que quede persistido desde la primera carga.
+      await append('Config!A:B', [['UMBRAL_STOCK_GLOBAL', UMBRAL_GLOBAL_DEFAULT]]);
+    }
+  } catch(e) { console.error('No se pudo cargar el umbral global de stock', e); }
+  const inp = $('umbral-global-input');
+  if (inp) inp.value = UMBRAL_GLOBAL_DEFAULT;
+}
+
+async function guardarUmbralGlobal(valor) {
+  const n = Math.max(0, parseInt(valor, 10) || 0);
+  try {
+    await asegurarHoja('Config', ['Clave','Valor']);
+    const rows = await get('Config!A2:B');
+    const idx = rows.findIndex(r => str(r[0]).toUpperCase() === 'UMBRAL_STOCK_GLOBAL');
+    if (idx >= 0) await updateCell(`Config!B${idx+2}`, [[n]]);
+    else await append('Config!A:B', [['UMBRAL_STOCK_GLOBAL', n]]);
+    UMBRAL_GLOBAL_DEFAULT = n;
+    toast('✓ Umbral global actualizado');
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+async function guardarUmbralProducto(fila, valor) {
+  const v = str(valor);
+  const n = v === '' ? '' : Math.max(0, parseInt(v, 10) || 0);
+  try {
+    await updateCell(`Productos!G${fila}`, [[n]]);
+    toast('✓ Umbral guardado');
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+function renderAlertasStock() {
+  const box = $('home-alertas'), countEl = $('alertas-count');
+  if (!box) return;
+  const bajos = (DB.todo || []).filter(p => p.stock <= p.umbral).sort((a,b) => a.stock - b.stock);
+  if (countEl) countEl.textContent = bajos.length;
+  if (!bajos.length) { box.innerHTML = '<div class="empty" style="font-size:12px;">Todo el stock está por encima de su umbral. 👍</div>'; return; }
+  let html = '';
+  bajos.forEach(p => {
+    const color = p.stock <= 0 ? 'var(--red)' : 'var(--orange)';
+    html += `<div class="bal-row"><span class="bal-key">${p.nombre}</span><span class="bal-val" style="color:${color}">${p.stock} u. (umbral: ${p.umbral})</span></div>`;
+  });
+  box.innerHTML = html;
+}
+// ================================================================
+// FIN MÓDULO ALERTAS DE STOCK BAJO
+// ================================================================
+
 
 async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
   try{
-    const pRows = await get('Productos!A2:F');
-    const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2}; });
+    await cargarConfigUmbral();
+    const pRows = await get('Productos!A2:G');
+    const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2, umbral: (r[6]!==undefined && str(r[6])!=='') ? num(r[6]) : null}; });
 
     const eRows = await get('Entradas!A2:G'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
@@ -1731,7 +1818,9 @@ async function cargarTodo(){
     DB.todo=[]; DB.prods=[]; let totalU=0, valC=0;
     Object.keys(pMap).forEach(n => {
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
-const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.'};      DB.todo.push(item); 
+      const umbralPropio = pMap[n].umbral;
+      const umbralEfectivo = (umbralPropio !== null && umbralPropio !== undefined) ? umbralPropio : UMBRAL_GLOBAL_DEFAULT;
+const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.', umbralPropio, umbral: umbralEfectivo};      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
@@ -1909,6 +1998,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
 
     poblarListas();
     renderCatalogo(); // Rellena el catálogo de Stock
+    renderAlertasStock();
     
     await cargarPasivosPersonales();
     try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
@@ -1932,12 +2022,14 @@ function renderCatalogo(){
    const div = $('cat-lista'); if(!div) return;
    let html = '';
    DB.todo.forEach(p => {
-       let dot = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
+       let dot = p.stock > p.umbral ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
+       const umbralTag = p.umbralPropio !== null ? `Umbral propio: ${p.umbralPropio}` : `Umbral (default): ${UMBRAL_GLOBAL_DEFAULT}`;
        html += `<div class="cat-item" data-name="${p.nombre}" data-sku="${p.sku}" data-stock="${p.stock}" style="padding:10px 0; border-bottom:1px solid var(--border2); display:flex; justify-content:space-between; align-items:center;">
          <div style="display:flex; align-items:center; gap:10px;">
            <input type="checkbox" class="cat-chk" value="${p.nombre}" style="width:18px;height:18px;accent-color:var(--blue);">
            <div><div style="font-weight:600;font-size:12px;">${dot} ${p.nombre}</div>
-           <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div></div>
+           <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div>
+           <div style="font-size:10px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:5px;">${umbralTag} <input class="f-in" type="number" min="0" value="${p.umbralPropio !== null ? p.umbralPropio : ''}" placeholder="${UMBRAL_GLOBAL_DEFAULT}" style="width:50px;padding:2px 5px;font-size:10px;height:20px;" onchange="guardarUmbralProducto(${p.fila}, this.value)"></div></div>
          </div>
          <div style="text-align:right;"><div style="font-weight:700;color:var(--blue);">${fmt(p.precio)}</div><div style="font-size:11px;color:var(--text2)">${p.stock} u.</div></div>
        </div>`;
