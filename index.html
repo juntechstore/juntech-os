@@ -617,6 +617,36 @@
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
       </div>
 
+      <div class="card" style="border-left: 4px solid var(--blue)">
+        <div class="card-title" style="color:var(--blue)">🧮 Calculadora de Precios</div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="calcprecio-modo-directo" onclick="calcPrecioSetModo('DIRECTO')">Costo → Precio</button>
+          <button type="button" class="curr-btn" id="calcprecio-modo-inverso" onclick="calcPrecioSetModo('INVERSO')">Precio → Margen</button>
+        </div>
+
+        <div class="field">
+          <label class="f-label">Costo ($)</label>
+          <input class="f-in" id="calcprecio-costo" type="text" inputmode="decimal" placeholder="Ej: 1500" oninput="calcPrecioRecalcular()">
+        </div>
+
+        <div class="field" id="calcprecio-campo-margen">
+          <label class="f-label">Margen deseado sobre precio de venta (%)</label>
+          <input class="f-in" id="calcprecio-margen" type="text" inputmode="decimal" placeholder="Ej: 30" oninput="calcPrecioRecalcular()">
+        </div>
+
+        <div class="field" id="calcprecio-campo-precio" style="display:none;">
+          <label class="f-label">Precio de Venta ($)</label>
+          <input class="f-in" id="calcprecio-precio" type="text" inputmode="decimal" placeholder="Ej: 2000" oninput="calcPrecioRecalcular()">
+        </div>
+
+        <div class="total-block" id="calcprecio-resultado" style="display:none;">
+          <div class="total-line"><span id="calcprecio-r-label1">Precio de Venta Sugerido</span><span id="calcprecio-r-val1">$0</span></div>
+          <div class="total-line"><span>Ganancia por unidad</span><span id="calcprecio-r-ganancia">$0</span></div>
+          <div class="total-final"><span class="total-final-label" id="calcprecio-r-label2">Margen real</span><span class="total-final-val" id="calcprecio-r-val2" style="font-size:1.3rem;">0%</span></div>
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin-top:8px;">Solo una herramienta de cálculo en pantalla — no guarda nada en la planilla. El margen se calcula sobre el precio de venta (no sobre el costo).</div>
+      </div>
+
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista de Entrada</span><span class="pill pill-muted" id="entrada-count">0</span></div>
         <div id="entrada-items"></div>
@@ -1809,6 +1839,65 @@ function renderAlertasStock() {
 }
 // ================================================================
 // FIN MÓDULO ALERTAS DE STOCK BAJO
+// ================================================================
+
+// ================================================================
+// MÓDULO CALCULADORA DE PRECIOS (aditivo)
+// ----------------------------------------------------------------
+// Herramienta pura de cálculo en pantalla — no lee ni escribe nada en
+// Sheets, no toca ningún producto ni ningún KPI. El margen se calcula
+// siempre sobre el PRECIO DE VENTA (definición estándar de "margen"),
+// no sobre el costo (eso sería "markup"), para que el modo directo y
+// el modo inverso sean coherentes entre sí.
+// ================================================================
+let CALCPRECIO_MODO = 'DIRECTO';
+
+function calcPrecioSetModo(modo) {
+  CALCPRECIO_MODO = modo;
+  const bD = $('calcprecio-modo-directo'), bI = $('calcprecio-modo-inverso');
+  if (bD) bD.classList.toggle('on', modo === 'DIRECTO');
+  if (bI) bI.classList.toggle('on', modo === 'INVERSO');
+  const campoMargen = $('calcprecio-campo-margen'), campoPrecio = $('calcprecio-campo-precio');
+  if (campoMargen) campoMargen.style.display = modo === 'DIRECTO' ? 'block' : 'none';
+  if (campoPrecio) campoPrecio.style.display = modo === 'INVERSO' ? 'block' : 'none';
+  calcPrecioRecalcular();
+}
+
+function calcPrecioRecalcular() {
+  const costoInp = $('calcprecio-costo'), resultado = $('calcprecio-resultado');
+  if (!costoInp || !resultado) return;
+  const costo = parseFloat((costoInp.value||'').toString().replace(',','.')) || 0;
+  if (!(costo > 0)) { resultado.style.display = 'none'; return; }
+
+  if (CALCPRECIO_MODO === 'DIRECTO') {
+    const margenInp = $('calcprecio-margen');
+    const margen = parseFloat((margenInp ? margenInp.value : '').toString().replace(',','.')) || 0;
+    if (margen >= 100) { resultado.style.display = 'none'; return; } // margen sobre precio no puede llegar a 100%
+    const precio = costo / (1 - margen/100);
+    const ganancia = precio - costo;
+    setText('calcprecio-r-label1', 'Precio de Venta Sugerido');
+    setText('calcprecio-r-val1', fmt(precio));
+    setText('calcprecio-r-ganancia', fmt(ganancia));
+    setText('calcprecio-r-label2', 'Margen aplicado');
+    setText('calcprecio-r-val2', margen.toFixed(1) + '%');
+    const val2El = $('calcprecio-r-val2'); if (val2El) val2El.style.color = '';
+  } else {
+    const precioInp = $('calcprecio-precio');
+    const precio = parseFloat((precioInp ? precioInp.value : '').toString().replace(',','.')) || 0;
+    if (!(precio > 0)) { resultado.style.display = 'none'; return; }
+    const ganancia = precio - costo;
+    const margenReal = (ganancia / precio) * 100;
+    setText('calcprecio-r-label1', 'Precio de Venta');
+    setText('calcprecio-r-val1', fmt(precio));
+    setText('calcprecio-r-ganancia', fmt(ganancia));
+    setText('calcprecio-r-label2', 'Margen real');
+    setText('calcprecio-r-val2', margenReal.toFixed(1) + '%');
+    const val2El = $('calcprecio-r-val2'); if (val2El) val2El.style.color = margenReal < 0 ? 'var(--red)' : '';
+  }
+  resultado.style.display = 'block';
+}
+// ================================================================
+// FIN MÓDULO CALCULADORA DE PRECIOS
 // ================================================================
 
 
