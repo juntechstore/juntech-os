@@ -295,6 +295,24 @@
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
       </div>
+      <div class="card" style="border-left: 4px solid var(--purple)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="card-title" style="margin:0; color:var(--purple)">📦 Vender Combo</span>
+        </div>
+        <div class="field">
+          <label class="f-label">Buscar Combo</label>
+          <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="combo-search" list="combo-lista" placeholder="Escribí el nombre del combo..." onchange="selCombo()" autocomplete="off"><datalist id="combo-lista"></datalist></div>
+        </div>
+        <div class="prod-prev" id="combo-prev">
+          <div class="pp-top"><span class="pp-name" id="combo-prev-nombre">—</span><span class="pill pill-blue" id="combo-prev-stock">—</span></div>
+          <div id="combo-prev-componentes" style="font-size:11px; color:var(--text2); margin:6px 0; line-height:1.6;"></div>
+          <div class="pp-meta"><span>Precio combo: <b id="combo-prev-precio">—</b></span><span>Vs. lista: <b id="combo-prev-desc">—</b></span></div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Cantidad de combos</label><input class="f-in" id="combo-cant" type="number" value="1" min="1"></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-ghost" onclick="agregarComboAlCarrito()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar al carrito</button></div>
+        </div>
+      </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span class="card-title" style="margin:0">Carrito</span><span class="pill pill-blue" id="cart-count">0 items</span>
@@ -603,6 +621,28 @@
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
 
+      <div class="card" style="border-left: 4px solid var(--purple)">
+        <div class="card-title" style="color:var(--purple)">🧮 Calculadora de Precios</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Solo calcula en pantalla — no guarda nada en la planilla.</div>
+
+        <div class="field"><label class="f-label">Costo ($)</label><input class="f-in" id="calc-costo" type="text" inputmode="decimal" placeholder="Ej: 8000" oninput="calcularPrecios()"></div>
+
+        <div style="border-top:1px dashed var(--border); padding-top:12px; margin-top:4px;">
+          <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--text2); text-transform:uppercase;">Costo + Margen → Precio sugerido</div>
+          <div class="field"><label class="f-label">Margen deseado sobre el precio de venta (%)</label><input class="f-in" id="calc-margen" type="text" inputmode="decimal" placeholder="Ej: 30" oninput="calcularPrecios()"></div>
+          <div class="bal-row"><span class="bal-key">Precio de venta sugerido</span><span class="bal-val purple" id="calc-precio-resultado">—</span></div>
+          <div class="bal-row"><span class="bal-key">Ganancia por unidad</span><span class="bal-val" id="calc-ganancia-resultado">—</span></div>
+        </div>
+
+        <div style="border-top:1px dashed var(--border); padding-top:12px; margin-top:14px;">
+          <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--text2); text-transform:uppercase;">Costo + Precio → Margen real (cálculo inverso)</div>
+          <div class="field"><label class="f-label">Precio de venta ($)</label><input class="f-in" id="calc-precio-inv" type="text" inputmode="decimal" placeholder="Ej: 12000" oninput="calcularPrecios()"></div>
+          <div class="bal-row"><span class="bal-key">Margen real sobre el precio de venta</span><span class="bal-val purple" id="calc-margen-resultado">—</span></div>
+          <div class="bal-row"><span class="bal-key">Margen real sobre el costo (markup)</span><span class="bal-val" id="calc-markup-resultado">—</span></div>
+          <div class="bal-row"><span class="bal-key">Ganancia por unidad</span><span class="bal-val" id="calc-ganancia-inv-resultado">—</span></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
@@ -615,6 +655,20 @@
           <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: 5000*1.5" onchange="evalMath(this)"></div>
         </div>
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
+      </div>
+
+      <div class="card" style="border-left: 4px solid var(--purple)">
+        <div class="card-title" style="color:var(--purple)">📦 Crear Combo</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Arma un combo con productos reales de tu catálogo. No crea un producto nuevo: al venderse, se descuenta el stock real de cada componente. Una vez guardado, el combo no se puede editar ni borrar desde acá.</div>
+        <div class="field"><label class="f-label">Buscar componente</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="combo-comp-prod" list="combo-comp-lista" placeholder="Buscar producto..." autocomplete="off"><datalist id="combo-comp-lista"></datalist></div></div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Cantidad en el combo</label><input class="f-in" id="combo-comp-cant" type="number" min="1" value="1"></div>
+          <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-ghost" onclick="addComponenteCombo()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar componente</button></div>
+        </div>
+        <div id="combo-comp-items" style="margin-bottom:12px;"></div>
+        <div class="field"><label class="f-label">Nombre del Combo</label><input class="f-in" id="combo-nombre" placeholder="Ej: COMBO CARGADOR + CABLE + FUNDA" style="text-transform: uppercase;"></div>
+        <div class="field"><label class="f-label">Precio Total del Combo ($)</label><input class="f-in" id="combo-precio-total" type="text" placeholder="Ej: 25000" onchange="evalMath(this)"></div>
+        <button class="btn btn-purple" id="btn-guardar-combo" onclick="guardarCombo()">💾 Guardar Combo</button>
       </div>
 
       <div class="card" style="border-left: 4px solid var(--blue)">
@@ -903,7 +957,7 @@ const CLIENT_ID='21061290717-fei5b38etsl97mtal01164u251lk0v0q.apps.googleusercon
 const SHEET_ID='1S67cE2Z0DhSscWW5sxidHaAS0MTeXtVyLm0IVIsVhBM';
 const SCOPES='https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 
-let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[], pasivos: {}, garantias: []}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null, ppDeudaSeleccionada = null;
+let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}, directorio:[], pasivos: {}, garantias: [], combos: {}}, cart=[], entradaCart=[], currentProd=null, timeoutCRM=null, ppDeudaSeleccionada = null, comboCart=[], currentCombo=null;
 
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
@@ -2127,6 +2181,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     
     await cargarPasivosPersonales();
     try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
+    try { await cargarCombos(); } catch(e) { console.error('Combos: no se pudo cargar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
@@ -2135,10 +2190,10 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
 }
 
 function poblarListas(){
-  const vl=$('v-lista'); const el=$('e-lista');
-  if(vl) vl.innerHTML=''; if(el) el.innerHTML='';
+  const vl=$('v-lista'); const el=$('e-lista'); const ccl=$('combo-comp-lista');
+  if(vl) vl.innerHTML=''; if(el) el.innerHTML=''; if(ccl) ccl.innerHTML='';
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
-  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); });
+  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); if(ccl) ccl.appendChild(o.cloneNode(true)); });
   poblarListasGarantia();
 }
 
@@ -3243,7 +3298,228 @@ async function marcarReclamoRecibido(id) {
 // FIN MÓDULO GARANTÍAS
 // ================================================================
 
+// ================================================================
+// MÓDULO CALCULADORA DE PRECIOS (aditivo) — 100% cliente, no lee ni
+// escribe nada en Sheets. Dos cálculos independientes que comparten el
+// campo Costo:
+//  - Costo + Margen deseado (sobre el precio de venta) → Precio sugerido.
+//  - Costo + Precio de venta → Margen real (sobre precio y sobre costo).
+// Margen "sobre el precio de venta" = (precio-costo)/precio — es la
+// definición de margen más habitual en reventa; el markup (margen sobre
+// costo) se muestra aparte para quien piense en esos términos.
+// ================================================================
+function calcularPrecios() {
+  const costo = parseFloat(($('calc-costo').value||'').toString().replace(',','.')) || 0;
+
+  // Costo + Margen → Precio
+  const margenInput = parseFloat(($('calc-margen').value||'').toString().replace(',','.'));
+  const elPrecioRes = $('calc-precio-resultado'), elGanRes = $('calc-ganancia-resultado');
+  if (costo > 0 && !isNaN(margenInput) && margenInput >= 0 && margenInput < 100) {
+    const precioSugerido = costo / (1 - margenInput / 100);
+    if (elPrecioRes) { elPrecioRes.textContent = fmt(precioSugerido); elPrecioRes.style.color = ''; }
+    if (elGanRes) elGanRes.textContent = fmt(precioSugerido - costo);
+  } else {
+    if (elPrecioRes) {
+      elPrecioRes.textContent = (costo > 0 && !isNaN(margenInput) && margenInput >= 100) ? 'Margen inválido (debe ser < 100%)' : '—';
+      elPrecioRes.style.color = (costo > 0 && !isNaN(margenInput) && margenInput >= 100) ? 'var(--red)' : '';
+    }
+    if (elGanRes) elGanRes.textContent = '—';
+  }
+
+  // Costo + Precio → Margen real
+  const precioInv = parseFloat(($('calc-precio-inv').value||'').toString().replace(',','.')) || 0;
+  const elMargenRes = $('calc-margen-resultado'), elMarkupRes = $('calc-markup-resultado'), elGanInvRes = $('calc-ganancia-inv-resultado');
+  if (costo > 0 && precioInv > 0) {
+    const margenReal = ((precioInv - costo) / precioInv) * 100;
+    const markupReal = ((precioInv - costo) / costo) * 100;
+    if (elMargenRes) { elMargenRes.textContent = margenReal.toFixed(1) + '%'; elMargenRes.style.color = margenReal < 0 ? 'var(--red)' : ''; }
+    if (elMarkupRes) elMarkupRes.textContent = markupReal.toFixed(1) + '%';
+    if (elGanInvRes) elGanInvRes.textContent = fmt(precioInv - costo);
+  } else {
+    if (elMargenRes) { elMargenRes.textContent = '—'; elMargenRes.style.color = ''; }
+    if (elMarkupRes) elMarkupRes.textContent = '—';
+    if (elGanInvRes) elGanInvRes.textContent = '—';
+  }
+}
+// ================================================================
+// FIN MÓDULO CALCULADORA DE PRECIOS
+// ================================================================
+
 function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
+
+// ================================================================
+// MÓDULO COMBOS (aditivo)
+// ----------------------------------------------------------------
+// Un combo NO es un producto nuevo: vive solo en la hoja "Combos"
+// (una fila por componente, mismo patrón append-only que Entradas/
+// AJUSTES/Garantias) y referencia productos reales que ya existen en
+// "Productos". No se puede editar ni borrar desde la app en esta
+// versión — igual que hoy no se puede editar una Entrada ya cargada.
+//
+// Columnas de "Combos!A:E":
+//   A ID_Combo | B NombreCombo | C Producto | D CantidadPorCombo | E PrecioComboTotal
+// (E se repite igual en todas las filas de un mismo ID_Combo)
+//
+// AL VENDERSE: el combo nunca genera una fila "combo" en Salidas. Se
+// prorratea el precio total entre los componentes según su PESO en el
+// precio de lista (peso = precioLista_componente*cantidad / suma total
+// de precios de lista del combo) y se agregan al carrito de siempre
+// (`cart`) como líneas de producto real — por eso procesarVenta() no
+// necesita ningún cambio: ya recorre `cart` y genera una fila de Salidas
+// por línea, con el costo real de cada producto. Stock, costo y recupero
+// de Capital siguen el camino de siempre, sin tocarlo. El descuento
+// general del carrito ("$ Desc"/"% Desc") tampoco necesita cambios: se
+// sigue aplicando proporcionalmente sobre TODAS las líneas del carrito
+// en procesarVenta() (ver "descuentoProporcional"), sean de un combo
+// explotado o de una venta suelta — es exactamente el mismo mecanismo.
+// ================================================================
+
+async function cargarCombos() {
+  await asegurarHoja('Combos', ['ID_Combo','NombreCombo','Producto','CantidadPorCombo','PrecioComboTotal']);
+  let rows = []; try { rows = await get('Combos!A2:E'); } catch(e) {}
+  const combos = {};
+  rows.forEach(r => {
+    if (!r[0]) return;
+    const id = str(r[0]);
+    if (!combos[id]) combos[id] = { id, nombre: str(r[1]), precioTotal: num(r[4]), componentes: [] };
+    combos[id].componentes.push({ nombre: str(r[2]), cantidad: num(r[3]) || 1 });
+  });
+  // Enriquecido con datos vigentes de DB.todo (stock y precio real de HOY,
+  // nunca lo que había cuando se creó el combo).
+  Object.values(combos).forEach(c => {
+    let sumaLista = 0, stockDisponible = Infinity, valido = true;
+    c.componentes.forEach(comp => {
+      const prod = DB.todo.find(p => p.nombre === comp.nombre);
+      if (!prod) { valido = false; return; }
+      sumaLista += (prod.precio || 0) * comp.cantidad;
+      const disponibles = Math.floor((prod.stock || 0) / comp.cantidad);
+      if (disponibles < stockDisponible) stockDisponible = disponibles;
+    });
+    c.sumaLista = sumaLista;
+    c.stockDisponible = valido ? (stockDisponible === Infinity ? 0 : stockDisponible) : 0;
+    c.valido = valido; // false si algún componente ya no existe en el catálogo
+    c.descuentoPct = sumaLista > 0 ? ((sumaLista - c.precioTotal) / sumaLista * 100) : 0;
+  });
+  DB.combos = combos;
+  poblarListaCombos();
+}
+
+function poblarListaCombos() {
+  const dl = $('combo-lista');
+  if (!dl) return;
+  dl.innerHTML = '';
+  Object.values(DB.combos || {}).forEach(c => {
+    const o = document.createElement('option'); o.value = c.nombre; dl.appendChild(o);
+  });
+}
+
+// --- Alta de combos (Stock) ---
+function renderComboCompItems() {
+  const div = $('combo-comp-items');
+  if (!div) return;
+  if (!comboCart.length) { div.innerHTML = '<div class="empty" style="font-size:12px;">Sin componentes aún</div>'; return; }
+  div.innerHTML = comboCart.map((i, idx) => `<div class="cart-item"><div class="cart-name">${i.cantidad}x ${i.nombre}</div><button class="cart-del" onclick="delComponenteCombo(${idx})">✕</button></div>`).join('');
+}
+
+function addComponenteCombo() {
+  const inp = $('combo-comp-prod'), cantInp = $('combo-comp-cant');
+  const nombre = inp ? inp.value : '';
+  const cantidad = parseInt(cantInp ? cantInp.value : 1, 10) || 1;
+  if (!nombre) { toast('Elegí un producto', 'err'); return; }
+  const prod = DB.todo.find(p => p.nombre === nombre);
+  if (!prod) { toast('Ese producto no está en el catálogo', 'err'); return; }
+  const existente = comboCart.find(i => i.nombre === nombre);
+  if (existente) existente.cantidad += cantidad;
+  else comboCart.push({ nombre, cantidad });
+  if (inp) inp.value = ''; if (cantInp) cantInp.value = '1';
+  renderComboCompItems();
+}
+
+function delComponenteCombo(idx) { comboCart.splice(idx, 1); renderComboCompItems(); }
+
+async function guardarCombo() {
+  if (comboCart.length < 2) { toast('Un combo necesita al menos 2 componentes', 'err'); return; }
+  const nombre = ($('combo-nombre').value || '').trim().toUpperCase();
+  const precioTotal = parseFloat(($('combo-precio-total').value || '').toString().replace(',', '.')) || 0;
+  if (!nombre) { toast('Falta el nombre del combo', 'err'); return; }
+  if (precioTotal <= 0) { toast('Falta el precio total del combo', 'err'); return; }
+
+  setBtn('btn-guardar-combo', true, '');
+  try {
+    const idCombo = 'COMBO-' + Date.now();
+    const filas = comboCart.map(i => [idCombo, nombre, i.nombre, i.cantidad, precioTotal]);
+    await append('Combos!A:E', filas);
+    toast('✓ Combo guardado');
+    comboCart = []; renderComboCompItems();
+    $('combo-nombre').value = ''; $('combo-precio-total').value = '';
+    await cargarTodo();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+  setBtn('btn-guardar-combo', false, '💾 Guardar Combo');
+}
+
+// --- Venta de combos (Vender) ---
+function selCombo() {
+  const inp = $('combo-search'), prev = $('combo-prev');
+  if (!inp) return;
+  const c = Object.values(DB.combos || {}).find(x => x.nombre === inp.value);
+  if (!c) { if (prev) prev.style.display = 'none'; currentCombo = null; return; }
+  currentCombo = c;
+  setText('combo-prev-nombre', c.nombre);
+  setText('combo-prev-stock', (c.valido ? c.stockDisponible : '0') + ' combo(s)');
+  setText('combo-prev-precio', fmt(c.precioTotal));
+  setText('combo-prev-desc', c.descuentoPct > 0 ? ('-' + c.descuentoPct.toFixed(1) + '% vs. lista') : 'Sin descuento vs. lista');
+  const compDiv = $('combo-prev-componentes');
+  if (compDiv) {
+    if (!c.valido) {
+      compDiv.innerHTML = '<span style="color:var(--red)">⚠️ Alguno de los componentes de este combo ya no está en el catálogo — no se puede vender.</span>';
+    } else {
+      compDiv.innerHTML = c.componentes.map(comp => `• ${comp.cantidad}x ${comp.nombre}`).join('<br>');
+    }
+  }
+  if (prev) prev.style.display = 'block';
+}
+
+function agregarComboAlCarrito() {
+  if (!currentCombo) { toast('Elegí un combo', 'err'); return; }
+  if (!currentCombo.valido) { toast('Este combo no se puede vender: algún componente ya no está en el catálogo', 'err'); return; }
+  const cantInp = $('combo-cant');
+  const cantCombos = parseInt(cantInp ? cantInp.value : 1, 10) || 1;
+  if (cantCombos <= 0) { toast('Cantidad inválida', 'err'); return; }
+
+  if (cantCombos > currentCombo.stockDisponible && !confirm('! Stock insuficiente para ' + cantCombos + ' combo(s) (alcanza para ' + currentCombo.stockDisponible + '). ¿Agregar igual?')) return;
+
+  currentCombo.componentes.forEach(comp => {
+    const prod = DB.todo.find(p => p.nombre === comp.nombre);
+    if (!prod) return; // ya validado por currentCombo.valido, pero por las dudas
+    const peso = currentCombo.sumaLista > 0 ? ((prod.precio || 0) * comp.cantidad) / currentCombo.sumaLista : 0;
+    const montoAsignadoPorCombo = peso * currentCombo.precioTotal; // $ que le toca a este componente en UN combo
+    const precioUnitarioProrrateado = Math.round(montoAsignadoPorCombo / comp.cantidad);
+    const cantidadTotal = comp.cantidad * cantCombos;
+    cart.push({
+      nombre: prod.nombre + ' [combo: ' + currentCombo.nombre + ']',
+      sysName: prod.nombre,
+      sku: prod.sku,
+      cant: cantidadTotal,
+      precio: precioUnitarioProrrateado,
+      precioLista: prod.precio, // precio real de lista del producto, no el prorrateado — así se ve el descuento del combo en el ticket
+      costo: prod.costo,
+      garantia: '',
+      precioUSD: null,
+      tcUsado: null
+    });
+  });
+
+  toast('✓ Combo agregado al carrito');
+  const searchInp = $('combo-search'); if (searchInp) searchInp.value = '';
+  if (cantInp) cantInp.value = '1';
+  const prev = $('combo-prev'); if (prev) prev.style.display = 'none';
+  currentCombo = null;
+  renderCart();
+}
+// ================================================================
+// FIN MÓDULO COMBOS
+// ================================================================
+
 // Muestra, ANTES de guardar, exactamente qué va a pasar: cuánto se descuenta de
 // Capital, si toca Caja o no, y si el costo de margen difiere del real (para que
 // eso sea una decisión consciente, no un olvido).
