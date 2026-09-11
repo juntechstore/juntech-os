@@ -238,6 +238,11 @@
         <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Suma clientes + personales + proveedores, por moneda. Esto es lo que hay en la pestaña Cuentas, resumido.</div>
         <div id="h-deudas-resumen"></div>
       </div>
+
+      <div class="card" style="border-left: 4px solid var(--cyan)">
+        <div class="card-title" style="color:var(--cyan)">📅 Seguimiento de Clientes</div>
+        <div id="home-seguimientos"><div class="empty">Cargando...</div></div>
+      </div>
       
       <div class="card">
         <div class="card-title">Últimos movimientos de Caja</div>
@@ -349,7 +354,7 @@
         <div class="card-title" style="color:var(--purple); margin-bottom:8px">Radar de Clientes (CRM)</div>
         <div class="search-wrap" style="margin-bottom:8px;">
            <span class="search-ico">🔍</span>
-           <input class="f-in ico" placeholder="Escribí el nombre para analizar..." oninput="buscarCliente(this.value)">
+           <input class="f-in ico" id="crm-search" placeholder="Escribí el nombre para analizar..." oninput="buscarCliente(this.value)">
         </div>
         <div id="crm-result"><div class="empty" style="padding:10px">Buscá un cliente para ver su radiografía</div></div>
       </div>
@@ -2182,6 +2187,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     await cargarPasivosPersonales();
     try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
     try { await cargarCombos(); } catch(e) { console.error('Combos: no se pudo cargar', e); }
+    try { await cargarSeguimientos(); } catch(e) { console.error('Seguimiento de clientes: no se pudo cargar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
@@ -2291,7 +2297,10 @@ function buscarCliente(val) {
              const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
              const ccUsdTxt = saldoCCUSD ? `<br><span style="font-size:11px;">${fmtUSD(Math.abs(saldoCCUSD))} ${saldoCCUSD > 0 ? '(a favor)' : '(deudor)'}</span>` : '';
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}${ccUsdTxt}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div></div>`;
+             const seg = (DB.seguimientos && DB.seguimientos[c]) || null;
+             const tieneSeg = seg && seg.fechaContactar;
+             const segHtml = tieneSeg ? `<span class="pill pill-orange">📅 ${formatFechaISO(seg.fechaContactar)}${seg.nota ? ' — '+seg.nota : ''}</span>` : `<span style="font-size:11px;color:var(--text2)">Sin recordatorio activo</span>`;
+             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}${ccUsdTxt}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div><div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);"><div style="font-size:10px;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Seguimiento</div>${segHtml}<div class="f-row" style="margin-top:6px;"><input class="f-in" id="seg-fecha-${cliId}" type="date" style="font-size:11px;padding:8px;"><input class="f-in" id="seg-nota-${cliId}" placeholder="Nota (opcional)" style="font-size:11px;padding:8px;"></div><div class="f-row" style="margin-top:6px;"><button class="btn btn-ghost" style="margin:0;padding:8px;font-size:10px;border-color:var(--cyan);color:var(--cyan);" onclick="guardarSeguimiento('${c}','${cliId}')">💾 Guardar recordatorio</button>${tieneSeg ? `<button class="btn btn-ghost" style="margin:0;padding:8px;font-size:10px;border-color:var(--text3);color:var(--text2);" onclick="limpiarSeguimiento('${c}')">✓ Ya contactado</button>` : '<span></span>'}</div></div></div>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
@@ -3518,6 +3527,82 @@ function agregarComboAlCarrito() {
 }
 // ================================================================
 // FIN MÓDULO COMBOS
+// ================================================================
+
+// ================================================================
+// MÓDULO SEGUIMIENTO DE CLIENTES (aditivo)
+// ----------------------------------------------------------------
+// Hoja nueva "SeguimientoClientes" (se crea sola), append-only como el
+// resto del sistema: cada "Guardar recordatorio" o "Ya contactado" agrega
+// una fila nueva, nunca edita una vieja. Para saber el estado VIGENTE de
+// cada cliente, se toma la ÚLTIMA fila de esa persona en la hoja (las
+// filas de abajo pisan a las de arriba) — mismo patrón de "última fila
+// gana" que ya usa este archivo en otros lados (ej. el saldo del Ledger
+// de Capital). "Ya contactado" simplemente agrega una fila con la fecha
+// vacía, que al ser la última pasa a ser el estado vigente (sin recordatorio).
+// No toca ninguna otra hoja ni cálculo del sistema.
+// ================================================================
+
+function formatFechaISO(iso) {
+  if (!iso) return '';
+  const partes = iso.split('-');
+  if (partes.length !== 3) return iso;
+  return partes[2] + '/' + partes[1] + '/' + partes[0];
+}
+
+async function cargarSeguimientos() {
+  await asegurarHoja('SeguimientoClientes', ['Persona','FechaContactar','Nota','FechaRegistro']);
+  let rows = []; try { rows = await get('SeguimientoClientes!A2:D'); } catch(e) {}
+  const map = {};
+  rows.forEach(r => {
+    if (!r[0]) return;
+    const persona = str(r[0]).toUpperCase();
+    map[persona] = { fechaContactar: str(r[1]), nota: str(r[2]) }; // la última fila de cada persona pisa a las anteriores
+  });
+  DB.seguimientos = map;
+  renderSeguimientosHome();
+}
+
+function renderSeguimientosHome() {
+  const box = $('home-seguimientos');
+  if (!box) return;
+  const activos = Object.entries(DB.seguimientos || {})
+    .filter(([p, s]) => s.fechaContactar)
+    .map(([p, s]) => ({ persona: p, fecha: s.fechaContactar, nota: s.nota }));
+  activos.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  if (!activos.length) { box.innerHTML = '<div class="empty" style="font-size:12px;">Sin seguimientos pendientes.</div>'; return; }
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  let html = '';
+  activos.forEach(s => {
+    const color = s.fecha < hoyISO ? 'var(--red)' : (s.fecha === hoyISO ? 'var(--orange)' : 'var(--text)');
+    html += `<div class="bal-row"><span class="bal-key">${s.persona}${s.nota ? ' — ' + s.nota : ''}</span><span class="bal-val" style="color:${color}">${formatFechaISO(s.fecha)}</span></div>`;
+  });
+  box.innerHTML = html;
+}
+
+async function guardarSeguimiento(persona, cliId) {
+  const fechaInp = $('seg-fecha-' + cliId), notaInp = $('seg-nota-' + cliId);
+  const fecha = fechaInp ? fechaInp.value : '';
+  const nota = notaInp ? notaInp.value.trim() : '';
+  if (!fecha) { toast('Elegí una fecha para el recordatorio', 'err'); return; }
+  try {
+    await append('SeguimientoClientes!A:D', [[persona, fecha, nota, new Date().toLocaleDateString('es-AR')]]);
+    toast('✓ Recordatorio guardado');
+    await cargarSeguimientos();
+    const buscador = $('crm-search'); if (buscador) buscarCliente(buscador.value);
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function limpiarSeguimiento(persona) {
+  try {
+    await append('SeguimientoClientes!A:D', [[persona, '', '', new Date().toLocaleDateString('es-AR')]]);
+    toast('✓ Marcado como contactado');
+    await cargarSeguimientos();
+    const buscador = $('crm-search'); if (buscador) buscarCliente(buscador.value);
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+// ================================================================
+// FIN MÓDULO SEGUIMIENTO DE CLIENTES
 // ================================================================
 
 // Muestra, ANTES de guardar, exactamente qué va a pasar: cuánto se descuenta de
