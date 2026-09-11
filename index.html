@@ -243,6 +243,29 @@
         <div class="card-title" style="color:var(--cyan)">📅 Seguimiento de Clientes</div>
         <div id="home-seguimientos"><div class="empty">Cargando...</div></div>
       </div>
+
+      <div class="card" style="border-left: 4px solid var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="card-title" style="margin:0; color:var(--blue)">🗓️ Turnos y Retiros</span>
+          <span class="pill pill-blue" id="turnos-count">0</span>
+        </div>
+        <div id="home-turnos"><div class="empty">Cargando...</div></div>
+
+        <div style="border-top:1px dashed var(--border); padding-top:12px; margin-top:12px;">
+          <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--text2); text-transform:uppercase;">Agendar nuevo</div>
+          <div class="curr-toggle">
+            <button type="button" class="curr-btn on" id="turno-tipo-turno" onclick="turnoSetTipo('TURNO')">Turno (minorista)</button>
+            <button type="button" class="curr-btn" id="turno-tipo-retiro" onclick="turnoSetTipo('RETIRO')">Retiro (mayorista)</button>
+          </div>
+          <div class="field"><label class="f-label">Cliente</label><input class="f-in" id="turno-cliente" list="cli-lista" placeholder="Nombre del cliente" style="text-transform:uppercase;"></div>
+          <div class="f-row">
+            <div class="field"><label class="f-label">Fecha</label><input class="f-in" id="turno-fecha" type="date"></div>
+            <div class="field"><label class="f-label">Hora</label><input class="f-in" id="turno-hora" type="time"></div>
+          </div>
+          <div class="field"><label class="f-label">Nota (opcional)</label><input class="f-in" id="turno-nota" placeholder="Ej: Retira 3 unidades, paga en efectivo"></div>
+          <button class="btn btn-blue" id="btn-turno-guardar" onclick="guardarTurno()">💾 Agendar</button>
+        </div>
+      </div>
       
       <div class="card">
         <div class="card-title">Últimos movimientos de Caja</div>
@@ -967,6 +990,7 @@ let accessToken=null, DB={prods:[],todo:[],finanzas:{}, saldosCC:{}, clientes:{}
 // ===== BIMONETARIO: cotizaciones en vivo (aditivo — no interviene en el cálculo del Capital) =====
 let COTIZ = { blue:0, cripto:0, oficial:0, manual:0, elegida:'blue' };
 let UMBRAL_GLOBAL_DEFAULT = 3; // valor de respaldo para productos sin umbral propio cargado en Productos!G
+let TURNO_TIPO = 'TURNO'; // toggle del formulario de agenda: 'TURNO' (minorista) o 'RETIRO' (mayorista)
 let monedaEntradaActual = 'ARS';
 let monedaVentaActual = 'ARS'; // Venta Mayorista en USD (Opción A: siempre se convierte a ARS al momento de la venta)
 const TC_MIN_SEGURO = 100;
@@ -2188,6 +2212,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
     try { await cargarCombos(); } catch(e) { console.error('Combos: no se pudo cargar', e); }
     try { await cargarSeguimientos(); } catch(e) { console.error('Seguimiento de clientes: no se pudo cargar', e); }
+    try { await cargarTurnos(); } catch(e) { console.error('Turnos y retiros: no se pudo cargar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
@@ -3603,6 +3628,102 @@ async function limpiarSeguimiento(persona) {
 }
 // ================================================================
 // FIN MÓDULO SEGUIMIENTO DE CLIENTES
+// ================================================================
+
+// ================================================================
+// MÓDULO TURNOS Y RETIROS (aditivo)
+// ----------------------------------------------------------------
+// Solo agenda — no reemplaza ni toca el flujo de venta. Cuando el turno
+// o retiro efectivamente pasa, la venta se sigue cargando como siempre
+// en la pestaña Vender; esto es nada más un recordatorio de "quién viene
+// y cuándo".
+//
+// Hoja nueva "Turnos" (se crea sola), append-only, con "última fila por
+// ID gana" — mismo patrón que Seguimiento de Clientes: agendar crea una
+// fila con Estado=PENDIENTE, y marcar Cumplido/Cancelar agrega una fila
+// nueva con el mismo ID y el Estado actualizado, en vez de editar la
+// fila original.
+//
+// Columnas de "Turnos!A:G":
+//   A ID | B FechaHora (ISO "AAAA-MM-DDTHH:MM") | C Tipo (TURNO/RETIRO)
+//   D Cliente | E Nota | F Estado (PENDIENTE/COMPLETADO/CANCELADO)
+//   G FechaRegistro
+// ================================================================
+
+function formatFechaHoraISO(iso) {
+  if (!iso) return '';
+  const [fecha, hora] = iso.split('T');
+  return formatFechaISO(fecha) + (hora ? ' ' + hora : '');
+}
+
+function turnoSetTipo(tipo) {
+  TURNO_TIPO = tipo;
+  const bT = $('turno-tipo-turno'), bR = $('turno-tipo-retiro');
+  if (bT) bT.classList.toggle('on', tipo === 'TURNO');
+  if (bR) bR.classList.toggle('on', tipo === 'RETIRO');
+}
+
+async function cargarTurnos() {
+  await asegurarHoja('Turnos', ['ID','FechaHora','Tipo','Cliente','Nota','Estado','FechaRegistro']);
+  let rows = []; try { rows = await get('Turnos!A2:G'); } catch(e) {}
+  const map = {};
+  rows.forEach(r => {
+    if (!r[0]) return;
+    map[str(r[0])] = { id: str(r[0]), fechaHora: str(r[1]), tipo: str(r[2]), cliente: str(r[3]), nota: str(r[4]), estado: str(r[5]) || 'PENDIENTE' };
+  });
+  DB.turnos = map;
+  renderTurnosHome();
+}
+
+function renderTurnosHome() {
+  const box = $('home-turnos'), countEl = $('turnos-count');
+  if (!box) return;
+  const pendientes = Object.values(DB.turnos || {}).filter(t => t.estado === 'PENDIENTE' && t.fechaHora);
+  pendientes.sort((a, b) => a.fechaHora.localeCompare(b.fechaHora));
+  if (countEl) countEl.textContent = pendientes.length;
+  if (!pendientes.length) { box.innerHTML = '<div class="empty" style="font-size:12px;">Sin turnos ni retiros agendados.</div>'; return; }
+  const ahora = new Date();
+  let html = '';
+  pendientes.forEach(t => {
+    const fechaObj = new Date(t.fechaHora);
+    const vencido = !isNaN(fechaObj) && fechaObj < ahora;
+    const color = vencido ? 'var(--red)' : 'var(--text)';
+    const tipoPill = t.tipo === 'RETIRO' ? '<span class="pill pill-purple">Retiro</span>' : '<span class="pill pill-blue">Turno</span>';
+    html += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${t.cliente || '(sin nombre)'} ${tipoPill}</span><span class="hist-amt" style="color:${color}">${formatFechaHoraISO(t.fechaHora)}</span></div>${t.nota ? `<div class="hist-meta">${t.nota}</div>` : ''}<div style="display:flex; gap:6px; margin-top:6px;"><button class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:10px;border-color:var(--cyan);color:var(--cyan);" onclick="marcarTurno('${t.id}','COMPLETADO')">✓ Cumplido</button><button class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:10px;border-color:var(--text3);color:var(--text2);" onclick="marcarTurno('${t.id}','CANCELADO')">✕ Cancelar</button></div></div>`;
+  });
+  box.innerHTML = html;
+}
+
+async function guardarTurno() {
+  const cliente = ($('turno-cliente').value || '').trim().toUpperCase();
+  const fecha = $('turno-fecha').value, hora = $('turno-hora').value;
+  const nota = ($('turno-nota').value || '').trim();
+  if (!fecha || !hora) { toast('Elegí fecha y hora', 'err'); return; }
+  const fechaHora = fecha + 'T' + hora;
+
+  setBtn('btn-turno-guardar', true, '');
+  try {
+    const id = 'TURNO-' + Date.now();
+    const fechaReg = new Date().toLocaleDateString('es-AR');
+    await append('Turnos!A:G', [[id, fechaHora, TURNO_TIPO, cliente, nota, 'PENDIENTE', fechaReg]]);
+    toast('✓ Agendado');
+    $('turno-cliente').value = ''; $('turno-fecha').value = ''; $('turno-hora').value = ''; $('turno-nota').value = '';
+    await cargarTurnos();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+  setBtn('btn-turno-guardar', false, '💾 Agendar');
+}
+
+async function marcarTurno(id, nuevoEstado) {
+  const t = DB.turnos && DB.turnos[id];
+  if (!t) return;
+  try {
+    await append('Turnos!A:G', [[id, t.fechaHora, t.tipo, t.cliente, t.nota, nuevoEstado, new Date().toLocaleDateString('es-AR')]]);
+    toast(nuevoEstado === 'COMPLETADO' ? '✓ Marcado como cumplido' : '✓ Cancelado');
+    await cargarTurnos();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+// ================================================================
+// FIN MÓDULO TURNOS Y RETIROS
 // ================================================================
 
 // Muestra, ANTES de guardar, exactamente qué va a pasar: cuánto se descuenta de
