@@ -75,6 +75,12 @@
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
     .kpi-grid-hero { gap: 10px; margin-bottom: 10px; }
+    .home-header { margin-bottom: 14px; padding: 0 2px; }
+    .home-header-title { font-size: 1.15rem; font-weight: 700; letter-spacing: -.2px; }
+    .home-header-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+    .kpi-trend { font-size: 10.5px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 3px; min-height: 14px; }
+    .kpi-trend.up { color: var(--cyan); } .kpi-trend.down { color: var(--red); } .kpi-trend.flat { color: var(--text2); font-weight: 500; }
+    .kpi-hero .kpi-label { opacity: .7; }
     .kpi { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; position: relative; overflow: hidden; box-shadow: var(--shadow); }
     .kpi-hero { padding: 18px 16px; }
     .kpi-label { font-size: 10px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-bottom: 6px; }
@@ -219,13 +225,17 @@
 
   <div class="scroll">
     <div class="tab on" id="tab-home">
+      <div class="home-header">
+        <div class="home-header-title" id="home-header-fecha">—</div>
+        <div class="home-header-sub" id="home-header-sub">Cargando...</div>
+      </div>
       <div class="kpi-grid kpi-grid-hero">
-        <div class="kpi kpi-hero blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi kpi-hero cyan" onclick="abrirModalCapital()" style="cursor:pointer;"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi kpi-hero blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-trend" id="h-gan-trend"></div><div class="kpi-bar"></div></div>
+        <div class="kpi kpi-hero cyan" onclick="abrirModalCapital()" style="cursor:pointer;"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-trend" id="h-cap-trend"></div><div class="kpi-bar"></div></div>
       </div>
       <div class="kpi-grid">
-        <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi orange"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-trend" id="h-fondo-trend"></div><div class="kpi-bar"></div></div>
+        <div class="kpi orange"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-trend" id="h-joaco-trend"></div><div class="kpi-bar"></div></div>
       </div>
 
       <div class="card">
@@ -798,7 +808,11 @@
         <div class="bal-row"><span class="bal-key">Margen sobre lo vendido</span><span class="bal-val" id="rep-margen">—</span></div>
 
         <div class="card-title" style="color:var(--blue); margin-top:16px; font-size:0.9rem;">Ventas por Día</div>
-        <div id="rep-chart" style="overflow-x:auto; margin-bottom:8px;"></div>
+        <div id="rep-chart" style="overflow-x:auto; margin-bottom:4px;"></div>
+        <div style="display:flex; gap:16px; margin-bottom:8px; font-size:10px; color:var(--text2);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,var(--cyan),#26a641);display:inline-block;"></span>Ventas por día</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:0;border-top:2px dashed var(--text3);display:inline-block;"></span>Promedio del período</span>
+        </div>
 
         <div class="card-title" style="color:var(--orange); margin-top:16px; font-size:0.9rem;">Top 5 Productos del Período</div>
         <div id="rep-top-productos"></div>
@@ -2208,6 +2222,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
     if (typeof dgRecalcular === 'function') dgRecalcular();
     if (typeof actualizarSaldoCajaUSD === 'function') actualizarSaldoCajaUSD();
+    try { await actualizarTendenciasKPI(cRows, sRows, capitalLedgerActivo); } catch(e) { console.error('Tendencias KPI: no se pudo calcular', e); }
     
     let html=''; for(const k in saldos){ if(saldos[k]!==0) html += `<div class="bal-row"><span class="bal-key">${k}</span><span class="bal-val ${saldos[k]>0?'cyan':'red'}">${fmt(saldos[k])}</span></div>`; }
     setHTML('caja-res', html || '<div class="empty">Sin movimientos</div>');
@@ -2246,6 +2261,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     try { await cargarCombos(); } catch(e) { console.error('Combos: no se pudo cargar', e); }
     try { await cargarSeguimientos(); } catch(e) { console.error('Seguimiento de clientes: no se pudo cargar', e); }
     try { await cargarTurnos(); } catch(e) { console.error('Turnos y retiros: no se pudo cargar', e); }
+    try { renderHomeHeader(); } catch(e) { console.error('Header de Home: no se pudo armar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     toast('✓ Datos actualizados');
@@ -3757,6 +3773,109 @@ async function marcarTurno(id, nuevoEstado) {
 }
 // ================================================================
 // FIN MÓDULO TURNOS Y RETIROS
+// ================================================================
+
+// ================================================================
+// MÓDULO TENDENCIAS DE KPI Y HEADER DE HOME (aditivo, solo lectura)
+// ----------------------------------------------------------------
+// No toca ganD/fondo/billJ/capJ ni ningún otro cálculo existente: son
+// funciones aparte que recorren las MISMAS filas ya leídas por
+// cargarTodo() (cero llamadas extra a Sheets para Ganancia/Fondo/
+// Billetera) replicando la MISMA lógica de categorías que ya usa el
+// cálculo principal, pero acotada a una ventana de fechas, para poder
+// comparar "últimos 30 días" vs. "los 30 días anteriores".
+//
+// Capital Real es distinto: en "cálculo simple" es un residuo en un
+// instante (Activos-Billetera-Ganancia-Fondo), no una suma de
+// movimientos con fecha, así que no se puede partir en un período de
+// forma confiable — su tendencia solo se calcula cuando el Ledger de
+// Capital está activo (ahí sí es una suma de movimientos con fecha,
+// mismo mecanismo que ya usa el resto de este módulo).
+// ================================================================
+
+function calcularFlujoEnRango(cRowsAll, sRowsVentas, desdeTs, hastaTs) {
+  let ganV = 0, gastosJ = 0, retirosJ = 0, guardados = 0, caps = 0, ingP = 0, gastP = 0, fondoDelta = 0, fondoGan = 0, recGarantiaGan = 0;
+  (sRowsVentas || []).forEach(r => {
+    if (!r[0]) return;
+    const fecha = parseExcelDate(r[5]);
+    if (!fecha.t || fecha.t < desdeTs || fecha.t >= hastaTs) return;
+    const pt = num(r[4]), ct = num(r[7]);
+    if (pt > 0) ganV += (pt - ct);
+  });
+  (cRowsAll || []).forEach(r => {
+    if (!r[0]) return;
+    const fecha = parseExcelDate(r[1]);
+    if (!fecha.t || fecha.t < desdeTs || fecha.t >= hastaTs) return;
+    const tipo = str(r[2]).toUpperCase(), cat = str(r[3]).toUpperCase(), monto = num(r[5]);
+    if (cat.includes('FONDO EMERGENCIA')) { fondoDelta += tipo === 'INGRESO' ? monto : -monto; }
+    if (cat.includes('PERSONAL (INGRESO)')) { ingP += monto; }
+    else if (cat.includes('PERSONAL (GASTO)')) { gastP += monto; }
+    else if (cat.includes('PASAR GANANCIA')) { guardados += monto; }
+    else if (cat.includes('CAPITALIZACION')) { caps += monto; }
+    else if (cat.includes('FONDO EMERGENCIA') && cat.includes('DESDE GANANCIA')) { fondoGan += monto; }
+    else if (cat.includes('GARANTIA') && cat.includes('RECUPERO GANANCIA')) { recGarantiaGan += monto; }
+    else { if (tipo === 'EGRESO') { if (cat.includes('GASTO')) gastosJ += monto; if (cat.includes('RETIRO PERSONAL')) retirosJ += monto; } }
+  });
+  const billDelta = ingP - gastP + guardados;
+  const ganDelta = ganV - gastosJ - retirosJ - guardados - caps - fondoGan + recGarantiaGan;
+  return { ganDelta, fondoDelta, billDelta };
+}
+
+function pintarTendencia(id, actual, anterior) {
+  const el = $(id);
+  if (!el) return;
+  // Sin actividad en el período previo no hay contra qué comparar — mostrar
+  // un % ahí sería inventar una cifra sin sentido real.
+  if (Math.abs(anterior) < 1) { el.innerHTML = ''; return; }
+  const variacionPct = ((actual - anterior) / Math.abs(anterior)) * 100;
+  const sube = variacionPct >= 0;
+  el.innerHTML = `<span class="kpi-trend ${sube ? 'up' : 'down'}">${sube ? '▲' : '▼'} ${Math.abs(variacionPct).toFixed(0)}% vs. 30d previos</span>`;
+}
+
+async function actualizarTendenciasKPI(cRowsAll, sRowsVentas, capitalLedgerActivo) {
+  const unDia = 86400000, ahora = Date.now();
+  const actual = calcularFlujoEnRango(cRowsAll, sRowsVentas, ahora - 30 * unDia, ahora);
+  const anterior = calcularFlujoEnRango(cRowsAll, sRowsVentas, ahora - 60 * unDia, ahora - 30 * unDia);
+  pintarTendencia('h-gan-trend', actual.ganDelta, anterior.ganDelta);
+  pintarTendencia('h-fondo-trend', actual.fondoDelta, anterior.fondoDelta);
+  pintarTendencia('h-joaco-trend', actual.billDelta, anterior.billDelta);
+
+  const elCap = $('h-cap-trend');
+  if (!capitalLedgerActivo) { if (elCap) elCap.innerHTML = ''; return; }
+  try {
+    const capRows = await get('CapitalMovimientos!A2:F');
+    const sumaEnRango = (desdeTs, hastaTs) => (capRows || []).reduce((s, r) => {
+      const f = parseExcelDate(r[0]);
+      if (!f.t || f.t < desdeTs || f.t >= hastaTs) return s;
+      const ev = str(r[1]).toUpperCase();
+      if (ev === 'AJUSTE_INVENTARIO' || ev === 'AJUSTE_FONDO_EMERGENCIA') return s; // no cuentan para el saldo (ver módulo Capital)
+      return s + num(r[2]);
+    }, 0);
+    const actualCap = sumaEnRango(ahora - 30 * unDia, ahora);
+    const anteriorCap = sumaEnRango(ahora - 60 * unDia, ahora - 30 * unDia);
+    pintarTendencia('h-cap-trend', actualCap, anteriorCap);
+  } catch (e) { console.error('Tendencia de Capital: no se pudo calcular', e); }
+}
+
+function renderHomeHeader() {
+  const fechaEl = $('home-header-fecha'), subEl = $('home-header-sub');
+  if (fechaEl) {
+    const mes = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+    fechaEl.textContent = mes.charAt(0).toUpperCase() + mes.slice(1);
+  }
+  if (subEl) {
+    const partes = [];
+    const bajos = (DB.todo || []).filter(p => p.stock <= p.umbral).length;
+    if (bajos > 0) partes.push(bajos + (bajos === 1 ? ' alerta de stock' : ' alertas de stock'));
+    const proximoTurno = Object.values(DB.turnos || {})
+      .filter(t => t.estado === 'PENDIENTE' && t.fechaHora)
+      .sort((a, b) => a.fechaHora.localeCompare(b.fechaHora))[0];
+    if (proximoTurno) partes.push('próximo: ' + (proximoTurno.cliente || 'sin nombre') + ' ' + formatFechaHoraISO(proximoTurno.fechaHora));
+    subEl.textContent = partes.length ? partes.join(' · ') : 'Todo al día';
+  }
+}
+// ================================================================
+// FIN MÓDULO TENDENCIAS DE KPI Y HEADER DE HOME
 // ================================================================
 
 // Muestra, ANTES de guardar, exactamente qué va a pasar: cuánto se descuenta de
