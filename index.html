@@ -21,6 +21,7 @@
       --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
       --border:#30363d; --border2:#21262d; --r:12px;
       --shadow: 0 4px 16px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.4);
+      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 28px;
       --font:'Inter',system-ui,sans-serif;
     }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
@@ -36,7 +37,7 @@
     .sync-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: border-color .15s ease, color .15s ease; }
     .sync-btn:active { border-color: var(--blue); color: var(--blue); }
     
-    .scroll { flex: 1; overflow-y: auto; padding: 14px; padding-bottom: 92px; }
+    .scroll { flex: 1; overflow-y: auto; padding: var(--sp-4); padding-bottom: 92px; }
     .tab { display: none; } .tab.on { display: block; animation: fu .18s ease; }
     @keyframes fu { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -47,7 +48,7 @@
     .nav-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .nav-btn.on svg { stroke: var(--blue); }
 
-    .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: var(--sp-4); margin-bottom: var(--sp-3); box-shadow: var(--shadow); }
     .card-title { font-size: 10.5px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; display: flex; align-items: center; }
     .card-title::before { content:''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; margin-right: 7px; flex-shrink: 0; }
     
@@ -59,11 +60,11 @@
     .btn-white { background: var(--text); color: #07090d; font-weight: 700; }
     .btn-purple { background: linear-gradient(135deg,#bc8cff,#8a4fff); color: #fff; box-shadow: 0 3px 10px #bc8cff25; }
 
-    .field { margin-bottom: 11px; }
+    .field { margin-bottom: var(--sp-3); }
     .f-label { display: block; font-size: 10px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-bottom: 5px; }
     .f-in { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text); font-family: var(--font); font-size: 14px; outline: none; transition: border-color .15s ease, background .15s ease; }
     .f-in:focus { border-color: var(--blue); background: #161b2266; }
-    .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 
     .pill { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: .2px; }
     .pill-blue { background: #2f81f715; color: var(--blue); border: 1px solid #2f81f730; }
@@ -73,9 +74,9 @@
     .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
     .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
-    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); margin-bottom: var(--sp-2); }
     .kpi-grid-hero { gap: 10px; margin-bottom: 10px; }
-    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: var(--sp-2); margin-bottom: var(--sp-3); }
     .kpi-chip { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 10px; box-shadow: var(--shadow); }
     .kpi-chip .kpi-label { font-size: 9.5px; margin-bottom: 5px; }
     .kpi-chip .kpi-val { font-size: 1.05rem; line-height: 1.2; }
@@ -118,7 +119,9 @@
     .pp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; } .pp-name { font-size: 13px; font-weight: 600; }
     .pp-meta { display: flex; gap: 14px; font-size: 12px; color: var(--text2); } .pp-meta b { color: var(--text); font-weight: 600; }
     
-    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border2); gap: 8px; }
+    .cart-item-wrap { position: relative; overflow: hidden; }
+    .cart-item-del-bg { position: absolute; inset: 0; background: var(--red-g); color: #fff; display: flex; align-items: center; justify-content: flex-end; padding-right: 18px; font-size: 12px; font-weight: 700; border-radius: 6px; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border2); gap: 8px; position: relative; background: var(--s1); touch-action: pan-y; }
     .cart-name { font-size: 12px; font-weight: 500; flex: 1; } .cart-price { font-size: 13px; font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
     .cart-del { background: none; border: none; color: var(--red); cursor: pointer; padding: 4px 6px; font-size: 15px; }
     
@@ -153,11 +156,11 @@
     #pp-forms > div { display: none; } #pp-forms > div.on { display: block; }
 
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); } .modal-bg.on { display: flex; }
-    .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 340px; max-height: 85vh; overflow-y: auto; text-align: center; box-shadow: var(--shadow); }
+    .modal-box { background: var(--s1); border: 1px solid var(--border); border-radius: 16px; padding: 24px 20px; width: 100%; max-width: 340px; max-height: 85vh; overflow-y: auto; text-align: center; box-shadow: var(--shadow); transition: opacity .18s ease; transform-origin: center; }
     .modal-id { font-size: 11px; background: var(--s2); border-radius: 8px; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); color: var(--text2); }
     
-    .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--s1); border: 1px solid var(--border); border-radius: 9px; padding: 10px 18px; font-size: 12px; font-weight: 500; z-index: 300; opacity: 0; transition: all .25s; pointer-events: none; box-shadow: var(--shadow); }
-    .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); } .toast.ok { border-color: #2f81f750; color: var(--blue); } .toast.err { border-color: #f8514950; color: var(--red); }
+    .toast { position: fixed; bottom: 92px; left: 50%; transform: translateX(-50%) translateY(14px); background: var(--s1); border: 1px solid var(--border); border-radius: 9px; padding: 10px 18px; font-size: 12px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity .2s ease; pointer-events: none; box-shadow: var(--shadow); }
+    .toast.on { opacity: 1; } .toast.ok { border-color: #2f81f750; color: var(--blue); } .toast.err { border-color: #f8514950; color: var(--red); }
     
     #auditoria-stock-wrap, #remito-pro { display: none; }
     @media print {
@@ -1130,7 +1133,94 @@ const $ = id => document.getElementById(id);
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
 const fmtUSD = n => 'u$s ' + (n||0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-function toast(msg, tipo='ok'){ const t = $('toast'); if(!t) return; t.textContent = msg; t.className = 'toast on ' + tipo; clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2800); }
+// ================================================================
+// MÓDULO DE ANIMACIÓN FÍSICA — springs (aditivo)
+// ----------------------------------------------------------------
+// Integrador de resorte amortiguado (masa-resorte-amortiguador) corriendo
+// en requestAnimationFrame, sin librerías externas. Traduce los parámetros
+// "response"/"damping" (estilo SwiftUI) a rigidez y amortiguación físicas:
+//   k = (2π / response)² · masa      c = 2 · damping · √(k · masa)
+// damping=1 (crítico, el default de esta app) llega al destino sin rebotar
+// ni oscilar — es la sensación "seria" que pidió el usuario, no un rebote
+// juguetón. Se usa solo en un puñado de interacciones de alto impacto
+// (modales, toast, confirmación de carrito, swipe del carrito) — el resto
+// de la interfaz sigue con transiciones CSS normales, mucho más livianas.
+// Es interrumpible: cada llamada devuelve una función que corta la
+// animación en curso a mitad de camino (por eso siempre se guarda y se
+// invoca antes de lanzar una nueva animación sobre el mismo elemento).
+// ================================================================
+function animarSpring(valorInicial, valorObjetivo, onUpdate, opciones = {}) {
+  const { response = 0.35, damping = 1, velocidadInicial = 0, onComplete, masa = 1 } = opciones;
+  const k = Math.pow(2 * Math.PI / response, 2) * masa;
+  const c = 2 * damping * Math.sqrt(k * masa);
+  let valor = valorInicial, velocidad = velocidadInicial, ultimoTs = null, vivo = true;
+
+  function frame(ts) {
+    if (!vivo) return;
+    if (ultimoTs === null) ultimoTs = ts;
+    let dt = (ts - ultimoTs) / 1000;
+    ultimoTs = ts;
+    dt = Math.min(dt, 1 / 30); // evita saltos grandes si la pestaña estuvo en segundo plano
+
+    const fuerza = -k * (valor - valorObjetivo) - c * velocidad;
+    velocidad += (fuerza / masa) * dt;
+    valor += velocidad * dt;
+    onUpdate(valor);
+
+    if (Math.abs(valor - valorObjetivo) < 0.01 && Math.abs(velocidad) < 0.01) {
+      onUpdate(valorObjetivo);
+      if (onComplete) onComplete();
+      return;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  return () => { vivo = false; };
+}
+// ================================================================
+// FIN MÓDULO DE ANIMACIÓN FÍSICA
+// ================================================================
+
+function mostrarModalSpring(id) {
+  const el = $(id);
+  if (!el) return;
+  const box = el.querySelector('.modal-box');
+  el.classList.add('on');
+  if (!box) return;
+  if (box._cancelarSpring) box._cancelarSpring();
+  box.style.opacity = '0';
+  box.style.transform = 'scale(0.92)';
+  void box.offsetWidth; // fuerza el reflow para que el navegador registre el estado inicial antes de animar
+  box.style.opacity = '1';
+  box._cancelarSpring = animarSpring(0.92, 1, v => { box.style.transform = `scale(${v})`; }, { response: 0.32, damping: 1 });
+}
+
+function ocultarModalSpring(id) {
+  const el = $(id);
+  if (!el) return;
+  const box = el.querySelector('.modal-box');
+  if (!box) { el.classList.remove('on'); return; }
+  if (box._cancelarSpring) box._cancelarSpring();
+  box.style.opacity = '0';
+  box._cancelarSpring = animarSpring(1, 0.94, v => { box.style.transform = `scale(${v})`; }, {
+    response: 0.22, damping: 1,
+    onComplete: () => { el.classList.remove('on'); box.style.transform = ''; box.style.opacity = ''; }
+  });
+}
+
+function toast(msg, tipo='ok'){
+  const t = $('toast'); if(!t) return;
+  t.textContent = msg; t.className = 'toast on ' + tipo;
+  t.style.opacity = '1';
+  if (t._cancelarSpring) t._cancelarSpring();
+  t._cancelarSpring = animarSpring(14, 0, v => { t.style.transform = `translateX(-50%) translateY(${v}px)`; }, { response: 0.3, damping: 1 });
+  clearTimeout(t._t);
+  t._t = setTimeout(() => {
+    t.style.opacity = '0';
+    if (t._cancelarSpring) t._cancelarSpring();
+    t._cancelarSpring = animarSpring(0, 14, v => { t.style.transform = `translateX(-50%) translateY(${v}px)`; }, { response: 0.22, damping: 1, onComplete: () => { t.className = 'toast'; } });
+  }, 2800);
+}
 function goTab(id, el){ document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on')); const tab = $('tab-'+id); if(tab) tab.classList.add('on'); if(el) el.classList.add('on'); }
 
 // ================================================================
@@ -2548,7 +2638,7 @@ function addToCart(){
   cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : ''), precioUSD, tcUsado});
   
   if(vSearch) vSearch.value=''; if(vPrecio) vPrecio.value=''; if(vPrecioLista) vPrecioLista.value=''; if(vGar) vGar.value=''; if(vAlias) vAlias.value=''; if(vCant) vCant.value='1'; 
-  const prev=$('prod-prev'); if(prev) prev.style.display='none'; currentProd=null; renderCart();
+  const prev=$('prod-prev'); if(prev) prev.style.display='none'; currentProd=null; renderCart(); pulsoConfirmacionCarrito();
 }
 
 function renderCart(){
@@ -2560,11 +2650,78 @@ function renderCart(){
     let pTxt = fmt(item.precio);
     if(item.precio < item.precioLista) pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
     const usdTag = item.precioUSD ? `<div class="usd-tag">u$s ${item.precioUSD.toLocaleString('en-US',{minimumFractionDigits:2})} — cotización $${item.tcUsado} de ese día</div>` : '';
-    html += `<div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${usdTag}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div>`; 
+    html += `<div class="cart-item-wrap" data-idx="${i}"><div class="cart-item-del-bg">🗑️ Eliminar</div><div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${usdTag}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div></div>`; 
   });
   div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
+  div.querySelectorAll('.cart-item-wrap').forEach(wrap => {
+    const idx = parseInt(wrap.dataset.idx, 10);
+    const itemEl = wrap.querySelector('.cart-item');
+    if (itemEl) wireSwipeToDelete(itemEl, idx);
+  });
 }
 function removeCart(i){ cart.splice(i,1); renderCart(); }
+
+// ================================================================
+// SWIPE-TO-DELETE DEL CARRITO (aditivo) — manipulación directa
+// ----------------------------------------------------------------
+// Mientras el dedo está apoyado, el ítem sigue el desplazamiento 1:1 (sin
+// suavizado, sin delay) — eso es lo que hace que se sienta "agarrado" de
+// verdad. El spring físico solo entra al soltar: si pasó el umbral, vuela
+// hacia afuera y recién ahí se borra; si no, vuelve a 0 sin rebote (mismo
+// damping=1 que el resto de la app). El botón ✕ existente se deja intacto
+// como alternativa para quien use mouse/desktop.
+// ================================================================
+function wireSwipeToDelete(itemEl, idx) {
+  let startX = 0, startY = 0, currentX = 0, arrastrando = false, esHorizontal = null, cancelarSpring = null;
+  const UMBRAL_BORRAR = 80;
+  const setX = x => { itemEl.style.transform = `translateX(${x}px)`; };
+
+  itemEl.addEventListener('touchstart', e => {
+    if (cancelarSpring) { cancelarSpring(); cancelarSpring = null; }
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; currentX = 0; arrastrando = true; esHorizontal = null;
+  }, { passive: true });
+
+  itemEl.addEventListener('touchmove', e => {
+    if (!arrastrando) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    if (esHorizontal === null) esHorizontal = Math.abs(dx) > Math.abs(dy) + 4;
+    if (!esHorizontal) return; // deja pasar el scroll vertical normal de la página
+    e.preventDefault();
+    currentX = Math.min(0, dx); // solo se desliza hacia la izquierda
+    setX(currentX);
+  }, { passive: false });
+
+  itemEl.addEventListener('touchend', () => {
+    if (!arrastrando) return;
+    arrastrando = false;
+    if (!esHorizontal) return;
+    if (currentX < -UMBRAL_BORRAR) {
+      cancelarSpring = animarSpring(currentX, -400, setX, { response: 0.26, damping: 1, onComplete: () => removeCart(idx) });
+    } else {
+      cancelarSpring = animarSpring(currentX, 0, setX, { response: 0.3, damping: 1 });
+    }
+  });
+}
+// ================================================================
+// FIN SWIPE-TO-DELETE DEL CARRITO
+// ================================================================
+
+// Pulso de confirmación al agregar algo al carrito (producto o combo): dos
+// springs encadenados (escala 1→1.15→1), sin rebote en ninguno de los dos
+// tramos — el "pulso" lo da el ida-y-vuelta deliberado, no un overshoot
+// físico, consistente con el damping=1 por defecto de toda la app.
+function pulsoConfirmacionCarrito() {
+  const el = $('cart-count');
+  if (!el) return;
+  if (el._cancelarSpring) el._cancelarSpring();
+  el.style.transformOrigin = 'center';
+  el._cancelarSpring = animarSpring(1, 1.15, v => { el.style.transform = `scale(${v})`; }, {
+    response: 0.14, damping: 1,
+    onComplete: () => { el._cancelarSpring = animarSpring(1.15, 1, v => { el.style.transform = `scale(${v})`; }, { response: 0.3, damping: 1 }); }
+  });
+}
 
 function syncDesc(t){
   let sub=0; cart.forEach(i => sub += i.cant * i.precio); if(!sub) return;
@@ -2695,13 +2852,13 @@ async function procesarVenta(){
     } catch(err) {}
 
     const mWsp = $('modal-wsp'); if(mWsp) mWsp.href = 'https://wa.me/?text=' + encodeURIComponent(msgWsp).replace(/%250A/g, '%0A');
-    const mVenta = $('modal-venta'); if(mVenta) mVenta.classList.add('on');
+    mostrarModalSpring('modal-venta');
     
     cart=[]; renderCart(); if(vCli) vCli.value=''; if(vDescM) vDescM.value=''; if($('v-desc-p')) $('v-desc-p').value=''; if(vDescMot) vDescMot.value=''; setMonedaVenta('ARS'); if($('v-rate-val')) $('v-rate-val').value=''; await cargarTodo();
   }catch(e){ toast('Error: '+e.message,'err'); }
   setBtn('btn-vender',false,'✓ Confirmar venta');
 }
-function cerrarModal(){ const m = $('modal-venta'); if(m) m.classList.remove('on'); }
+function cerrarModal(){ ocultarModalSpring('modal-venta'); }
 
 // --- MÓDULO CAPITAL (consolidación): Auditoría / sincronización desde la UI ---
 function activarModoSimpleCapital() {
@@ -2713,7 +2870,7 @@ function activarModoSimpleCapital() {
 }
 
 async function abrirModalCapital() {
-  const m = $('modal-capital'); if (m) m.classList.add('on');
+  mostrarModalSpring('modal-capital');
   setText('mc-viejo', 'Calculando...'); setText('mc-nuevo', 'Calculando...'); setText('mc-diff', '—');
   const estadoEl = $('mc-estado'), btnSync = $('btn-mc-sync');
   if (btnSync) btnSync.style.display = 'none';
@@ -2781,7 +2938,7 @@ async function abrirModalCapital() {
 }
 
 function cerrarModalCapital() {
-  const m = $('modal-capital'); if (m) m.classList.remove('on');
+  ocultarModalSpring('modal-capital');
 }
 
 async function sincronizarCapital() {
@@ -3692,6 +3849,7 @@ function agregarComboAlCarrito() {
   const prev = $('combo-prev'); if (prev) prev.style.display = 'none';
   currentCombo = null;
   renderCart();
+  pulsoConfirmacionCarrito();
 }
 // ================================================================
 // FIN MÓDULO COMBOS
@@ -3888,7 +4046,7 @@ async function marcarTurno(id, nuevoEstado) {
 // ================================================================
 
 function calcularFlujoEnRango(cRowsAll, sRowsVentas, desdeTs, hastaTs) {
-  let ganV = 0, gastosJ = 0, retirosJ = 0, guardados = 0, caps = 0, ingP = 0, gastP = 0, fondoDelta = 0, fondoGan = 0, recGarantiaGan = 0;
+  let ganV = 0, gastosJ = 0, retirosJ = 0, ingP = 0, gastP = 0, fondoDelta = 0, recGarantiaGan = 0;
   (sRowsVentas || []).forEach(r => {
     if (!r[0]) return;
     const fecha = parseExcelDate(r[5]);
@@ -3901,29 +4059,46 @@ function calcularFlujoEnRango(cRowsAll, sRowsVentas, desdeTs, hastaTs) {
     const fecha = parseExcelDate(r[1]);
     if (!fecha.t || fecha.t < desdeTs || fecha.t >= hastaTs) return;
     const tipo = str(r[2]).toUpperCase(), cat = str(r[3]).toUpperCase(), monto = num(r[5]);
-    if (cat.includes('FONDO EMERGENCIA')) { fondoDelta += tipo === 'INGRESO' ? monto : -monto; }
-    if (cat.includes('PERSONAL (INGRESO)')) { ingP += monto; }
-    else if (cat.includes('PERSONAL (GASTO)')) { gastP += monto; }
-    else if (cat.includes('PASAR GANANCIA')) { guardados += monto; }
-    else if (cat.includes('CAPITALIZACION')) { caps += monto; }
-    else if (cat.includes('FONDO EMERGENCIA') && cat.includes('DESDE GANANCIA')) { fondoGan += monto; }
-    else if (cat.includes('GARANTIA') && cat.includes('RECUPERO GANANCIA')) { recGarantiaGan += monto; }
-    else { if (tipo === 'EGRESO') { if (cat.includes('GASTO')) gastosJ += monto; if (cat.includes('RETIRO PERSONAL')) retirosJ += monto; } }
+    // Reasignaciones internas entre tus propios casilleros (Distribución de Ganancia,
+    // Capitalización manual): no son actividad nueva para ningún lado del movimiento,
+    // así que quedan afuera del cálculo de TENDENCIA por completo (ni suman ni restan
+    // en ninguno de los 3 casilleros). Esto NO toca los saldos reales — esas categorías
+    // siguen sumando/restando exactamente igual que siempre en cargarTodo().
+    if (cat.includes('CAPITALIZACION')) return;
+    if (cat.includes('PASAR GANANCIA')) return;
+    if (cat.includes('FONDO EMERGENCIA') && cat.includes('DESDE GANANCIA')) return;
+
+    if (cat.includes('FONDO EMERGENCIA')) { fondoDelta += tipo === 'INGRESO' ? monto : -monto; return; }
+    if (cat.includes('PERSONAL (INGRESO)')) { ingP += monto; return; }
+    if (cat.includes('PERSONAL (GASTO)')) { gastP += monto; return; }
+    if (cat.includes('GARANTIA') && cat.includes('RECUPERO GANANCIA')) { recGarantiaGan += monto; return; }
+    if (tipo === 'EGRESO') { if (cat.includes('GASTO')) gastosJ += monto; if (cat.includes('RETIRO PERSONAL')) retirosJ += monto; }
   });
-  const billDelta = ingP - gastP + guardados;
-  const ganDelta = ganV - gastosJ - retirosJ - guardados - caps - fondoGan + recGarantiaGan;
+  const billDelta = ingP - gastP;
+  const ganDelta = ganV - gastosJ - retirosJ + recGarantiaGan;
   return { ganDelta, fondoDelta, billDelta };
 }
 
 function pintarTendencia(id, actual, anterior) {
   const el = $(id);
   if (!el) return;
-  // Sin actividad en el período previo no hay contra qué comparar — mostrar
-  // un % ahí sería inventar una cifra sin sentido real.
-  if (Math.abs(anterior) < 1) { el.innerHTML = ''; return; }
-  const variacionPct = ((actual - anterior) / Math.abs(anterior)) * 100;
-  const sube = variacionPct >= 0;
-  el.innerHTML = `<span class="kpi-trend ${sube ? 'up' : 'down'}">${sube ? '▲' : '▼'} ${Math.abs(variacionPct).toFixed(0)}% vs. 30d previos</span>`;
+  const escala = Math.max(Math.abs(actual), Math.abs(anterior));
+  // Sin actividad relevante en ninguna de las dos ventanas: no hay nada que comparar.
+  if (escala < 1) { el.innerHTML = ''; return; }
+  const diferencia = actual - anterior;
+  const sube = diferencia >= 0;
+  const mismoSigno = (actual >= 0) === (anterior >= 0);
+  // El % solo es representativo si la base de comparación (el período anterior) no es
+  // chica en relación a la escala de actividad, y si no hubo un cruce de signo (ej.
+  // Billetera pasando de negativa a positiva) — en esos casos un % no significa nada
+  // real, así que mostramos la diferencia en pesos en su lugar.
+  const baseConfiable = mismoSigno && Math.abs(anterior) >= escala * 0.15;
+  if (baseConfiable) {
+    const variacionPct = (diferencia / Math.abs(anterior)) * 100;
+    el.innerHTML = `<span class="kpi-trend ${sube ? 'up' : 'down'}">${sube ? '▲' : '▼'} ${Math.abs(variacionPct).toFixed(0)}% vs. 30d previos</span>`;
+  } else {
+    el.innerHTML = `<span class="kpi-trend ${sube ? 'up' : 'down'}">${sube ? '▲' : '▼'} ${fmt(Math.abs(diferencia))} vs. 30d previos</span>`;
+  }
 }
 
 async function actualizarTendenciasKPI(cRowsAll, sRowsVentas, capitalLedgerActivo) {
