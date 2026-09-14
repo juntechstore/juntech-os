@@ -21,7 +21,47 @@
       --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
       --border:#30363d; --border2:#21262d; --r:12px;
       --shadow: 0 4px 16px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.4);
-      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 28px;
+      --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 28px; --sp-7: 36px;
+
+      /* ============================================================
+         TOKENS DEL SISTEMA DE DISEÑO NUEVO (aditivo — todavía nada del
+         archivo los usa, por eso hoy no cambia nada visualmente).
+         Son los que se van a aplicar en la reescritura completa de las
+         7 pestañas, una vez aprobados.
+         ============================================================ */
+
+      /* -- Color: 1 acento de marca + 2 semánticos, resto neutro -- */
+      --accent: var(--blue);              /* único color para lo interactivo/marca: botón primario, tabs activas, foco, links */
+      --accent-g: var(--blue-g);
+      --success: #39d353;                 /* positivo/OK — mismo valor que ya tenía --cyan, ahora con su único rol real */
+      --warning: var(--orange);           /* advertencia real únicamente (ej. stock bajo) — no "color de módulo" */
+      --danger: var(--red);               /* negativo/crítico */
+      --danger-g: var(--red-g);
+      --danger-soft-bg: #f8514915;        /* variante "tenue" del rojo — usada para severidad intermedia (ej. stock BAJO vs SIN STOCK) */
+      --danger-soft-border: #f8514930;
+      /* --purple queda definida por compatibilidad hasta la reescritura completa,
+         pero deja de asignarse a módulos nuevos desde ahora: en el sistema nuevo
+         no hay un 4to color de acento, es 1 marca + 2 semánticos + grises. */
+
+      /* -- Escala neutra (ya existía, se formaliza como tal): --s1/--s2/--s3
+         = superficies, --border/--border2 = líneas, --text/--text2/--text3
+         = jerarquía tipográfica de color. No se agregan nombres nuevos acá
+         para no duplicar lo que ya funciona bien. -- */
+
+      /* -- Tipografía: escala fija, con un rol claro cada tamaño -- */
+      --fs-xs: 10px;      /* captions, labels de campo, pills, meta-texto */
+      --fs-sm: 12.5px;    /* texto de lista, filas, texto secundario */
+      --fs-base: 14px;    /* texto de párrafo/inputs — default global, ya vigente */
+      --fs-md: 15px;      /* valor destacado inline (ej. un total en una fila) */
+      --fs-lg: 20px;      /* número protagonista estándar de una card */
+      --fs-xl: 30px;      /* número hero — el UNO más importante de la pantalla */
+      --lh-tight: 1.15;   /* para números grandes */
+      --lh-normal: 1.45;  /* para texto — default global, ya vigente */
+
+      /* -- Radios: se formalizan 3 tamaños en vez de valores sueltos (8px/9px/10px/16px repetidos a mano) -- */
+      --r-sm: 8px;   /* chips, inputs chicos, badges */
+      --r-lg: 16px;  /* modales */
+
       --font:'Inter',system-ui,sans-serif;
     }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
