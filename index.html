@@ -17,7 +17,7 @@
       --bg:#07090d; --s1:#0d1117; --s2:#161b22; --s3:#21262d;
       --blue:#2f81f7; --blue-g:linear-gradient(135deg,#2f81f7,#1f6feb);
       --red:#f85149; --red-g:linear-gradient(135deg,#f85149,#da3633);
-      --cyan:#39d353; --orange:#f0883e; --purple:#bc8cff;
+      --cyan:#39d353; --orange:#f0883e; --purple:#8b949e;
       --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
       --border:#30363d; --border2:#21262d; --r:12px;
       --shadow: 0 4px 16px rgba(0,0,0,.28), 0 1px 2px rgba(0,0,0,.4);
@@ -98,7 +98,7 @@
     .btn-blue { background: var(--blue-g); color: #fff; box-shadow: 0 3px 10px #2f81f725; } .btn-red { background: var(--red-g); color: #fff; box-shadow: 0 3px 10px #f8514925; }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
     .btn-white { background: var(--text); color: #07090d; font-weight: 700; }
-    .btn-purple { background: linear-gradient(135deg,#bc8cff,#8a4fff); color: #fff; box-shadow: 0 3px 10px #bc8cff25; }
+    .btn-purple { background: var(--s3); color: var(--text); border: 1px solid var(--border); }
 
     .field { margin-bottom: var(--sp-3); }
     .f-label { display: block; font-size: 10px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-bottom: 5px; }
@@ -111,7 +111,7 @@
     .pill-cyan { background: #39d35315; color: var(--cyan); border: 1px solid #39d35330; }
     .pill-orange { background: #f0883e15; color: var(--orange); border: 1px solid #f0883e30; }
     .pill-red { background: #f8514915; color: var(--red); border: 1px solid #f8514930; }
-    .pill-purple { background: #bc8cff15; color: var(--purple); border: 1px solid #bc8cff30; }
+    .pill-purple { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
     .pill-muted { background: var(--s2); color: var(--text2); border: 1px solid var(--border); }
 
     .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); margin-bottom: var(--sp-2); }
@@ -127,6 +127,8 @@
     .home-header { margin-bottom: 14px; padding: 0 2px; }
     .home-header-title { font-size: 1.15rem; font-weight: 700; letter-spacing: -.2px; }
     .home-header-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+    .section-header { font-size: var(--fs-xs); font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin: var(--sp-6) 0 var(--sp-2) 2px; }
+    .section-header:first-child { margin-top: 0; }
     .kpi-trend { font-size: 10.5px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 3px; min-height: 14px; }
     .kpi-trend.up { color: var(--cyan); } .kpi-trend.down { color: var(--red); } .kpi-trend.flat { color: var(--text2); font-weight: 500; }
     .kpi-hero .kpi-label { opacity: .7; }
@@ -172,11 +174,19 @@
 
     .search-wrap { position: relative; margin-bottom: 12px; } .search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); } .f-in.ico { padding-left: 36px; }
 
+    /* Filas de catálogo colapsables (detalle secundario detrás de un toque) */
+    details > summary { cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    .cat-item { display: block; border-bottom: 1px solid var(--border2); padding: var(--sp-2) 0; }
+    .cat-item summary { display: flex; justify-content: space-between; align-items: center; list-style: none; }
+    .chevron > summary::after { content: '›'; color: var(--text3); font-size: 16px; margin-left: 6px; transition: transform .15s ease; flex-shrink: 0; }
+    .chevron[open] > summary::after { transform: rotate(90deg); }
+
     /* ===== BIMONETARIO: barra de cotizaciones y toggles ARS/USD ===== */
     .fx-bar { display: flex; gap: 7px; overflow-x: auto; padding: 10px 14px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .fx-bar::-webkit-scrollbar { display: none; }
     .fx-chip { flex-shrink: 0; background: var(--s2); border: 1px solid var(--border); border-radius: 9px; padding: 5px 10px; min-width: 64px; text-align: center; cursor: pointer; transition: border-color .15s ease; }
-    .fx-chip.on { border-color: var(--purple); background: #bc8cff15; }
+    .fx-chip.on { border-color: var(--accent); background: #2f81f715; }
     .fx-chip-label { font-size: 9px; color: var(--text2); text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
     .fx-chip-val { font-size: 12.5px; font-weight: 700; color: var(--text); margin-top: 1px; font-variant-numeric: tabular-nums; }
     .fx-manual-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
@@ -185,7 +195,7 @@
     .fx-refresh { min-width: auto !important; padding: 5px 12px !important; }
     .curr-toggle { display: flex; gap: 8px; margin-bottom: 11px; }
     .curr-btn { flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--s2); color: var(--text2); font-family: var(--font); font-weight: 600; font-size: .85rem; cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
-    .curr-btn.on { border-color: var(--purple); color: var(--purple); background: #bc8cff15; }
+    .curr-btn.on { border-color: var(--accent); color: var(--accent); background: #2f81f715; }
     .fx-rate-row { display: none; }
     .fx-rate-row.on { display: block; }
     .usd-tag { font-size: 10px; color: var(--purple); font-weight: 600; margin-top: 2px; display: block; }
@@ -280,6 +290,7 @@
         <div class="home-header-title" id="home-header-fecha">—</div>
         <div class="home-header-sub" id="home-header-sub">Cargando...</div>
       </div>
+      <div class="section-header">Resumen</div>
       <div class="kpi-row">
         <div class="kpi-chip purple"><div class="kpi-label">Ventas (30d)</div><div class="kpi-val" id="home-kpi-ventas">—</div></div>
         <div class="kpi-chip cyan"><div class="kpi-label">Ganancia Bruta (30d)</div><div class="kpi-val" id="home-kpi-ganbruta">—</div></div>
@@ -287,45 +298,52 @@
         <div class="kpi-chip purple"><div class="kpi-label">Margen (30d)</div><div class="kpi-val" id="home-kpi-margen">—</div></div>
         <div class="kpi-chip blue"><div class="kpi-label">Ganancia Disp.</div><div class="kpi-val" id="h-gan">—</div><div class="kpi-trend" id="h-gan-trend"></div></div>
         <div class="kpi-chip cyan" onclick="abrirModalCapital()" style="cursor:pointer;"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="h-cap">—</div><div class="kpi-trend" id="h-cap-trend"></div></div>
-        <div class="kpi-chip orange"><div class="kpi-label">Stock Total</div><div class="kpi-val" id="home-kpi-stock">—</div></div>
+        <div class="kpi-chip"><div class="kpi-label">Stock Total</div><div class="kpi-val" id="home-kpi-stock">—</div></div>
       </div>
       <div class="kpi-grid">
-        <div class="kpi red"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-trend" id="h-fondo-trend"></div><div class="kpi-bar"></div></div>
-        <div class="kpi orange"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-trend" id="h-joaco-trend"></div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">F. Emergencia</div><div class="kpi-val" id="h-fondo">—</div><div class="kpi-trend" id="h-fondo-trend"></div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="h-joaco">—</div><div class="kpi-trend" id="h-joaco-trend"></div><div class="kpi-bar"></div></div>
       </div>
 
+      <div class="section-header">Finanzas</div>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span class="card-title" style="margin:0">Balances Financieros</span>
           <span class="pill pill-cyan" id="h-hora">—</span>
         </div>
-        <div id="caja-res"></div>
-        
-        <div class="bal-row" style="border-top:1px dashed var(--border); padding-top:10px; margin-top:5px;">
-           <span class="bal-key" style="color:var(--blue); font-weight:600;">A Cobrar (Clientes te deben)</span>
-           <span class="bal-val blue" id="h-cc-cobrar">—</span>
+        <div class="f-label" style="margin-bottom:2px;">Efectivo Físico/Digital</div>
+        <div class="tot-val" id="h-total" style="font-size:var(--fs-xl); margin-bottom:var(--sp-3);">—</div>
+
+        <div class="bal-row">
+           <span class="bal-key">A Cobrar (Clientes te deben)</span>
+           <span class="bal-val" style="color:var(--success)" id="h-cc-cobrar">—</span>
         </div>
         <div class="bal-row">
-           <span class="bal-key" style="color:var(--red); font-weight:600;">A Pagar (Vos debés a clientes)</span>
-           <span class="bal-val red" id="h-cc-pagar">—</span>
+           <span class="bal-key">A Pagar (Vos debés a clientes)</span>
+           <span class="bal-val" style="color:var(--danger)" id="h-cc-pagar">—</span>
         </div>
-        <div class="tot-row"><span class="tot-label">Efectivo Físico/Digital</span><span class="tot-val" id="h-total">—</span></div>
+
+        <details style="margin-top:var(--sp-2);">
+          <summary style="font-size:var(--fs-xs); color:var(--text2);">Ver detalle por billetera</summary>
+          <div id="caja-res" style="margin-top:var(--sp-2);"></div>
+        </details>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--purple)">
-        <div class="card-title" style="color:var(--purple)">Resumen de Deudas (Todo junto)</div>
+      <div class="card">
+        <div class="card-title">Resumen de Deudas (Todo junto)</div>
         <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Suma clientes + personales + proveedores, por moneda. Esto es lo que hay en la pestaña Cuentas, resumido.</div>
         <div id="h-deudas-resumen"></div>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--cyan)">
-        <div class="card-title" style="color:var(--cyan)">📅 Seguimiento de Clientes</div>
+      <div class="section-header">Clientes y agenda</div>
+      <div class="card">
+        <div class="card-title">📅 Seguimiento de Clientes</div>
         <div id="home-seguimientos"><div class="empty">Cargando...</div></div>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--blue)">
+      <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="card-title" style="margin:0; color:var(--blue)">🗓️ Turnos y Retiros</span>
+          <span class="card-title" style="margin:0">🗓️ Turnos y Retiros</span>
           <span class="pill pill-blue" id="turnos-count">0</span>
         </div>
         <div id="home-turnos"><div class="empty">Cargando...</div></div>
@@ -346,6 +364,7 @@
         </div>
       </div>
       
+      <div class="section-header">Actividad y stock</div>
       <div class="card">
         <div class="card-title">Últimos movimientos de Caja</div>
         <div id="home-hist"><div class="empty">Cargando...</div></div>
@@ -357,9 +376,9 @@
         <div class="bal-row"><span class="bal-key">Valor al costo</span><span class="bal-val" id="h-valor">—</span></div>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--orange)" id="card-alertas-stock">
+      <div class="card" id="card-alertas-stock">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="card-title" style="margin:0; color:var(--orange)">⚠️ Alertas de Stock Bajo</span>
+          <span class="card-title" style="margin:0">⚠️ Alertas de Stock Bajo</span>
           <span class="pill pill-orange" id="alertas-count">0</span>
         </div>
         <div id="home-alertas"><div class="empty">Cargando...</div></div>
@@ -367,6 +386,7 @@
     </div>
 
     <div class="tab" id="tab-sell">
+      <div class="section-header">Carga de venta</div>
       <div class="card">
         <div class="card-title">Nueva Venta</div>
         <div class="field">
@@ -402,9 +422,9 @@
         <div class="field"><label class="f-label">Garantía (opcional)</label><input class="f-in" id="v-gar" placeholder="Ej: 30 días"></div>
         <button class="btn btn-white" onclick="addToCart()">+ Agregar al carrito</button>
       </div>
-      <div class="card" style="border-left: 4px solid var(--purple)">
+      <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <span class="card-title" style="margin:0; color:var(--purple)">📦 Vender Combo</span>
+          <span class="card-title" style="margin:0">📦 Vender Combo</span>
         </div>
         <div class="field">
           <label class="f-label">Buscar Combo</label>
@@ -420,6 +440,7 @@
           <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-ghost" onclick="agregarComboAlCarrito()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar al carrito</button></div>
         </div>
       </div>
+      <div class="section-header">Carrito</div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span class="card-title" style="margin:0">Carrito</span><span class="pill pill-blue" id="cart-count">0 items</span>
@@ -452,8 +473,9 @@
     </div>
 
     <div class="tab" id="tab-cc">
-      <div class="card" style="border-color:#bc8cff50; background:var(--bg)">
-        <div class="card-title" style="color:var(--purple); margin-bottom:8px">Radar de Clientes (CRM)</div>
+      <div class="section-header" style="margin-top:0">CRM</div>
+      <div class="card" style="background:var(--bg)">
+        <div class="card-title" style="margin-bottom:8px">Radar de Clientes (CRM)</div>
         <div class="search-wrap" style="margin-bottom:8px;">
            <span class="search-ico">🔍</span>
            <input class="f-in ico" id="crm-search" placeholder="Escribí el nombre para analizar..." oninput="buscarCliente(this.value)">
@@ -461,7 +483,7 @@
         <div id="crm-result"><div class="empty" style="padding:10px">Buscá un cliente para ver su radiografía</div></div>
       </div>
       <div class="card">
-        <div class="card-title" style="color:var(--cyan)">Agendar Nuevo Contacto</div>
+        <div class="card-title">Agendar Nuevo Contacto</div>
         <div class="field"><label class="f-label">Nombre / Empresa</label><input class="f-in" id="dir-nom" placeholder="Ej: Importador Chino" style="text-transform: uppercase;"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="dir-tipo"><option>CLIENTE</option><option>PROVEEDOR</option></select></div>
@@ -469,13 +491,14 @@
         </div>
         <button class="btn btn-ghost" id="btn-dir" onclick="guardarContacto()" style="border-color:var(--cyan); color:var(--cyan)">+ Guardar en Agenda</button>
       </div>
+      <div class="section-header">Cuentas</div>
       <div class="card">
-        <div class="card-title" style="color:var(--purple)">Cuentas Activas</div>
+        <div class="card-title">Cuentas Activas</div>
         <div id="cta-lista"><div class="empty">Cargando cuentas...</div></div>
       </div>
 
       <div class="card" id="cta-form-nueva">
-        <div class="card-title" style="color:var(--purple)">Nueva Cuenta / Movimiento</div>
+        <div class="card-title">Nueva Cuenta / Movimiento</div>
         <div class="curr-toggle">
           <button type="button" class="curr-btn on" id="cta-tipo-cliente" onclick="ctaSetTipo('CLIENTE')">Cliente</button>
           <button type="button" class="curr-btn" id="cta-tipo-personal" onclick="ctaSetTipo('PERSONAL')">Personal</button>
@@ -548,8 +571,9 @@
 
 
     <div class="tab" id="tab-caja">
-      <div class="card" style="border-left: 4px solid var(--blue)">
-        <div class="card-title" style="color:var(--blue)">Transferencia entre Billeteras</div>
+      <div class="section-header" style="margin-top:0">Movimientos</div>
+      <div class="card">
+        <div class="card-title">Transferencia entre Billeteras</div>
         <div class="f-row">
           <div class="field"><label class="f-label">Origen (Sale de)</label><select class="f-in" id="t-orig"><option>EFECTIVO</option><option>MERCADO PAGO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
           <div class="field"><label class="f-label">Destino (Entra a)</label><select class="f-in" id="t-dest"><option>MERCADO PAGO</option><option>EFECTIVO</option><option>NX</option><option>TRANSFERENCIA</option></select></div>
@@ -558,8 +582,9 @@
         <button class="btn btn-ghost" id="btn-transf" onclick="ejecutarTransferencia()" style="border-color:var(--blue); color:var(--blue); margin-top:8px;">💸 Confirmar Movimiento</button>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--purple)">
-        <div class="card-title" style="color:var(--purple)">Distribución de Ganancia</div>
+      <div class="section-header">Distribución y dólares</div>
+      <div class="card">
+        <div class="card-title">Distribución de Ganancia</div>
         <div class="bal-row" style="margin-bottom:8px;">
           <span class="bal-key">Ganancia Disponible</span>
           <span class="bal-val blue" id="dg-gan-disp">—</span>
@@ -619,8 +644,8 @@
         <button class="btn btn-purple" id="btn-dist-gan" onclick="confirmarDistribucionGanancia()" style="margin-top:10px;">💾 Confirmar Distribución</button>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--orange)">
-        <div class="card-title" style="color:var(--orange)">💵 Caja en Dólares (Opción B)</div>
+      <div class="card">
+        <div class="card-title">💵 Caja en Dólares (Opción B)</div>
         <div class="bal-row" style="margin-bottom:4px;">
           <span class="bal-key">Tenés en USD (total)</span>
           <span class="bal-val orange" id="usd-caja-saldo">—</span>
@@ -663,6 +688,7 @@
         <button class="btn" id="btn-usd-mov" onclick="confirmarMovimientoUSD()" style="background:var(--orange);color:#fff;">💾 Registrar</button>
       </div>
 
+      <div class="section-header">Registro</div>
       <div class="card">
         <div class="card-title">Registrar Movimiento de Caja Ordinario</div>
         <div class="field"><label class="f-label">Tipo</label><select class="f-in" id="c-tipo" onchange="actualizarVisibilidadFijoVar()"><option value="EGRESO">EGRESO</option><option value="INGRESO">INGRESO</option></select></div>
@@ -692,8 +718,9 @@
 
    <div class="tab" id="tab-stock">
 
-      <div class="card" style="border-left: 4px solid var(--orange)">
-        <div class="card-title" style="color:var(--orange)">⚠️ Alertas de Stock Bajo — Config</div>
+      <div class="section-header" style='margin-top:0'>Configuración</div>
+      <div class="card">
+        <div class="card-title">⚠️ Alertas de Stock Bajo — Config</div>
         <div class="field">
           <label class="f-label">Umbral global de respaldo (para productos sin umbral propio)</label>
           <input class="f-in" id="umbral-global-input" type="number" min="0" placeholder="Ej: 3" onchange="guardarUmbralGlobal(this.value)">
@@ -701,6 +728,7 @@
         </div>
       </div>
 
+      <div class="section-header">Movimientos</div>
       <div class="card">
         <div class="card-title">Entrada de Stock (Compra)</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
@@ -728,8 +756,9 @@
         <button class="btn btn-white" onclick="addEntrada()">+ Agregar a la lista</button>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--purple)">
-        <div class="card-title" style="color:var(--purple)">🧮 Calculadora de Precios</div>
+      <div class="section-header">Herramientas</div>
+      <div class="card">
+        <div class="card-title">🧮 Calculadora de Precios</div>
         <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Solo calcula en pantalla — no guarda nada en la planilla.</div>
 
         <div class="field"><label class="f-label">Costo ($)</label><input class="f-in" id="calc-costo" type="text" inputmode="decimal" placeholder="Ej: 8000" oninput="calcularPrecios()"></div>
@@ -751,7 +780,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title" style="color:var(--cyan)">Crear Producto Nuevo (Catálogo)</div>
+        <div class="card-title">Crear Producto Nuevo (Catálogo)</div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Accesorios"></div>
@@ -764,8 +793,8 @@
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--purple)">
-        <div class="card-title" style="color:var(--purple)">📦 Crear Combo</div>
+      <div class="card">
+        <div class="card-title">📦 Crear Combo</div>
         <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Arma un combo con productos reales de tu catálogo. No crea un producto nuevo: al venderse, se descuenta el stock real de cada componente. Una vez guardado, el combo no se puede editar ni borrar desde acá.</div>
         <div class="field"><label class="f-label">Buscar componente</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="combo-comp-prod" list="combo-comp-lista" placeholder="Buscar producto..." autocomplete="off"><datalist id="combo-comp-lista"></datalist></div></div>
         <div class="f-row">
@@ -778,36 +807,6 @@
         <button class="btn btn-purple" id="btn-guardar-combo" onclick="guardarCombo()">💾 Guardar Combo</button>
       </div>
 
-      <div class="card" style="border-left: 4px solid var(--blue)">
-        <div class="card-title" style="color:var(--blue)">🧮 Calculadora de Precios</div>
-        <div class="curr-toggle">
-          <button type="button" class="curr-btn on" id="calcprecio-modo-directo" onclick="calcPrecioSetModo('DIRECTO')">Costo → Precio</button>
-          <button type="button" class="curr-btn" id="calcprecio-modo-inverso" onclick="calcPrecioSetModo('INVERSO')">Precio → Margen</button>
-        </div>
-
-        <div class="field">
-          <label class="f-label">Costo ($)</label>
-          <input class="f-in" id="calcprecio-costo" type="text" inputmode="decimal" placeholder="Ej: 1500" oninput="calcPrecioRecalcular()">
-        </div>
-
-        <div class="field" id="calcprecio-campo-margen">
-          <label class="f-label">Margen deseado sobre precio de venta (%)</label>
-          <input class="f-in" id="calcprecio-margen" type="text" inputmode="decimal" placeholder="Ej: 30" oninput="calcPrecioRecalcular()">
-        </div>
-
-        <div class="field" id="calcprecio-campo-precio" style="display:none;">
-          <label class="f-label">Precio de Venta ($)</label>
-          <input class="f-in" id="calcprecio-precio" type="text" inputmode="decimal" placeholder="Ej: 2000" oninput="calcPrecioRecalcular()">
-        </div>
-
-        <div class="total-block" id="calcprecio-resultado" style="display:none;">
-          <div class="total-line"><span id="calcprecio-r-label1">Precio de Venta Sugerido</span><span id="calcprecio-r-val1">$0</span></div>
-          <div class="total-line"><span>Ganancia por unidad</span><span id="calcprecio-r-ganancia">$0</span></div>
-          <div class="total-final"><span class="total-final-label" id="calcprecio-r-label2">Margen real</span><span class="total-final-val" id="calcprecio-r-val2" style="font-size:1.3rem;">0%</span></div>
-        </div>
-        <div style="font-size:10px;color:var(--text2);margin-top:8px;">Solo una herramienta de cálculo en pantalla — no guarda nada en la planilla. El margen se calcula sobre el precio de venta (no sobre el costo).</div>
-      </div>
-
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="card-title" style="margin:0">Lista de Entrada</span><span class="pill pill-muted" id="entrada-count">0</span></div>
         <div id="entrada-items"></div>
@@ -815,10 +814,11 @@
       </div>
       
       <div class="card">
-        <div class="card-title" style="color:var(--cyan)">📋 Auditoría de Stock</div>
+        <div class="card-title">📋 Auditoría de Stock</div>
         <button class="btn btn-ghost" onclick="prepararAuditoria('imprimir')" style="margin-bottom:0; border-color:var(--cyan); color:var(--cyan);">🖨️ Imprimir Hoja de Auditoría</button>
       </div>
 
+      <div class="section-header">Catálogo</div>
       <div class="card">
         <div class="card-title">Catálogo Completo y Exportación</div>
         <div class="f-row" style="margin-bottom:8px">
@@ -835,8 +835,9 @@
     </div>
 
     <div class="tab" id="tab-reportes">
+      <div class="section-header" style='margin-top:0'>Reportes</div>
       <div class="card">
-        <div class="card-title" style="color:var(--cyan)">Período del Reporte</div>
+        <div class="card-title">Período del Reporte</div>
         <div class="curr-toggle" style="flex-wrap:wrap;">
           <button type="button" class="curr-btn on" id="rep-periodo-7d" onclick="repSetPeriodo('7d')" style="flex:1 1 45%;">Últimos 7 días</button>
           <button type="button" class="curr-btn" id="rep-periodo-1m" onclick="repSetPeriodo('1m')" style="flex:1 1 45%;">Último mes (30 días)</button>
@@ -853,7 +854,7 @@
       </div>
 
       <div class="card" id="rep-resultado-card" style="display:none;">
-        <div class="card-title" style="color:var(--purple)"><span id="rep-titulo">Reporte</span></div>
+        <div class="card-title"><span id="rep-titulo">Reporte</span></div>
         <div class="kpi-grid">
           <div class="kpi blue"><div class="kpi-label">Total Vendido</div><div class="kpi-val" id="rep-vendido">—</div><div class="kpi-bar"></div></div>
           <div class="kpi cyan"><div class="kpi-label">Ganancia Bruta</div><div class="kpi-val" id="rep-ganancia">—</div><div class="kpi-bar"></div></div>
@@ -863,14 +864,14 @@
         <div class="bal-row"><span class="bal-key">Ticket Promedio</span><span class="bal-val" id="rep-promedio">—</span></div>
         <div class="bal-row"><span class="bal-key">Margen sobre lo vendido</span><span class="bal-val" id="rep-margen">—</span></div>
 
-        <div class="card-title" style="color:var(--blue); margin-top:16px; font-size:0.9rem;">Ventas por Día</div>
+        <div class="card-title" style="margin-top:16px; font-size:0.9rem">Ventas por Día</div>
         <div id="rep-chart" style="overflow-x:auto; margin-bottom:4px;"></div>
         <div style="display:flex; gap:16px; margin-bottom:8px; font-size:10px; color:var(--text2);">
           <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,var(--cyan),#26a641);display:inline-block;"></span>Ventas por día</span>
           <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:0;border-top:2px dashed var(--text3);display:inline-block;"></span>Promedio del período</span>
         </div>
 
-        <div class="card-title" style="color:var(--blue); margin-top:16px; font-size:0.9rem;">Ganancia por Día</div>
+        <div class="card-title" style="margin-top:16px; font-size:0.9rem">Ganancia por Día</div>
         <div class="f-label" style="margin-bottom:2px;">Ganancia del Período</div>
         <div id="rep-ganancia-total" style="font-size:1.9rem; font-weight:700; color:var(--blue); font-variant-numeric:tabular-nums; margin-bottom:8px;">—</div>
         <div id="rep-chart-ganancia" style="overflow-x:auto; margin-bottom:4px;"></div>
@@ -879,24 +880,26 @@
           <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:0;border-top:2px dashed var(--text3);display:inline-block;"></span>Promedio del período</span>
         </div>
 
-        <div class="card-title" style="color:var(--orange); margin-top:16px; font-size:0.9rem;">Top 5 Productos del Período</div>
+        <div class="card-title" style="margin-top:16px; font-size:0.9rem">Top 5 Productos del Período</div>
         <div id="rep-top-productos"></div>
 
-        <div class="card-title" style="color:var(--red); margin-top:16px; font-size:0.9rem;">Gastos Operativos: Fijos vs Variables</div>
+        <div class="card-title" style="margin-top:16px; font-size:0.9rem">Gastos Operativos: Fijos vs Variables</div>
         <div id="rep-gastos-fv"></div>
       </div>
     </div>
 
     <div class="tab" id="tab-garantias">
+      <div class="section-header" style="margin-top:0">Resumen</div>
       <div class="kpi-grid">
         <div class="kpi red"><div class="kpi-label">Pérdida Neta Garantías</div><div class="kpi-val" id="gar-perdida-neta">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi orange"><div class="kpi-label">Costo Total Cubierto</div><div class="kpi-val" id="gar-costo-total">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">Costo Total Cubierto</div><div class="kpi-val" id="gar-costo-total">—</div><div class="kpi-bar"></div></div>
         <div class="kpi cyan"><div class="kpi-label">Recuperado de Proveedores</div><div class="kpi-val" id="gar-recuperado">—</div><div class="kpi-bar"></div></div>
-        <div class="kpi blue"><div class="kpi-label">Garantías Cubiertas</div><div class="kpi-val" id="gar-cantidad">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">Garantías Cubiertas</div><div class="kpi-val" id="gar-cantidad">—</div><div class="kpi-bar"></div></div>
       </div>
 
-      <div class="card" style="border-left:4px solid var(--red)">
-        <div class="card-title" style="color:var(--red)">Registrar Garantía Cubierta</div>
+      <div class="section-header">Registro</div>
+      <div class="card">
+        <div class="card-title">Registrar Garantía Cubierta</div>
 
         <div class="field">
           <label class="f-label">Producto que falló</label>
@@ -936,8 +939,9 @@
         <button class="btn btn-red" id="btn-gar-registrar" onclick="registrarGarantia()">🛡️ Registrar Garantía</button>
       </div>
 
+      <div class="section-header">Historial</div>
       <div class="card">
-        <div class="card-title" style="color:var(--purple)">Historial de Garantías</div>
+        <div class="card-title">Historial de Garantías</div>
         <div id="gar-historial"><div class="empty">Cargando...</div></div>
       </div>
     </div>
@@ -1896,7 +1900,7 @@ function renderCuentasUnificadas() {
     const formattedSaldo = c.moneda === 'USD' ? fmtUSD(Math.abs(c.saldo)) : fmt(Math.abs(c.saldo));
     const signo = c.saldo < 0 ? '-' : '';
     const color = c.saldo > 0 ? 'blue' : 'red';
-    const pill = c.tipo === 'CLIENTE' ? '<span class="pill pill-blue" style="margin-left:6px;">Cliente</span>' : '<span class="pill pill-orange" style="margin-left:6px;">Personal</span>';
+    const pill = c.tipo === 'CLIENTE' ? '<span class="pill pill-muted" style="margin-left:6px;">Cliente</span>' : '<span class="pill pill-muted" style="margin-left:6px;">Personal</span>';
     const label = c.concepto ? `${c.concepto} (${c.nombre})` : c.nombre;
     html += `<div class="bal-row cta-item" data-tipo="${c.tipo}" data-id="${c.id}" onclick="seleccionarCuenta(this,'${c.tipo}','${c.id}','${c.moneda}')" style="cursor:pointer;"><span class="bal-key">${label}${pill}</span><span class="bal-val ${color}">${signo}${formattedSaldo}</span></div>`;
   });
@@ -2193,65 +2197,6 @@ function renderAlertasStock() {
 // FIN MÓDULO ALERTAS DE STOCK BAJO
 // ================================================================
 
-// ================================================================
-// MÓDULO CALCULADORA DE PRECIOS (aditivo)
-// ----------------------------------------------------------------
-// Herramienta pura de cálculo en pantalla — no lee ni escribe nada en
-// Sheets, no toca ningún producto ni ningún KPI. El margen se calcula
-// siempre sobre el PRECIO DE VENTA (definición estándar de "margen"),
-// no sobre el costo (eso sería "markup"), para que el modo directo y
-// el modo inverso sean coherentes entre sí.
-// ================================================================
-let CALCPRECIO_MODO = 'DIRECTO';
-
-function calcPrecioSetModo(modo) {
-  CALCPRECIO_MODO = modo;
-  const bD = $('calcprecio-modo-directo'), bI = $('calcprecio-modo-inverso');
-  if (bD) bD.classList.toggle('on', modo === 'DIRECTO');
-  if (bI) bI.classList.toggle('on', modo === 'INVERSO');
-  const campoMargen = $('calcprecio-campo-margen'), campoPrecio = $('calcprecio-campo-precio');
-  if (campoMargen) campoMargen.style.display = modo === 'DIRECTO' ? 'block' : 'none';
-  if (campoPrecio) campoPrecio.style.display = modo === 'INVERSO' ? 'block' : 'none';
-  calcPrecioRecalcular();
-}
-
-function calcPrecioRecalcular() {
-  const costoInp = $('calcprecio-costo'), resultado = $('calcprecio-resultado');
-  if (!costoInp || !resultado) return;
-  const costo = parseFloat((costoInp.value||'').toString().replace(',','.')) || 0;
-  if (!(costo > 0)) { resultado.style.display = 'none'; return; }
-
-  if (CALCPRECIO_MODO === 'DIRECTO') {
-    const margenInp = $('calcprecio-margen');
-    const margen = parseFloat((margenInp ? margenInp.value : '').toString().replace(',','.')) || 0;
-    if (margen >= 100) { resultado.style.display = 'none'; return; } // margen sobre precio no puede llegar a 100%
-    const precio = costo / (1 - margen/100);
-    const ganancia = precio - costo;
-    setText('calcprecio-r-label1', 'Precio de Venta Sugerido');
-    setText('calcprecio-r-val1', fmt(precio));
-    setText('calcprecio-r-ganancia', fmt(ganancia));
-    setText('calcprecio-r-label2', 'Margen aplicado');
-    setText('calcprecio-r-val2', margen.toFixed(1) + '%');
-    const val2El = $('calcprecio-r-val2'); if (val2El) val2El.style.color = '';
-  } else {
-    const precioInp = $('calcprecio-precio');
-    const precio = parseFloat((precioInp ? precioInp.value : '').toString().replace(',','.')) || 0;
-    if (!(precio > 0)) { resultado.style.display = 'none'; return; }
-    const ganancia = precio - costo;
-    const margenReal = (ganancia / precio) * 100;
-    setText('calcprecio-r-label1', 'Precio de Venta');
-    setText('calcprecio-r-val1', fmt(precio));
-    setText('calcprecio-r-ganancia', fmt(ganancia));
-    setText('calcprecio-r-label2', 'Margen real');
-    setText('calcprecio-r-val2', margenReal.toFixed(1) + '%');
-    const val2El = $('calcprecio-r-val2'); if (val2El) val2El.style.color = margenReal < 0 ? 'var(--red)' : '';
-  }
-  resultado.style.display = 'block';
-}
-// ================================================================
-// FIN MÓDULO CALCULADORA DE PRECIOS
-// ================================================================
-
 
 async function cargarTodo(){
   const btn=$('sync-btn'); if(btn) { btn.classList.add('loading'); btn.textContent='Sync'; }
@@ -2506,17 +2451,30 @@ function renderCatalogo(){
    const div = $('cat-lista'); if(!div) return;
    let html = '';
    DB.todo.forEach(p => {
-       let dot = p.stock > p.umbral ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
+       let badge;
+       if (p.stock > p.umbral) badge = `<span class="pill" style="background:#39d35315;color:var(--success);border:1px solid #39d35330;">OK</span>`;
+       else if (p.stock > 0) badge = `<span class="pill" style="background:var(--danger-soft-bg);color:var(--danger);border:1px solid var(--danger-soft-border);">Bajo ⚠</span>`;
+       else badge = `<span class="pill" style="background:var(--danger-g);color:#fff;">Sin stock</span>`;
        const umbralTag = p.umbralPropio !== null ? `Umbral propio: ${p.umbralPropio}` : `Umbral (default): ${UMBRAL_GLOBAL_DEFAULT}`;
-       html += `<div class="cat-item" data-name="${p.nombre}" data-sku="${p.sku}" data-stock="${p.stock}" style="padding:10px 0; border-bottom:1px solid var(--border2); display:flex; justify-content:space-between; align-items:center;">
-         <div style="display:flex; align-items:center; gap:10px;">
-           <input type="checkbox" class="cat-chk" value="${p.nombre}" style="width:18px;height:18px;accent-color:var(--blue);">
-           <div><div style="font-weight:600;font-size:12px;">${dot} ${p.nombre}</div>
-           <div style="font-size:10px;color:var(--text2);margin-top:4px;">SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}</div>
-           <div style="font-size:10px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:5px;">${umbralTag} <input class="f-in" type="number" min="0" value="${p.umbralPropio !== null ? p.umbralPropio : ''}" placeholder="${UMBRAL_GLOBAL_DEFAULT}" style="width:50px;padding:2px 5px;font-size:10px;height:20px;" onchange="guardarUmbralProducto(${p.fila}, this.value)"></div></div>
+       html += `<details class="cat-item chevron" data-name="${p.nombre}" data-sku="${p.sku}" data-stock="${p.stock}">
+         <summary>
+           <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+             <input type="checkbox" class="cat-chk" value="${p.nombre}" onclick="event.stopPropagation()" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
+             <div style="min-width:0;">
+               <div style="font-weight:600;font-size:var(--fs-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.nombre}</div>
+               <div style="margin-top:3px;">${badge}</div>
+             </div>
+           </div>
+           <div style="text-align:right; flex-shrink:0; margin-left:8px;">
+             <div style="font-weight:700;color:var(--text);font-size:var(--fs-sm);">${fmt(p.precio)}</div>
+             <div style="font-size:var(--fs-xs);color:var(--text2)">${p.stock} u.</div>
+           </div>
+         </summary>
+         <div style="padding-top:8px; font-size:var(--fs-xs); color:var(--text2);">
+           SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}
+           <div style="display:flex;align-items:center;gap:5px;margin-top:6px;">${umbralTag} <input class="f-in" type="number" min="0" value="${p.umbralPropio !== null ? p.umbralPropio : ''}" placeholder="${UMBRAL_GLOBAL_DEFAULT}" style="width:50px;padding:2px 5px;font-size:10px;height:20px;" onclick="event.stopPropagation()" onchange="guardarUmbralProducto(${p.fila}, this.value)"></div>
          </div>
-         <div style="text-align:right;"><div style="font-weight:700;color:var(--blue);">${fmt(p.precio)}</div><div style="font-size:11px;color:var(--text2)">${p.stock} u.</div></div>
-       </div>`;
+       </details>`;
    });
    div.innerHTML = html;
 }
@@ -2524,7 +2482,7 @@ function renderCatalogo(){
 function filtrarCatalogo() {
    const txt = ($('s-search')?$('s-search').value||'':'').toUpperCase();
    document.querySelectorAll('.cat-item').forEach(el => {
-      if(el.dataset.name.includes(txt) || el.dataset.sku.includes(txt)) el.style.display = 'flex';
+      if(el.dataset.name.includes(txt) || el.dataset.sku.includes(txt)) el.style.display = 'block';
       else el.style.display = 'none';
    });
 }
@@ -2550,7 +2508,7 @@ function exportarStockCopiar() {
   
   DB.todo.forEach(p => {
     if(seleccionados.includes(p.nombre)) {
-        let ind = p.stock > 3 ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
+        let ind = p.stock > p.umbral ? '🟢' : (p.stock > 0 ? '🟡' : '🔴');
         let det = p.stock > 0 ? `${p.stock} u.` : 'SIN STOCK';
         txt += `${ind} *${p.nombre}*\n      └ SKU: ${p.sku} | ${det} | Sugerido: ${fmt(p.precio)}\n`;
         count++;
@@ -2592,13 +2550,41 @@ function buscarCliente(val) {
              const saldosPersona = DB.saldosCC[c] || {ARS:0, USD:0};
              const saldoCC = saldosPersona.ARS || 0;
              const saldoCCUSD = saldosPersona.USD || 0;
-             const ccColor = saldoCC > 0 ? 'blue' : (saldoCC < 0 ? 'red' : 'text2');
+             // CORRECCIÓN (encontrada en la auditoría de color): saldoCC > 0 significa que el
+             // cliente TE debe a vos (a tu favor) — eso es positivo, no debería ser "azul"
+             // genérico. saldoCC < 0 es al revés (vos les debés). Antes también tenía una
+             // llave de más suelta en el string de estilo (`var(--${ccColor})}`), que el
+             // navegador ignoraba en silencio pero era un typo real.
+             const ccColor = saldoCC > 0 ? 'var(--success)' : (saldoCC < 0 ? 'var(--danger)' : 'var(--text2)');
              const ccUsdTxt = saldoCCUSD ? `<br><span style="font-size:11px;">${fmtUSD(Math.abs(saldoCCUSD))} ${saldoCCUSD > 0 ? '(a favor)' : '(deudor)'}</span>` : '';
              const cliId = c.replace(/[^a-zA-Z0-9]/g, '');
              const seg = (DB.seguimientos && DB.seguimientos[c]) || null;
              const tieneSeg = seg && seg.fechaContactar;
              const segHtml = tieneSeg ? `<span class="pill pill-orange">📅 ${formatFechaISO(seg.fechaContactar)}${seg.nota ? ' — '+seg.nota : ''}</span>` : `<span style="font-size:11px;color:var(--text2)">Sin recordatorio activo</span>`;
-             html += `<div style="background:var(--s2); border:1px solid var(--border); padding:12px; border-radius:8px; margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong style="color:var(--blue);font-size:14px;">${c}</strong><span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;"><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Inversión Total</div><div style="font-weight:700;font-size:1.1rem">${fmt(d.totalComprado)}</div></div><div><div style="font-size:10px;color:var(--text2);text-transform:uppercase;">Saldo Deudor CC</div><div style="font-weight:700;font-size:1.1rem; color:var(--${ccColor})}">${fmt(saldoCC)}${ccUsdTxt}</div></div></div><div style="font-size:11px; margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div><button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:10px; margin-bottom:0; border-color:var(--border)">Ver historial completo</button><div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div><div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);"><div style="font-size:10px;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Seguimiento</div>${segHtml}<div class="f-row" style="margin-top:6px;"><input class="f-in" id="seg-fecha-${cliId}" type="date" style="font-size:11px;padding:8px;"><input class="f-in" id="seg-nota-${cliId}" placeholder="Nota (opcional)" style="font-size:11px;padding:8px;"></div><div class="f-row" style="margin-top:6px;"><button class="btn btn-ghost" style="margin:0;padding:8px;font-size:10px;border-color:var(--cyan);color:var(--cyan);" onclick="guardarSeguimiento('${c}','${cliId}')">💾 Guardar recordatorio</button>${tieneSeg ? `<button class="btn btn-ghost" style="margin:0;padding:8px;font-size:10px;border-color:var(--text3);color:var(--text2);" onclick="limpiarSeguimiento('${c}')">✓ Ya contactado</button>` : '<span></span>'}</div></div></div>`;
+             html += `<details class="chevron" style="background:var(--s2); border:1px solid var(--border); border-radius:var(--r-sm); padding:12px; margin-bottom:10px;">
+               <summary style="display:flex;justify-content:space-between;align-items:center;">
+                 <div>
+                   <strong style="font-size:var(--fs-md);">${c}</strong>
+                   <div style="font-size:var(--fs-xs); color:${ccColor}; margin-top:2px;">${fmt(saldoCC)}${saldoCC!==0?' saldo CC':''}</div>
+                 </div>
+                 <span class="pill pill-${dias > 30 ? 'red' : (dias > 14 ? 'orange' : 'cyan')}">${dias} días inactivo</span>
+               </summary>
+               <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                   <div><div class="f-label" style="margin-bottom:2px;">Inversión Total</div><div style="font-weight:700;font-size:var(--fs-md)">${fmt(d.totalComprado)}</div></div>
+                   <div><div class="f-label" style="margin-bottom:2px;">Saldo Deudor CC</div><div style="font-weight:700;font-size:var(--fs-md); color:${ccColor}">${fmt(saldoCC)}${ccUsdTxt}</div></div>
+                 </div>
+                 <div style="font-size:var(--fs-sm); margin-bottom:10px;"><span style="color:var(--text2)">Última compra:</span> ${d.ultCompraStr.split(' ')[0]}<br><span style="color:var(--text2)">Producto Estrella:</span> <b>${topProd}</b> (${maxC} u)</div>
+                 <button onclick="verHistorial('${c}', '${cliId}')" class="btn btn-ghost" style="padding:7px; font-size:var(--fs-xs); margin-bottom:0;">Ver historial completo</button>
+                 <div id="hist-${cliId}" style="display:none; margin-top:10px; max-height:220px; overflow-y:auto; padding-top:8px; border-top:1px solid var(--border)"></div>
+                 <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+                   <div class="f-label" style="margin-bottom:6px;">Seguimiento</div>
+                   ${segHtml}
+                   <div class="f-row" style="margin-top:6px;"><input class="f-in" id="seg-fecha-${cliId}" type="date" style="font-size:var(--fs-xs);padding:8px;"><input class="f-in" id="seg-nota-${cliId}" placeholder="Nota (opcional)" style="font-size:var(--fs-xs);padding:8px;"></div>
+                   <div class="f-row" style="margin-top:6px;"><button class="btn btn-ghost" style="margin:0;padding:8px;font-size:var(--fs-xs);" onclick="guardarSeguimiento('${c}','${cliId}')">💾 Guardar recordatorio</button>${tieneSeg ? `<button class="btn btn-ghost" style="margin:0;padding:8px;font-size:var(--fs-xs);" onclick="limpiarSeguimiento('${c}')">✓ Ya contactado</button>` : '<span></span>'}</div>
+                 </div>
+               </div>
+             </details>`;
           }
        }
        setHTML('crm-result', html || '<div class="empty" style="padding:10px">No hay clientes con ese nombre.</div>');
@@ -4029,7 +4015,7 @@ function renderTurnosHome() {
     const fechaObj = new Date(t.fechaHora);
     const vencido = !isNaN(fechaObj) && fechaObj < ahora;
     const color = vencido ? 'var(--red)' : 'var(--text)';
-    const tipoPill = t.tipo === 'RETIRO' ? '<span class="pill pill-purple">Retiro</span>' : '<span class="pill pill-blue">Turno</span>';
+    const tipoPill = t.tipo === 'RETIRO' ? '<span class="pill pill-muted">Retiro</span>' : '<span class="pill pill-muted">Turno</span>';
     html += `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${t.cliente || '(sin nombre)'} ${tipoPill}</span><span class="hist-amt" style="color:${color}">${formatFechaHoraISO(t.fechaHora)}</span></div>${t.nota ? `<div class="hist-meta">${t.nota}</div>` : ''}<div style="display:flex; gap:6px; margin-top:6px;"><button class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:10px;border-color:var(--cyan);color:var(--cyan);" onclick="marcarTurno('${t.id}','COMPLETADO')">✓ Cumplido</button><button class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:10px;border-color:var(--text3);color:var(--text2);" onclick="marcarTurno('${t.id}','CANCELADO')">✕ Cancelar</button></div></div>`;
   });
   box.innerHTML = html;
