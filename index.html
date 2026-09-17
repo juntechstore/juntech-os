@@ -71,13 +71,13 @@
     .login-btn { background: var(--blue-g); color: #fff; border: none; padding: 14px 0; border-radius: var(--r); font-family: var(--font); font-weight: 600; font-size: .95rem; cursor: pointer; width: 100%; max-width: 260px; box-shadow: 0 4px 14px #2f81f730; transition: transform .12s ease, box-shadow .12s ease; }
     .login-btn:active { transform: scale(.97); }
     
-    #app { display: none; height: 100%; flex-direction: column; } #app.on { display: flex; }     @media (min-width: 768px) {       #app.on { flex-direction: row; }       .hdr { height: auto; padding: 12px 16px; border-right: 1px solid var(--border); border-bottom: none; width: 220px; flex-shrink: 0; flex-direction: column; order: -1; }       .scroll { flex: 1; }       .nav { bottom: auto; right: auto; left: 0; width: 220px; border-top: none; border-right: 1px solid var(--border); padding: 12px 0; }     }
+    #app { display: none; height: 100%; flex-direction: column; } #app.on { display: flex; }
     .hdr { display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 54px; background: var(--s1); border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .brand-name { font-size: 1.02rem; font-weight: 700; letter-spacing: .2px; } .brand-name span { color: var(--blue); }
     .sync-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: border-color .15s ease, color .15s ease; }
     .sync-btn:active { border-color: var(--blue); color: var(--blue); }
     
-    .scroll { flex: 1; overflow-y: auto; padding: var(--sp-4); padding-bottom: 92px; }     @media (min-width: 768px) {       .scroll { padding-bottom: var(--sp-4); display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }       .scroll .tab { display: none !important; }       .scroll .tab.on { display: contents !important; }     }     @media (min-width: 1200px) {       .scroll { grid-template-columns: 1fr 1fr 1fr; }     }
+    .scroll { flex: 1; overflow-y: auto; padding: var(--sp-4); padding-bottom: 92px; }
     .tab { display: none; } .tab.on { display: block; animation: fu .18s ease; }
     @keyframes fu { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -89,9 +89,6 @@
     .nav-btn.on svg { stroke: var(--blue); }
 
     .card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: var(--sp-4); margin-bottom: var(--sp-3); box-shadow: var(--shadow); }
-    @media (min-width: 768px) {
-      .card { margin-bottom: 0; }
-    }
     .card-title { font-size: 10.5px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; display: flex; align-items: center; }
     .card-title::before { content:''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; margin-right: 7px; flex-shrink: 0; }
     
@@ -216,6 +213,19 @@
     .toast.on { opacity: 1; } .toast.ok { border-color: #2f81f750; color: var(--blue); } .toast.err { border-color: #f8514950; color: var(--red); }
     
     #auditoria-stock-wrap, #remito-pro { display: none; }
+
+    /* RESPONSIVE GRID LAYOUT */
+    @media (min-width: 768px) {
+      .scroll { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); padding-bottom: var(--sp-4); }
+      .scroll .tab { display: none !important; }
+      .scroll .tab.on { display: contents !important; }
+      .card { margin-bottom: 0; }
+    }
+
+    @media (min-width: 1200px) {
+      .scroll { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
     @media print {
       html, body { background: #ffffff !important; color: #000000 !important; font-size: 10pt; }
       #app, #login, .nav, .modal-bg, .toast { display: none !important; }
@@ -241,12 +251,6 @@
       #tabla-remito .col-precio, #tabla-remito .col-sub { width: 20%; text-align: right; }
       .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
     }
-    @media (min-width: 768px) {
-      #tab-sell { display: grid !important; grid-template-columns: 1fr 350px; gap: var(--sp-4); }
-      #tab-sell .card:nth-child(n+3) { grid-column: 1; }
-      #tab-sell .card:last-child { grid-column: 2; grid-row: 1 / span 999; }
-    }
-    
   </style>
 </head>
 <body>
@@ -450,13 +454,11 @@
         </div>
       </div>
       <div class="section-header">Carrito</div>
-<div class="card" style="position: sticky; top: 0; z-index: 10;">
-  <div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <span class="card-title" style="margin:0">Carrito</span><span class="pill pill-blue" id="cart-count">0 items</span>
-  </div>
-  
-  <div id="cart-items"><div class="empty">Sin productos aún</div></div>
-</div>   
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="card-title" style="margin:0">Carrito</span><span class="pill pill-blue" id="cart-count">0 items</span>
+        </div>
+        <div id="cart-items"><div class="empty">Sin productos aún</div></div>
         <div class="total-block">
           <div class="total-line"><span>Subtotal</span><span id="cart-sub">$0</span></div>
           <div style="margin:8px 0">
@@ -726,104 +728,7 @@
         <button class="btn btn-red" id="btn-mov" onclick="handleGuardarMov()">Guardar movimiento</button>
       </div>
     </div>
-<div class="card">
-        <div class="card-title">🔄 Cambio/Devolución con Proveedor</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Registra devoluciones y canjes simultáneos (ej: 29 EBCREATE → 15 ICEKING + 10 ICEKING adicional)</div>
-        
-        <div style="border:1px solid var(--border); border-radius:var(--r-sm); padding:12px; margin-bottom:12px; background:var(--s2);">
-          <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:var(--text);">DEVOLUCIÓN</div>
-          <div class="f-row">
-            <div class="field"><label class="f-label">Producto a devolver</label><input class="f-in" id="dev-prod" list="dev-lista" placeholder="Buscar..." autocomplete="off"><datalist id="dev-lista"></datalist></div>
-            <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="dev-cant" type="number" min="1" value="1"></div>
-          </div>
-          <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="dev-prov" placeholder="Ej: Pedro Donati" style="text-transform:uppercase;"></div>
-        </div>
- 
-        <div style="border:1px solid var(--border); border-radius:var(--r-sm); padding:12px; margin-bottom:12px; background:var(--s2);">
-          <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:var(--text);">RECEPCIÓN (Canje + Compra adicional)</div>
-          <div id="cambio-recepcion-items"></div>
-          <button type="button" class="btn btn-ghost" onclick="addRecepcionItem()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar línea de recepción</button>
-        </div>
- 
-        <button class="btn btn-blue" id="btn-cambio-guardar" onclick="guardarCambioProveedor()">💾 Registrar Cambio</button>
-      </div>
- 
-      <script>
-      window.cambioRecepcion = [];
-      
-      function poblarListaCambio() {
-        const dl = $('dev-lista');
-        if (!dl) return;
-        dl.innerHTML = '';
-        (DB.todo || []).forEach(p => {
-          const o = document.createElement('option'); o.value = p.nombre; dl.appendChild(o);
-        });
-      }
-      
-      function addRecepcionItem() {
-        cambioRecepcion.push({prod:'', cant:1, costo:0});
-        renderRecepcionItems();
-      }
-      
-      function delRecepcionItem(idx) {
-        cambioRecepcion.splice(idx, 1);
-        renderRecepcionItems();
-      }
-      
-      function renderRecepcionItems() {
-        const div = $('cambio-recepcion-items');
-        if (!div) return;
-        if (!cambioRecepcion.length) { div.innerHTML = '<div class="empty" style="font-size:11px;">Sin líneas aún</div>'; return; }
-        div.innerHTML = cambioRecepcion.map((i, idx) => `
-          <div style="display:grid; grid-template-columns:1fr 80px 100px 30px; gap:8px; margin-bottom:8px; align-items:flex-end;">
-            <input class="f-in" list="dev-lista" placeholder="Producto" value="${i.prod}" onchange="cambioRecepcion[${idx}].prod=this.value" style="font-size:11px; padding:6px;">
-            <input class="f-in" type="number" min="1" value="${i.cant}" onchange="cambioRecepcion[${idx}].cant=parseInt(this.value)" style="font-size:11px; padding:6px;">
-            <input class="f-in" type="text" placeholder="Costo/u" value="${i.costo}" onchange="cambioRecepcion[${idx}].costo=parseFloat(this.value.toString().replace(',','.'))" style="font-size:11px; padding:6px;">
-            <button class="btn btn-ghost" onclick="delRecepcionItem(${idx})" style="padding:4px 6px; margin:0; color:var(--red); border-color:var(--red); font-size:11px;">✕</button>
-          </div>
-        `).join('');
-      }
-      
-      async function guardarCambioProveedor() {
-        const prod = ($('dev-prod').value || '').trim();
-        const cant = parseInt(($('dev-cant').value || 0), 10);
-        const prov = ($('dev-prov').value || '').trim().toUpperCase();
-        
-        if (!prod || cant <= 0) { toast('Falta producto a devolver o cantidad', 'err'); return; }
-        if (!prov) { toast('Falta el proveedor', 'err'); return; }
-        if (!cambioRecepcion.length) { toast('Agrega al menos 1 línea de recepción', 'err'); return; }
-        
-        const faltanDatos = cambioRecepcion.some(r => !r.prod || r.cant <= 0 || r.costo <= 0);
-        if (faltanDatos) { toast('Completa todas las líneas (producto, cantidad, costo)', 'err'); return; }
-        
-        setBtn('btn-cambio-guardar', true, '');
-        try {
-          const fecha = new Date().toLocaleDateString('es-AR');
-          const loteId = 'CAMBIO-' + Date.now();
-          
-          // Salida (devolución)
-          await append('AJUSTES!A:D', [[prod, 'Cambio/Devolución con '+prov, -cant, fecha]]);
-          
-          // Entradas (recepción)
-          for (const r of cambioRecepcion) {
-            await append('Entradas!A:G', [[r.prod, '', r.cant, r.costo, r.cant*r.costo, fecha, prov]]);
-            // Actualizar costo en Productos si cambió
-            const prodDB = DB.todo.find(p => p.nombre === r.prod);
-            if (prodDB && prodDB.fila && r.costo > 0 && r.costo !== prodDB.costo) {
-              await updateCell(`Productos!E${prodDB.fila}`, [[r.costo]]);
-            }
-            // Capital: historial de entrada
-            await registrarMovimientoCapital('INGRESO_MERCADERIA', -(r.cant*r.costo), loteId+'-'+r.prod, 'Cambio con '+prov+': recepción de '+r.prod);
-          }
-          
-          toast('✓ Cambio registrado: salieron '+cant+' '+prod+', entraron '+cambioRecepcion.map(r=>r.cant+'x '+r.prod).join(' + '));
-          $('dev-prod').value = ''; $('dev-cant').value = '1'; $('dev-prov').value = '';
-          cambioRecepcion = []; renderRecepcionItems();
-          await cargarTodo();
-        } catch(e) { toast('Error: '+e.message, 'err'); }
-        setBtn('btn-cambio-guardar', false, '💾 Registrar Cambio');
-      }
-      </script>
+
    <div class="tab" id="tab-stock">
 
       <div class="section-header" style='margin-top:0'>Configuración</div>
@@ -920,7 +825,29 @@
         <div id="entrada-items"></div>
         <button class="btn btn-blue" id="btn-entrada" onclick="guardarEntrada()" disabled>💾 Guardar stock</button>
       </div>
-      
+
+      <div class="card">
+        <div class="card-title">🔄 Cambio/Devolución con Proveedor</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Registra devoluciones y canjes simultáneos (ej: 29 EBCREATE → 15 ICEKING + 10 ICEKING adicional)</div>
+        
+        <div style="border:1px solid var(--border); border-radius:var(--r-sm); padding:12px; margin-bottom:12px; background:var(--s2);">
+          <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:var(--text);">DEVOLUCIÓN</div>
+          <div class="f-row">
+            <div class="field"><label class="f-label">Producto a devolver</label><input class="f-in" id="dev-prod" list="dev-lista" placeholder="Buscar..." autocomplete="off"><datalist id="dev-lista"></datalist></div>
+            <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="dev-cant" type="number" min="1" value="1"></div>
+          </div>
+          <div class="field"><label class="f-label">Proveedor</label><input class="f-in" id="dev-prov" placeholder="Ej: PEDRO DONATI" style="text-transform:uppercase;"></div>
+        </div>
+
+        <div style="border:1px solid var(--border); border-radius:var(--r-sm); padding:12px; margin-bottom:12px; background:var(--s2);">
+          <div style="font-size:11px; font-weight:700; margin-bottom:10px; color:var(--text);">RECEPCIÓN (Canje + Compra adicional)</div>
+          <div id="cambio-recepcion-items"></div>
+          <button type="button" class="btn btn-ghost" onclick="addRecepcionItem()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar línea de recepción</button>
+        </div>
+
+        <button class="btn btn-blue" id="btn-cambio-guardar" onclick="guardarCambioProveedor()">💾 Registrar Cambio</button>
+      </div>
+
       <div class="card">
         <div class="card-title">📋 Auditoría de Stock</div>
         <button class="btn btn-ghost" onclick="prepararAuditoria('imprimir')" style="margin-bottom:0; border-color:var(--cyan); color:var(--cyan);">🖨️ Imprimir Hoja de Auditoría</button>
@@ -2552,6 +2479,7 @@ function poblarListas(){
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
   DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); if(ccl) ccl.appendChild(o.cloneNode(true)); });
   poblarListasGarantia();
+  poblarListaCambio();
 }
 
 // --- LÓGICA DE CATÁLOGO Y SELECCIÓN ---
@@ -2585,8 +2513,6 @@ function renderCatalogo(){
        </details>`;
    });
    div.innerHTML = html;
-    poblarListaCambio();
-
 }
 
 function filtrarCatalogo() {
@@ -3648,12 +3574,11 @@ async function registrarGarantia() {
     const id = 'GAR-' + Date.now();
     const fecha = new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 
-     // 1) Stock: SOLO el producto de reemplazo se descuenta (el que falló ya se vendió)
+    // ✓ CORREGIDO: Stock — el producto que falló YA se descontó cuando se vendió.
+    // SOLO descuentas el reemplazo (si aplica).
     if (GAR_RESOLUCION === 'PRODUCTO') {
       await descontarStockPorGarantia(productoReemplazo, cant, 'Garantía: reemplazo entregado ('+id+')');
     }
-    // Nota: el producto fallado NO se descuenta porque ya se descontó cuando se vendió
-    
 
     // 2) Impacto financiero: solo si hubo plata real de por medio (reembolso en dinero).
     if (GAR_RESOLUCION === 'DINERO') {
@@ -3678,14 +3603,12 @@ async function registrarGarantia() {
 async function cargarGarantias() {
   await asegurarHojaGarantias();
   let rows = [];
-  try { rows = await get('Garantias!A2:N'); } catch(e) {}
+  try { rows = await get('Garantias!A2:O'); } catch(e) {}
   DB.garantias = rows.filter(r => r[0]).map((r, i) => ({
     id: str(r[0]), fecha: str(r[1]), producto: str(r[2]), sku: str(r[3]), costoUnitario: num(r[4]),
     cliente: str(r[5]), tipo: str(r[6]), montoCosto: num(r[7]), productoReemplazo: str(r[8]),
     fuente: str(r[9]), estadoProveedor: str(r[10]) || 'SIN_RECLAMO', montoProveedor: num(r[11]),
-        productoDevuelto: str(r[14]) || 'NO', // SÍ / NO
-
-    fechaRecibido: str(r[12]), motivo: str(r[13]), fila: i + 2
+    fechaRecibido: str(r[12]), motivo: str(r[13]), productoDevuelto: str(r[14]) || 'NO', fila: i + 2
   }));
   renderGarantias();
 }
@@ -3716,7 +3639,7 @@ function renderGarantias() {
     html += `<div class="hist-item">
       <div class="hist-top"><span class="hist-mot">${g.producto}${g.cliente && g.cliente!=='-' ? ' — '+g.cliente : ''}</span><span class="hist-amt" style="color:var(--red)">-${fmt(g.montoCosto)}</span></div>
       <div class="hist-meta">${g.fecha} · ${resTxt} · Fuente: ${fuenteLabel[g.fuente]||g.fuente}</div>
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; flex-wrap:wrap; gap:6px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; flex-wrap:wrap; gap:6px;">
         <div>
           <span class="pill ${estadoPill[g.estadoProveedor]||'pill-muted'}">${estadoTxt[g.estadoProveedor]||g.estadoProveedor}${g.estadoProveedor==='RECIBIDO' ? ' ('+fmt(g.montoProveedor)+')' : ''}</span>
           ${g.productoDevuelto === 'SÍ' ? `<span class="pill pill-cyan" style="margin-left:6px;">Producto devuelto</span>` : ''}
@@ -3770,12 +3693,116 @@ async function marcarReclamoRecibido(id) {
     await cargarTodo();
   } catch(e) { toast('Error: '+e.message, 'err'); }
 }
+
+async function toggleProductoDevuelto(id) {
+  const g = (DB.garantias || []).find(x => x.id === id);
+  if (!g) return;
+  const nuevoEstado = g.productoDevuelto === 'SÍ' ? 'NO' : 'SÍ';
+  try {
+    await updateCell(`Garantias!O${g.fila}`, [[nuevoEstado]]);
+    if (nuevoEstado === 'SÍ') {
+      toast('✓ Producto devuelto registrado (entra '+g.montoCosto+' al stock)');
+    } else {
+      toast('✓ Marcado como no devuelto');
+    }
+    await cargarGarantias();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
 // ================================================================
 // FIN MÓDULO GARANTÍAS
 // ================================================================
 
 // ================================================================
-// MÓDULO CALCULADORA DE PRECIOS (aditivo) — 100% cliente, no lee ni
+// MÓDULO CAMBIO/DEVOLUCIÓN CON PROVEEDOR (NUEVO)
+// ================================================================
+
+let cambioRecepcion = [];
+
+function poblarListaCambio() {
+  const dl = $('dev-lista');
+  if (!dl) return;
+  dl.innerHTML = '';
+  (DB.todo || []).forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.nombre;
+    dl.appendChild(o);
+  });
+}
+
+function addRecepcionItem() {
+  cambioRecepcion.push({prod:'', cant:1, costo:0});
+  renderRecepcionItems();
+}
+
+function delRecepcionItem(idx) {
+  cambioRecepcion.splice(idx, 1);
+  renderRecepcionItems();
+}
+
+function renderRecepcionItems() {
+  const div = $('cambio-recepcion-items');
+  if (!div) return;
+  if (!cambioRecepcion.length) {
+    div.innerHTML = '<div class="empty" style="font-size:11px;">Sin líneas aún</div>';
+    return;
+  }
+  div.innerHTML = cambioRecepcion.map((i, idx) => `
+    <div style="display:grid;grid-template-columns:1fr 80px 100px 30px;gap:8px;margin-bottom:8px;align-items:flex-end;">
+      <input class="f-in" list="dev-lista" placeholder="Producto" value="${i.prod}" onchange="cambioRecepcion[${idx}].prod=this.value" style="font-size:11px;padding:6px">
+      <input class="f-in" type="number" min="1" value="${i.cant}" onchange="cambioRecepcion[${idx}].cant=parseInt(this.value)" style="font-size:11px;padding:6px">
+      <input class="f-in" type="text" placeholder="Costo/u" value="${i.costo}" onchange="cambioRecepcion[${idx}].costo=parseFloat(this.value.toString().replace(',','.'))" style="font-size:11px;padding:6px">
+      <button class="btn btn-ghost" onclick="delRecepcionItem(${idx})" style="padding:4px 6px;margin:0;color:var(--red);border-color:var(--red);font-size:11px">✕</button>
+    </div>
+  `).join('');
+}
+
+async function guardarCambioProveedor() {
+  const prod = ($('dev-prod').value || '').trim();
+  const cant = parseInt(($('dev-cant').value || 0), 10);
+  const prov = ($('dev-prov').value || '').trim().toUpperCase();
+
+  if (!prod || cant <= 0) { toast('Falta producto a devolver o cantidad', 'err'); return; }
+  if (!prov) { toast('Falta el proveedor', 'err'); return; }
+  if (!cambioRecepcion.length) { toast('Agrega al menos 1 línea de recepción', 'err'); return; }
+
+  const faltanDatos = cambioRecepcion.some(r => !r.prod || r.cant <= 0 || r.costo <= 0);
+  if (faltanDatos) { toast('Completa todas las líneas (producto, cantidad, costo)', 'err'); return; }
+
+  setBtn('btn-cambio-guardar', true, '');
+  try {
+    const fecha = new Date().toLocaleDateString('es-AR');
+    const loteId = 'CAMBIO-' + Date.now();
+
+    // 1) Registra la salida (devolución)
+    await append('AJUSTES!A:D', [[prod, 'Cambio/Devolución con '+prov, -cant, fecha]]);
+
+    // 2) Registra las entradas (recepción)
+    for (const r of cambioRecepcion) {
+      await append('Entradas!A:G', [[r.prod, '', r.cant, r.costo, r.cant*r.costo, fecha, prov]]);
+      
+      // Actualiza el costo en Productos si cambió
+      const prodDB = DB.todo.find(p => p.nombre === r.prod);
+      if (prodDB && prodDB.fila && r.costo > 0 && r.costo !== prodDB.costo) {
+        await updateCell(`Productos!E${prodDB.fila}`, [[r.costo]]);
+      }
+      
+      // Registra en Capital
+      await registrarMovimientoCapital('INGRESO_MERCADERIA', -(r.cant*r.costo), loteId+'-'+r.prod, 'Cambio con '+prov+': recepción de '+r.prod);
+    }
+
+    toast('✓ Cambio registrado: salieron '+cant+' '+prod+', entraron '+cambioRecepcion.map(r=>r.cant+'x '+r.prod).join(' + '));
+    $('dev-prod').value = '';
+    $('dev-cant').value = '1';
+    $('dev-prov').value = '';
+    cambioRecepcion = [];
+    renderRecepcionItems();
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-cambio-guardar', false, '💾 Registrar Cambio');
+}
+
+// FIN MÓDULO CAMBIO/DEVOLUCIÓN
+// ================================================================
 // escribe nada en Sheets. Dos cálculos independientes que comparten el
 // campo Costo:
 //  - Costo + Margen deseado (sobre el precio de venta) → Precio sugerido.
@@ -4445,23 +4472,6 @@ async function crearProductoDB(){
 // así que se sincroniza una vez al cargar el script, sin esperar a que el
 // usuario toque los selects.
 try { actualizarVisibilidadFijoVar(); } catch(e) {}
-
-  async function toggleProductoDevuelto(id) {
-  const g = (DB.garantias || []).find(x => x.id === id);
-  if (!g) return;
-  const nuevoEstado = g.productoDevuelto === 'SÍ' ? 'NO' : 'SÍ';
-  try {
-    await updateCell(`Garantias!O${g.fila}`, [[nuevoEstado]]);
-    if (nuevoEstado === 'SÍ') {
-      const cant = 1; // TODO: permitir ingresar cantidad
-      await descontarStockPorGarantia(g.producto, -cant, 'Devolución proveedor: producto roto de garantía ('+id+')'); // negativo = entra
-      toast('✓ Producto devuelto registrado (entra '+cant+' al stock)');
-    } else {
-      toast('✓ Marcado como no devuelto');
-    }
-    await cargarGarantias();
-  } catch(e) { toast('Error: '+e.message, 'err'); }
-}
 </script>
 </body>
 </html>
