@@ -80,13 +80,10 @@
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     ::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--s4); border-radius: 3px; }
 
-    /* ── OCULTAR NÚMEROS: reemplaza valor con asteriscos ── */
+    /* ── OCULTAR NÚMEROS ── */
     .hide-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text3); padding: 5px 10px; border-radius: var(--r-sm); cursor: pointer; font-size: 11px; font-weight: 600; transition: all .15s; display: flex; align-items: center; gap: 5px; font-family: var(--font); }
     .hide-btn:hover { border-color: var(--green); color: var(--green); }
     .hide-btn.on { border-color: var(--orange); color: var(--orange); background: #f9731612; }
-    body.nums-hidden .num-hide::after { content: '••••'; letter-spacing: 2px; }
-    body.nums-hidden .num-hide { color: transparent; position: relative; user-select: none; }
-    body.nums-hidden .num-hide::after { position: absolute; left: 0; top: 0; color: var(--text3); }
 
     /* ── LOGIN ── */
     #login { position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 0%, #0d1f12 0%, var(--bg) 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 999; padding: 40px 24px; }
@@ -4744,14 +4741,23 @@ async function crearProductoDB(){
 try { actualizarVisibilidadFijoVar(); } catch(e) {}
 
 // ================================================================
-// MÓDULO OCULTAR NÚMEROS (aditivo)
+// MÓDULO OCULTAR NÚMEROS
 // ----------------------------------------------------------------
-// Un click tapa todos los montos con blur CSS. No borra ni modifica
-// ningún dato — es puramente visual, para mostrar el sistema sin
-// exponer cifras sensibles. Se guarda en localStorage por si recarga.
+// Reemplaza el texto real de los elementos numéricos con "••••••"
+// y lo restaura al volver a tocar. Guarda el estado en localStorage.
 // ================================================================
 let NUMS_OCULTOS = false;
 try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
+
+const NUMS_SELECTORS = [
+  '.kpi-val', '.tot-val', '.total-final-val', '.bal-val', '.hist-amt', '.cart-price',
+  '#h-gan', '#h-cap', '#h-fondo', '#h-joaco', '#h-total', '#h-units', '#h-valor',
+  '#home-kpi-ventas', '#home-kpi-ganbruta', '#home-kpi-ticket', '#home-kpi-margen', '#home-kpi-stock',
+  '#dg-gan-disp', '#dg-r-bill', '#dg-r-cap', '#dg-r-fondo', '#dg-r-total', '#dg-r-restante',
+  '#h-cc-cobrar', '#h-cc-pagar', '#usd-caja-saldo', '#cap-tab-val', '#cap-tab-gan',
+  '#pf-bill', '#pf-fondo', '#pf-usd-saldo', '#gar-perdida-neta', '#gar-costo-total',
+  '#gar-recuperado', '#rep-vendido', '#rep-ganancia', '#rep-ganancia-total'
+];
 
 function toggleNums() {
   NUMS_OCULTOS = !NUMS_OCULTOS;
@@ -4761,24 +4767,55 @@ function toggleNums() {
 
 function aplicarEstadoNums() {
   const btn = $('hide-btn');
-  // Seleccionar todos los elementos que muestran números
-  const selectors = ['.kpi-val','.tot-val','.total-final-val','.bal-val','.hist-amt','.cart-price',
-    '#h-gan','#h-cap','#h-fondo','#h-joaco','#h-total','#h-units','#h-valor',
-    '#home-kpi-ventas','#home-kpi-ganbruta','#home-kpi-ticket','#home-kpi-margen','#home-kpi-stock',
-    '#dg-gan-disp','#dg-r-bill','#dg-r-cap','#dg-r-fondo','#dg-r-total','#dg-r-restante'];
+  const MASK = '••••••';
+
   if (NUMS_OCULTOS) {
-    document.body.classList.add('nums-hidden');
-    selectors.forEach(s => document.querySelectorAll(s).forEach(el => el.classList.add('num-hide')));
+    // Guardar el texto original y reemplazar con ••••••
+    NUMS_SELECTORS.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        // Solo si no está ya enmascarado
+        if (!el.dataset.original) {
+          el.dataset.original = el.textContent;
+          el.textContent = MASK;
+          el.style.color = 'var(--text3)';
+          el.style.letterSpacing = '2px';
+        }
+      });
+    });
     if (btn) { btn.classList.add('on'); btn.title = 'Mostrar números'; }
     setText('hide-btn-ico', '🙈');
   } else {
-    document.body.classList.remove('nums-hidden');
-    document.querySelectorAll('.num-hide').forEach(el => el.classList.remove('num-hide'));
+    // Restaurar texto original
+    NUMS_SELECTORS.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        if (el.dataset.original !== undefined) {
+          el.textContent = el.dataset.original;
+          el.style.color = '';
+          el.style.letterSpacing = '';
+          delete el.dataset.original;
+        }
+      });
+    });
     if (btn) { btn.classList.remove('on'); btn.title = 'Ocultar números'; }
     setText('hide-btn-ico', '👁');
   }
 }
 
+// Reaplicar después de cada sync (los números se reescriben)
+const _origSetText = setText;
+// Hook: cuando se actualiza el DOM, si estamos en modo oculto re-enmascaramos
+function setTextMasked(id, txt) {
+  _origSetText(id, txt);
+  if (NUMS_OCULTOS) {
+    const el = $(id);
+    if (el && NUMS_SELECTORS.some(s => s === '#'+id || (el.matches && el.matches(s)))) {
+      el.dataset.original = txt;
+      el.textContent = '••••••';
+      el.style.color = 'var(--text3)';
+      el.style.letterSpacing = '2px';
+    }
+  }
+}
 // Aplicar al cargar
 try { aplicarEstadoNums(); } catch(e) {}
 
