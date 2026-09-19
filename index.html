@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#07090d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>JuntechOS v5.1 - Master ERP</title>
+  <title>JuntechOS v6.0 - Master ERP</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -66,6 +66,33 @@
     }
     html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
     ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ===== MODO OCULTAR NÚMEROS ===== */
+    .hide-btn { background: var(--s2); border: 1px solid var(--border); color: var(--text2); padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all .15s ease; display: flex; align-items: center; gap: 5px; }
+    .hide-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .hide-btn.on { border-color: var(--orange); color: var(--orange); background: #f0883e12; }
+    /* Cuando está activo el modo ocultar, tapa los valores numéricos */
+    body.nums-hidden .kpi-val,
+    body.nums-hidden .tot-val,
+    body.nums-hidden .total-final-val,
+    body.nums-hidden .bal-val,
+    body.nums-hidden .hist-amt,
+    body.nums-hidden [id^="h-gan"],
+    body.nums-hidden [id^="h-cap"],
+    body.nums-hidden [id^="h-fondo"],
+    body.nums-hidden [id^="h-joaco"],
+    body.nums-hidden [id^="h-total"],
+    body.nums-hidden [id^="h-units"],
+    body.nums-hidden [id^="h-valor"],
+    body.nums-hidden [id^="home-kpi-"],
+    body.nums-hidden .cart-price,
+    body.nums-hidden [id^="dg-"] { 
+      filter: blur(8px); 
+      user-select: none; 
+      transition: filter .2s ease;
+    }
+    body:not(.nums-hidden) .kpi-val,
+    body:not(.nums-hidden) .tot-val { transition: filter .2s ease; }
 
     #login { position: fixed; inset: 0; background: radial-gradient(circle at 50% 20%, #101720 0%, var(--bg) 65%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; z-index: 999; padding: 40px 30px; }
     .login-btn { background: var(--blue-g); color: #fff; border: none; padding: 14px 0; border-radius: var(--r); font-family: var(--font); font-weight: 600; font-size: .95rem; cursor: pointer; width: 100%; max-width: 260px; box-shadow: 0 4px 14px #2f81f730; transition: transform .12s ease, box-shadow .12s ease; }
@@ -290,7 +317,7 @@
 <div id="login">
   <div class="login-title">
     <h1>HTML5<span>OS</span></h1>
-    <p>JuntechOS v5.1 Master</p>
+    <p>JuntechOS v6.0 Master</p>
   </div>
   <button class="login-btn" onclick="iniciarAuth()">Conectar con Google</button>
   <p id="login-msg" style="margin-top:10px; font-size:12px; color:var(--text2);"></p>
@@ -302,10 +329,13 @@
       <button class="hdr-menu-btn" onclick="toggleSidebar()">
         <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver" style="font-size:9px;color:var(--text3);margin-left:5px">v5.1</span></div>
+      <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver" style="font-size:9px;color:var(--text3);margin-left:5px">v6.0</span></div>
     </div>
     <div class="hdr-right" style="display:flex;align-items:center;gap:8px">
       <div class="dot-on" id="dot-on"></div>
+      <button class="hide-btn" id="hide-btn" onclick="toggleNums()" title="Ocultar/mostrar números">
+        <span id="hide-btn-ico">👁</span><span id="hide-btn-txt" style="display:none">Ocultar</span>
+      </button>
       <button class="sync-btn" id="sync-btn" onclick="cargarTodo()">↻ Sync</button>
     </div>
   </div>
@@ -321,7 +351,7 @@
         <div class="sb-logo-name">JUNTECH<span>OS</span></div>
         <div style="font-size:9px;color:var(--text3);margin-top:2px">Sistema de gestión</div>
       </div>
-      <div class="sb-logo-ver">v5.1</div>
+      <div class="sb-logo-ver">v6.0</div>
     </div>
 
     <div class="sb-group">
@@ -893,7 +923,45 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Crear Producto Nuevo (Catálogo)</div>
+        <div class="card-title">📲 Calculadora de Precios × Cantidad → WhatsApp</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Definí cuánto querés ganar por cantidad. Genera el mensaje listo para mandar por WhatsApp en ARS y USD.</div>
+
+        <div class="field">
+          <label class="f-label">Producto</label>
+          <input class="f-in" id="wsp-prod" list="e-lista" placeholder="Seleccioná del inventario o escribí uno" oninput="wspAutoFillCosto()" autocomplete="off">
+        </div>
+        <div class="f-row">
+          <div class="field">
+            <label class="f-label">Costo unitario (ARS)</label>
+            <input class="f-in" id="wsp-costo" type="text" inputmode="decimal" placeholder="Ej: 15000" oninput="wspCalcular()">
+          </div>
+          <div class="field">
+            <label class="f-label">Cotización USD (para preview)</label>
+            <input class="f-in" id="wsp-tc" type="text" inputmode="decimal" placeholder="Ej: 1600" oninput="wspCalcular()">
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px;">Cantidades y ganancia</div>
+        <div id="wsp-filas"></div>
+        <button class="btn btn-ghost" onclick="wspAgregarFila()" style="border-color:var(--purple);color:var(--purple);margin-bottom:14px;font-size:12px;">+ Agregar cantidad</button>
+
+        <div style="margin-bottom:8px;">
+          <button class="btn btn-ghost" onclick="wspCambiarEmojis()" style="font-size:11px;margin-bottom:6px;">🎲 Cambiar emojis del mensaje</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Preview ARS 🇦🇷</div>
+            <div id="wsp-preview-ars" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos para ver el mensaje</div>
+            <button class="btn btn-ghost" onclick="wspCopiar('ars')" style="margin-top:6px;font-size:11px;border-color:var(--cyan);color:var(--cyan);">📋 Copiar ARS</button>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Preview USD 🇺🇸</div>
+            <div id="wsp-preview-usd" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos para ver el mensaje</div>
+            <button class="btn btn-ghost" onclick="wspCopiar('usd')" style="margin-top:6px;font-size:11px;border-color:var(--blue);color:var(--blue);">📋 Copiar USD</button>
+          </div>
+        </div>
+      </div>
         <div class="field"><label class="f-label">Nombre del Producto</label><input class="f-in" id="n-nom" placeholder="Ej: FUNDA IPHONE 15 PRO" style="text-transform: uppercase;"></div>
         <div class="f-row">
           <div class="field"><label class="f-label">Categoría</label><input class="f-in" id="n-cat" placeholder="Ej: Accesorios"></div>
@@ -1079,14 +1147,13 @@
         <div class="card-title">Historial de Garantías</div>
         <div id="gar-historial"><div class="empty">Cargando...</div></div>
       </div>
-    </div>
-  </div> 
-</div> 
+    </div><!-- fin tab-garantias -->
+  </div><!-- fin .scroll -->
+  </div><!-- fin col-content -->
+  </div><!-- fin .app-body -->
+</div><!-- fin #app -->
 
-  </div><!-- fin col content -->
-  </div><!-- fin app-body -->
-
-<div class="nav" id="main-nav" style="display:none">
+<div class="nav" id="main-nav">
   <button class="nav-btn on" onclick="goTab('home',this)">
     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
   </button>
@@ -1114,7 +1181,7 @@
   <div class="print-header">
     <div>
       <h2 style="margin:0; font-size: 20px;">Remito</h2>
-      <p style="margin:0;">JuntechOS v5.1</p>
+      <p style="margin:0;">JuntechOS v6.0</p>
     </div>
     <div style="text-align: right;">
       <p id="remito-fecha" style="margin:0; font-weight:bold;"></p>
@@ -1144,7 +1211,7 @@
   <div class="print-header">
     <div>
       <h2 style="margin:0; font-size: 20px;">Auditoría de Stock</h2>
-      <p style="margin:0;">JuntechOS v5.1</p>
+      <p style="margin:0;">JuntechOS v6.0</p>
     </div>
     <div style="text-align: right;">
       <p id="auditoria-fecha" style="margin:5px 0 0 0; font-weight:bold;"></p>
@@ -4597,6 +4664,156 @@ async function crearProductoDB(){
 // así que se sincroniza una vez al cargar el script, sin esperar a que el
 // usuario toque los selects.
 try { actualizarVisibilidadFijoVar(); } catch(e) {}
+
+// ================================================================
+// MÓDULO OCULTAR NÚMEROS (aditivo)
+// ----------------------------------------------------------------
+// Un click tapa todos los montos con blur CSS. No borra ni modifica
+// ningún dato — es puramente visual, para mostrar el sistema sin
+// exponer cifras sensibles. Se guarda en localStorage por si recarga.
+// ================================================================
+let NUMS_OCULTOS = false;
+try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
+
+function toggleNums() {
+  NUMS_OCULTOS = !NUMS_OCULTOS;
+  try { localStorage.setItem('jt_nums_ocultos', NUMS_OCULTOS); } catch(e) {}
+  aplicarEstadoNums();
+}
+
+function aplicarEstadoNums() {
+  const btn = $('hide-btn');
+  if (NUMS_OCULTOS) {
+    document.body.classList.add('nums-hidden');
+    if (btn) { btn.classList.add('on'); btn.title = 'Mostrar números'; }
+    setText('hide-btn-ico', '🙈');
+  } else {
+    document.body.classList.remove('nums-hidden');
+    if (btn) { btn.classList.remove('on'); btn.title = 'Ocultar números'; }
+    setText('hide-btn-ico', '👁');
+  }
+}
+
+// Aplicar al cargar
+try { aplicarEstadoNums(); } catch(e) {}
+
+// ================================================================
+// MÓDULO CALCULADORA PRECIOS × CANTIDAD → WHATSAPP (aditivo)
+// ----------------------------------------------------------------
+// No guarda nada en Sheets — es 100% en pantalla.
+// Genera dos mensajes listos: uno en ARS y uno en USD.
+// Los emojis se pueden randomizar para que cada mensaje se vea diferente.
+// ================================================================
+
+let WSP_FILAS = [{cant: 1, ganar: 0}, {cant: 3, ganar: 0}, {cant: 5, ganar: 0}];
+const WSP_EMOJIS_SETS = [
+  ['📦','✅','🔥','💰','⚡'],
+  ['🎯','💎','🚀','💵','📲'],
+  ['🛍️','✨','💸','📊','🔑'],
+  ['⭐','🎁','💥','📈','🤝'],
+];
+let WSP_EMOJI_IDX = 0;
+
+function wspAutoFillCosto() {
+  const inp = $('wsp-prod');
+  if (!inp) return;
+  const p = DB.todo.find(x => x.nombre === inp.value);
+  const costoEl = $('wsp-costo');
+  if (p && costoEl && !costoEl.value) costoEl.value = p.costo;
+  const tcEl = $('wsp-tc');
+  if (tcEl && !tcEl.value) tcEl.value = Math.round(getTCActual()) || '';
+  wspCalcular();
+}
+
+function wspAgregarFila() {
+  WSP_FILAS.push({cant: '', ganar: 0});
+  wspRenderFilas();
+}
+
+function wspEliminarFila(idx) {
+  WSP_FILAS.splice(idx, 1);
+  wspRenderFilas();
+}
+
+function wspRenderFilas() {
+  const div = $('wsp-filas');
+  if (!div) return;
+  div.innerHTML = WSP_FILAS.map((f, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 30px;gap:8px;margin-bottom:8px;align-items:flex-end;">
+      <div>
+        <div class="f-label">Cantidad</div>
+        <input class="f-in" type="number" min="1" value="${f.cant}" placeholder="Ej: 5"
+          onchange="WSP_FILAS[${i}].cant=parseInt(this.value)||0; wspCalcular()"
+          style="padding:8px 10px;font-size:12px;">
+      </div>
+      <div>
+        <div class="f-label">Ganar por unidad (ARS)</div>
+        <input class="f-in" type="text" value="${f.ganar}" placeholder="Ej: 5000"
+          onchange="WSP_FILAS[${i}].ganar=parseFloat(this.value.toString().replace(',','.'))||0; wspCalcular()"
+          style="padding:8px 10px;font-size:12px;">
+      </div>
+      <button class="btn btn-ghost" onclick="wspEliminarFila(${i})"
+        style="padding:4px 8px;margin:0;color:var(--red);border-color:var(--red);font-size:12px;height:36px;">✕</button>
+    </div>
+  `).join('');
+}
+
+function wspCambiarEmojis() {
+  WSP_EMOJI_IDX = (WSP_EMOJI_IDX + 1) % WSP_EMOJIS_SETS.length;
+  wspCalcular();
+  toast('🎲 Emojis cambiados');
+}
+
+function wspCalcular() {
+  const prod = ($('wsp-prod') ? $('wsp-prod').value : '') || 'Producto';
+  const costo = parseFloat(($('wsp-costo') ? $('wsp-costo').value : '').toString().replace(',','.')) || 0;
+  const tc = parseFloat(($('wsp-tc') ? $('wsp-tc').value : '').toString().replace(',','.')) || 0;
+  const emojis = WSP_EMOJIS_SETS[WSP_EMOJI_IDX];
+
+  if (!costo || !WSP_FILAS.length) {
+    setHTML('wsp-preview-ars', '<span style="color:var(--text3)">Completá los datos para ver el mensaje</span>');
+    setHTML('wsp-preview-usd', '<span style="color:var(--text3)">Completá los datos para ver el mensaje</span>');
+    return;
+  }
+
+  // Genera las líneas de precio
+  let lineasARS = '', lineasUSD = '';
+  const filasValidas = WSP_FILAS.filter(f => f.cant > 0);
+  filasValidas.forEach((f, i) => {
+    const precioARS = Math.round(costo + (f.ganar || 0));
+    const totalARS = precioARS * f.cant;
+    const emo = emojis[i % emojis.length];
+    lineasARS += `${emo} x${f.cant} → $${precioARS.toLocaleString('es-AR')}/u = $${totalARS.toLocaleString('es-AR')}\n`;
+    if (tc > 0) {
+      const precioUSD = (precioARS / tc).toFixed(2);
+      const totalUSD = (totalARS / tc).toFixed(2);
+      lineasUSD += `${emo} x${f.cant} → u$s ${precioUSD}/u = u$s ${totalUSD}\n`;
+    }
+  });
+
+  const hoy = new Date().toLocaleDateString('es-AR');
+  const msgARS = `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios ARS · ${hoy}\n\n${lineasARS}\n💬 Escribime para coordinar entrega.`;
+  const msgUSD = tc > 0
+    ? `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios USD · ${hoy} (a $${Math.round(tc).toLocaleString('es-AR')}/u$s)\n\n${lineasUSD}\n💬 Escribime para coordinar entrega.`
+    : 'Ingresá la cotización USD para ver este preview.';
+
+  const arsEl = $('wsp-preview-ars'), usdEl = $('wsp-preview-usd');
+  if (arsEl) arsEl.textContent = msgARS;
+  if (usdEl) usdEl.textContent = msgUSD;
+}
+
+function wspCopiar(moneda) {
+  const el = moneda === 'ars' ? $('wsp-preview-ars') : $('wsp-preview-usd');
+  if (!el || !el.textContent || el.textContent.includes('Completá')) {
+    toast('Completá los datos primero', 'err'); return;
+  }
+  navigator.clipboard.writeText(el.textContent)
+    .then(() => toast('✓ Mensaje copiado — listo para pegar en WhatsApp'))
+    .catch(() => toast('Error al copiar', 'err'));
+}
+
+// Inicializar filas de la calculadora
+try { wspRenderFilas(); } catch(e) {}
 </script>
 </body>
 </html>
