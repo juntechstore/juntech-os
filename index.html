@@ -1148,11 +1148,74 @@
         <div id="gar-historial"><div class="empty">Cargando...</div></div>
       </div>
     </div><!-- fin tab-garantias -->
+
+    <!-- TAB CAPITAL (antes solo era modal) -->
+    <div class="tab" id="tab-capital">
+      <div class="home-header">
+        <div class="home-header-title">Capital del Negocio</div>
+        <div class="home-header-sub">Fondo de reposición y auditoría</div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:12px">
+        <div class="kpi cyan" onclick="abrirModalCapital()" style="cursor:pointer"><div class="kpi-label">Capital Real 🔍</div><div class="kpi-val" id="cap-tab-val">—</div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">Ganancia Disponible</div><div class="kpi-val" id="cap-tab-gan">—</div><div class="kpi-bar"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Auditoría de Capital</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Hacé click en el KPI "Capital Real 🔍" de arriba para abrir el modal de auditoría completo, donde podés inicializar el ledger, aplicar correcciones manuales y comparar ambos cálculos.</div>
+        <button class="btn btn-ghost" onclick="abrirModalCapital()" style="border-color:var(--cyan);color:var(--cyan);">🔍 Abrir Auditoría de Capital</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribución de Ganancia</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Repartí la ganancia disponible entre Billetera, Capital y Fondo de Emergencia.</div>
+        <button class="btn btn-ghost" onclick="goTab('caja',document.getElementById('sb-caja'))" style="border-color:var(--blue);color:var(--blue)">Ir a Caja → Distribución de Ganancia</button>
+      </div>
+    </div>
+
+    <!-- TAB MIS FINANZAS (personal) -->
+    <div class="tab" id="tab-personal">
+      <div class="home-header">
+        <div class="home-header-title">Mis Finanzas Personales</div>
+        <div class="home-header-sub">Billetera, fondo de emergencia y deudas personales</div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:12px">
+        <div class="kpi"><div class="kpi-label">Billetera Personal</div><div class="kpi-val" id="pf-bill">—</div><div class="kpi-trend" id="pf-bill-trend"></div><div class="kpi-bar"></div></div>
+        <div class="kpi"><div class="kpi-label">Fondo de Emergencia</div><div class="kpi-val" id="pf-fondo">—</div><div class="kpi-trend" id="pf-fondo-trend"></div><div class="kpi-bar"></div></div>
+      </div>
+      <div class="section-header">Deudas y Préstamos Personales</div>
+      <div class="card">
+        <div class="card-title">Cuentas Activas</div>
+        <div id="pf-cuentas-lista"><div class="empty">Cargando...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Nueva Deuda / Préstamo</div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="pf-tipo-me-deben" onclick="pfSetTipo('ME_DEBEN')">Me deben a mí</button>
+          <button type="button" class="curr-btn" id="pf-tipo-yo-debo" onclick="pfSetTipo('YO_DEBO')">Yo debo</button>
+        </div>
+        <div class="field"><label class="f-label">Persona</label><input class="f-in" id="pf-persona" placeholder="Ej: Papás, Juan" style="text-transform:uppercase"></div>
+        <div class="field"><label class="f-label">Concepto</label><input class="f-in" id="pf-concepto" placeholder="Ej: Préstamo para el super"></div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="pf-moneda-ars" onclick="pfSetMoneda('ARS')">$ Pesos</button>
+          <button type="button" class="curr-btn" id="pf-moneda-usd" onclick="pfSetMoneda('USD')">u$s Dólares</button>
+        </div>
+        <div class="field"><label class="f-label" id="pf-monto-label">Monto $</label><input class="f-in" id="pf-monto" type="text" inputmode="decimal" placeholder="0"></div>
+        <button class="btn btn-blue" id="btn-pf-nueva" onclick="pfGuardarDeuda()">💾 Registrar</button>
+      </div>
+      <div class="section-header">Caja en Dólares</div>
+      <div class="card">
+        <div class="card-title">💵 Caja USD</div>
+        <div class="bal-row"><span class="bal-key">Total en dólares</span><span class="bal-val orange" id="pf-usd-saldo">—</span></div>
+        <div id="pf-usd-desglose" style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.6"></div>
+        <button class="btn btn-ghost" onclick="goTab('caja',null)" style="margin-top:10px;border-color:var(--orange);color:var(--orange);font-size:12px">Ir a Caja para operar USD →</button>
+      </div>
+    </div>
+
   </div><!-- fin .scroll -->
   </div><!-- fin col-content -->
   </div><!-- fin .app-body -->
 </div><!-- fin #app -->
 
+<!-- NAV INFERIOR (solo visible en móvil via CSS) -->
 <div class="nav" id="main-nav">
   <button class="nav-btn on" onclick="goTab('home',this)">
     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
@@ -1752,7 +1815,15 @@ function evalMath(el) { if(!el || !el.value) return; let v = el.value.toString()
 
 function guardarToken(token, expiry){ try{ localStorage.setItem('jt_token', token); localStorage.setItem('jt_expiry', expiry); } catch(e){} }
 function tokenGuardado(){ try{ const t = localStorage.getItem('jt_token'); const e = parseInt(localStorage.getItem('jt_expiry')||'0'); if(t && e && Date.now() < e - 60000) return t; }catch(e){} return null; }
-async function entrarConToken(token){ accessToken = token; const l = $('login'), a = $('app'), m = $('main-nav'); if(l) l.style.display='none'; if(a) a.classList.add('on'); if(m) m.style.display='flex'; cargarCotizaciones(); await cargarTodo(); }
+async function entrarConToken(token){
+  accessToken = token;
+  const l = $('login'), a = $('app');
+  if(l) l.style.display='none';
+  if(a) a.classList.add('on');
+  // La nav inferior solo en móvil — el CSS la controla, no JS
+  cargarCotizaciones();
+  await cargarTodo();
+}
 
 function iniciarAuth(){
   const tokenExistente = tokenGuardado();
@@ -2660,6 +2731,7 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
     try { renderHomeHeader(); } catch(e) { console.error('Header de Home: no se pudo armar', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
@@ -4696,6 +4768,96 @@ function aplicarEstadoNums() {
 
 // Aplicar al cargar
 try { aplicarEstadoNums(); } catch(e) {}
+
+// ================================================================
+// TABS NUEVOS: Capital y Personal — KPIs y lógica adicional
+// ================================================================
+
+// Actualiza los KPIs de las tabs nuevas con los datos ya calculados en cargarTodo()
+function actualizarTabsNuevos() {
+  const F = DB.finanzas || {};
+  // Tab Capital
+  const modoSimple = localStorage.getItem('CAPITAL_MODO_SIMPLE') === 'true';
+  const capMostrado = (!modoSimple && CAPITAL_REFS && CAPITAL_REFS.has('INIT')) ? (CAPITAL_SALDO_ACTUAL || 0) : (F.capJ || 0);
+  setText('cap-tab-val', fmt(capMostrado));
+  setText('cap-tab-gan', fmt(F.ganD || 0));
+
+  // Tab Personal
+  setText('pf-bill', fmt(F.billJ || 0));
+  setText('pf-fondo', fmt(F.fondo || 0));
+
+  // Caja USD en tab personal
+  actualizarSaldoCajaUSD().then(({total, desglose} = {}) => {
+    if (!total && total !== 0) return;
+    const el = $('pf-usd-saldo'); if (el) el.textContent = fmtUSD(total);
+    const el2 = $('pf-usd-desglose');
+    if (el2) {
+      const partes = [];
+      if (Math.abs(desglose.EFECTIVO) > 0.01) partes.push('Efectivo: '+fmtUSD(desglose.EFECTIVO));
+      if (Math.abs(desglose.TRANSFERENCIA) > 0.01) partes.push('Transf: '+fmtUSD(desglose.TRANSFERENCIA));
+      if (Math.abs(desglose.USDT) > 0.01) partes.push('USDT: '+fmtUSD(desglose.USDT));
+      el2.textContent = partes.join(' · ');
+    }
+    const el3 = $('cap-usd-saldo'); if (el3) el3.textContent = fmtUSD(total);
+    const el4 = $('cap-usd-desglose'); if (el4) el4.textContent = $('pf-usd-desglose') ? $('pf-usd-desglose').textContent : '';
+  }).catch(() => {});
+
+  // Lista de cuentas en tab personal (reutiliza DB.pasivos)
+  renderCuentasPersonal();
+}
+
+function renderCuentasPersonal() {
+  const box = $('pf-cuentas-lista');
+  if (!box) return;
+  const pasivos = Object.values(DB.pasivos || {});
+  const activos = pasivos.filter(d => Math.abs(d.saldo) > 0.01);
+  if (!activos.length) { box.innerHTML = '<div class="empty" style="font-size:12px">Sin deudas ni préstamos personales activos</div>'; return; }
+  let html = '';
+  activos.forEach(d => {
+    const saldoSigned = d.relacion === 'YO_DEBO' ? -Math.abs(d.saldo) : Math.abs(d.saldo);
+    const color = saldoSigned > 0 ? 'var(--cyan)' : 'var(--red)';
+    const label = saldoSigned > 0 ? 'Te deben' : 'Debés';
+    const f = d.moneda === 'USD' ? fmtUSD : fmt;
+    html += `<div class="bal-row"><span class="bal-key">${d.concepto} <span style="color:var(--text3);font-size:10px">(${d.persona})</span></span><span class="bal-val" style="color:${color}">${label}: ${f(Math.abs(d.saldo))}</span></div>`;
+  });
+  box.innerHTML = html;
+}
+
+// Estado del toggle de tipo en tab personal
+let PF_TIPO = 'ME_DEBEN', PF_MONEDA = 'ARS';
+function pfSetTipo(t) {
+  PF_TIPO = t;
+  const bM = $('pf-tipo-me-deben'), bY = $('pf-tipo-yo-debo');
+  if (bM) bM.classList.toggle('on', t === 'ME_DEBEN');
+  if (bY) bY.classList.toggle('on', t === 'YO_DEBO');
+}
+function pfSetMoneda(m) {
+  PF_MONEDA = m;
+  const bA = $('pf-moneda-ars'), bU = $('pf-moneda-usd');
+  if (bA) bA.classList.toggle('on', m === 'ARS');
+  if (bU) bU.classList.toggle('on', m === 'USD');
+  const lbl = $('pf-monto-label');
+  if (lbl) lbl.textContent = m === 'USD' ? 'Monto u$s' : 'Monto $';
+}
+async function pfGuardarDeuda() {
+  const persona = ($('pf-persona').value || '').trim().toUpperCase();
+  const concepto = ($('pf-concepto').value || '').trim();
+  const monto = Math.abs(parseFloat(($('pf-monto').value || '').toString().replace(',','.')) || 0);
+  if (!persona || !concepto || monto <= 0) { toast('Falta persona, concepto o monto', 'err'); return; }
+  setBtn('btn-pf-nueva', true, '');
+  try {
+    const idRows = await get('PasivosPersonales!B2:B');
+    let maxId = 0;
+    if (idRows) idRows.forEach(r => { const n = parseInt(str(r[0]).replace('PERS-',''),10); if(!isNaN(n)&&n>maxId) maxId=n; });
+    const nuevoId = 'PERS-' + String(maxId+1).padStart(4,'0');
+    const fecha = new Date().toLocaleDateString('es-AR');
+    await append('PasivosPersonales!A:I', [['TPER-'+Date.now(), nuevoId, fecha, 'DEUDA', concepto, persona, monto, PF_MONEDA, PF_TIPO]]);
+    toast('✓ Registrado');
+    $('pf-persona').value = ''; $('pf-concepto').value = ''; $('pf-monto').value = '';
+    await cargarTodo();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-pf-nueva', false, '💾 Registrar');
+}
 
 // ================================================================
 // MÓDULO CALCULADORA PRECIOS × CANTIDAD → WHATSAPP (aditivo)
