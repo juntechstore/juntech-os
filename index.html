@@ -1031,7 +1031,8 @@
           <button class="btn btn-ghost" onclick="seleccionarConStock()" style="border-color:var(--cyan); color:var(--cyan); margin:0; font-size:11px; padding:8px;">✅ Sel. c/Stock</button>
           <button class="btn btn-ghost" onclick="deseleccionarTodo()" style="border-color:var(--text3); color:var(--text2); margin:0; font-size:11px; padding:8px;">❌ Limpiar Todo</button>
         </div>
-        <button class="btn btn-white" onclick="exportarStockCopiar()" style="margin-bottom:12px; background:var(--s2); border:1px solid var(--s3);">📋 Copiar Seleccionados</button>
+        <button class="btn btn-white" onclick="exportarStockCopiar()" style="margin-bottom:8px; background:var(--s2); border:1px solid var(--s3);">📋 Copiar para WhatsApp</button>
+        <button class="btn btn-ghost" onclick="exportarCatalogoHTML()" style="margin-bottom:12px; border-color:var(--green); color:var(--green);">🌐 Generar Catálogo Web (compartible)</button>
         <div class="search-wrap" style="margin-bottom:8px;">
            <span class="search-ico">🔍</span><input class="f-in ico" id="s-search" placeholder="Buscar en catálogo..." oninput="filtrarCatalogo()">
         </div>
@@ -2543,7 +2544,7 @@ async function cargarTodo(){
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
       const umbralPropio = pMap[n].umbral;
       const umbralEfectivo = (umbralPropio !== null && umbralPropio !== undefined) ? umbralPropio : UMBRAL_GLOBAL_DEFAULT;
-const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.', umbralPropio, umbral: umbralEfectivo};      DB.todo.push(item); 
+const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.', umbralPropio, umbral: umbralEfectivo};      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
@@ -4769,8 +4770,128 @@ try { actualizarVisibilidadFijoVar(); } catch(e) {}
 
 // ================================================================
 // ================================================================
-// MÓDULO OCULTAR NÚMEROS
+// MÓDULO CATÁLOGO EXPORTABLE
+// ----------------------------------------------------------------
+// Genera un HTML standalone con los productos seleccionados,
+// precios en ARS y USD, estilo Juntech. Se abre en una nueva
+// pestaña y se puede guardar o compartir como archivo.
 // ================================================================
+function exportarCatalogoHTML() {
+  const seleccionados = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
+  if (!seleccionados.length) { toast('Seleccioná al menos un producto primero', 'err'); return; }
+
+  const tc = getTCActual() || 0;
+  const productos = DB.todo.filter(p => seleccionados.includes(p.nombre) && p.precio > 0);
+  const fecha = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'long', year:'numeric'});
+  const hora = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+
+  // Agrupar por categoría
+  const porCat = {};
+  productos.forEach(p => {
+    const cat = p.cat || 'General';
+    if (!porCat[cat]) porCat[cat] = [];
+    porCat[cat].push(p);
+  });
+
+  let itemsHTML = '';
+  Object.entries(porCat).forEach(([cat, prods]) => {
+    itemsHTML += `<div class="cat-section">
+      <div class="cat-label">${cat}</div>
+      <div class="grid">`;
+    prods.forEach(p => {
+      const stockBadge = p.stock <= 0
+        ? '<span class="badge badge-red">Sin stock</span>'
+        : p.stock <= p.umbral
+          ? `<span class="badge badge-orange">Últimas ${p.stock} u.</span>`
+          : `<span class="badge badge-green">Disponible</span>`;
+      const precioUSD = tc > 0 ? `<div class="precio-usd">u$s ${(p.precio / tc).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</div>` : '';
+      itemsHTML += `
+        <div class="prod-card ${p.stock <= 0 ? 'sin-stock' : ''}">
+          <div class="prod-nombre">${p.nombre}</div>
+          ${stockBadge}
+          <div class="prod-precio">${fmt(p.precio)}</div>
+          ${precioUSD}
+        </div>`;
+    });
+    itemsHTML += `</div></div>`;
+  });
+
+  const tcInfo = tc > 0 ? `· USD $${Math.round(tc).toLocaleString('es-AR')}` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo Juntech Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#09090b;color:#fafafa;font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 60px}
+.header{background:linear-gradient(135deg,#0f1f14,#09090b);border-bottom:1px solid #27272a;padding:28px 20px 24px;text-align:center}
+.header-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+.header-logo img{width:48px;height:48px;border-radius:12px}
+.header-title{font-size:1.6rem;font-weight:800;letter-spacing:-.3px}
+.header-title span{color:#22c55e}
+.header-sub{font-size:12px;color:#52525b;margin-top:4px}
+.header-badge{display:inline-block;background:#22c55e15;color:#22c55e;border:1px solid #22c55e30;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;margin-top:10px}
+.content{max-width:900px;margin:0 auto;padding:0 16px}
+.cat-section{margin-top:32px}
+.cat-label{font-size:9px;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:1px;padding:0 2px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.prod-card{background:#0f0f11;border:1px solid #27272a;border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s}
+.prod-card:hover{border-color:#22c55e40}
+.prod-card.sin-stock{opacity:.5}
+.prod-nombre{font-size:12px;font-weight:600;line-height:1.3;flex:1}
+.prod-precio{font-size:1.15rem;font-weight:800;color:#22c55e;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.precio-usd{font-size:10px;color:#a78bfa;font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.2px}
+.badge-green{background:#22c55e12;color:#22c55e;border:1px solid #22c55e30}
+.badge-orange{background:#f9731612;color:#f97316;border:1px solid #f9731630}
+.badge-red{background:#ef444412;color:#ef4444;border:1px solid #ef444430}
+.footer{text-align:center;padding:40px 20px 0;color:#3f3f46;font-size:11px}
+.footer strong{color:#52525b}
+.wsp-btn{display:block;width:fit-content;margin:28px auto 0;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:.9rem;letter-spacing:.2px}
+@media(max-width:480px){.grid{grid-template-columns:1fr 1fr}.header-title{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo">
+    <div>
+      <div class="header-title">JUNTECH<span> STORE</span></div>
+    </div>
+  </div>
+  <div class="header-sub">Lista de precios · ${fecha} · ${hora} ${tcInfo}</div>
+  <div class="header-badge">⚡ Precios actualizados</div>
+</div>
+<div class="content">
+  ${itemsHTML}
+  <a class="wsp-btn" href="https://wa.me/543513000000" target="_blank">💬 Consultá por WhatsApp</a>
+</div>
+<div class="footer">
+  <p>Precios en pesos argentinos · Sujetos a disponibilidad de stock</p>
+  <p style="margin-top:4px">Generado con <strong>JuntechOS v6.0</strong></p>
+</div>
+</body>
+</html>`;
+
+  // Abrir en nueva pestaña
+  const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) {
+    // Si el popup fue bloqueado, ofrecer descarga
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'catalogo-juntech-'+new Date().toISOString().slice(0,10)+'.html';
+    a.click();
+    toast('✓ Catálogo descargado como archivo HTML');
+  } else {
+    toast('✓ Catálogo abierto — guardalo o compartí el archivo');
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
 let NUMS_OCULTOS = false;
 try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
 
