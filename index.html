@@ -1443,7 +1443,7 @@ function previewVentaUSD(){
 // ================================================================================================
   
 const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
-const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+let setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
 const $ = id => document.getElementById(id);
 const fmt = n => '$' + Math.round(n||0).toLocaleString('es-AR');
 const fmtUSD = n => 'u$s ' + (n||0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -2515,8 +2515,8 @@ async function cargarTodo(){
     
     // CAPTURA DE ÚLTIMOS MOVIMIENTOS
     let ultimoMovMap = {};
-    if(typeof eRows !== 'undefined') { eRows.forEach(r => { if(r[0] && r[5]) ultimoMovMap[str(r[0])] = str(r[5]); }); }
-    if(typeof sRows !== 'undefined') { todasLasSalidas.forEach(r => { if(r[0] && r[5]) { let f = str(r[5]).split(' ')[0]; ultimoMovMap[str(r[0])] = f; } }); }
+    if(typeof eRows !== 'undefined') { eRows.forEach(r => { if(r[0] && r[5]) { const fd = parseExcelDate(r[5]); ultimoMovMap[str(r[0])] = fd.s.split(' ')[0]; } }); }
+    if(typeof sRows !== 'undefined') { todasLasSalidas.forEach(r => { if(r[0] && r[5]) { const fd = parseExcelDate(r[5]); ultimoMovMap[str(r[0])] = fd.s.split(' ')[0]; } }); }
 
     let ganV = 0;
     sRows.forEach(r => { if(!r[0]) return; const pt = num(r[4]), ct = num(r[7]); if(pt > 0) ganV += (pt-ct); });
@@ -2740,6 +2740,8 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
+    // Si los números están ocultos, reenmascarar después del sync
+    try { if(typeof aplicarEstadoNums === 'function' && NUMS_OCULTOS) aplicarEstadoNums(); } catch(e) {}
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
@@ -4766,23 +4768,30 @@ async function crearProductoDB(){
 try { actualizarVisibilidadFijoVar(); } catch(e) {}
 
 // ================================================================
+// ================================================================
 // MÓDULO OCULTAR NÚMEROS
-// ----------------------------------------------------------------
-// Reemplaza el texto real de los elementos numéricos con "••••••"
-// y lo restaura al volver a tocar. Guarda el estado en localStorage.
 // ================================================================
 let NUMS_OCULTOS = false;
 try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
 
-const NUMS_SELECTORS = [
-  '.kpi-val', '.tot-val', '.total-final-val', '.bal-val', '.hist-amt', '.cart-price',
-  '#h-gan', '#h-cap', '#h-fondo', '#h-joaco', '#h-total', '#h-units', '#h-valor',
-  '#home-kpi-ventas', '#home-kpi-ganbruta', '#home-kpi-ticket', '#home-kpi-margen', '#home-kpi-stock',
-  '#dg-gan-disp', '#dg-r-bill', '#dg-r-cap', '#dg-r-fondo', '#dg-r-total', '#dg-r-restante',
-  '#h-cc-cobrar', '#h-cc-pagar', '#usd-caja-saldo', '#cap-tab-val', '#cap-tab-gan',
-  '#pf-bill', '#pf-fondo', '#pf-usd-saldo', '#gar-perdida-neta', '#gar-costo-total',
-  '#gar-recuperado', '#rep-vendido', '#rep-ganancia', '#rep-ganancia-total'
+const NUMS_IDS = new Set([
+  'h-gan','h-cap','h-fondo','h-joaco','h-total','h-units','h-valor',
+  'home-kpi-ventas','home-kpi-ganbruta','home-kpi-ticket','home-kpi-margen','home-kpi-stock',
+  'h-cc-cobrar','h-cc-pagar',
+  'dg-gan-disp','dg-r-bill','dg-r-cap','dg-r-fondo','dg-r-total','dg-r-restante',
+  'usd-caja-saldo','cap-tab-val','cap-tab-gan',
+  'pf-bill','pf-fondo','pf-usd-saldo',
+  'gar-perdida-neta','gar-costo-total','gar-recuperado','gar-cantidad',
+  'rep-vendido','rep-ganancia','rep-ganancia-total',
+  'cart-sub','cart-total'
+]);
+
+const NUMS_CLASSES = [
+  '.kpi-val','.tot-val','.total-final-val','.bal-val',
+  '.hist-amt','.cart-price'
 ];
+
+const MASK = '••••••';
 
 function toggleNums() {
   NUMS_OCULTOS = !NUMS_OCULTOS;
@@ -4792,55 +4801,41 @@ function toggleNums() {
 
 function aplicarEstadoNums() {
   const btn = $('hide-btn');
-  const MASK = '••••••';
-
   if (NUMS_OCULTOS) {
-    // Guardar el texto original y reemplazar con ••••••
-    NUMS_SELECTORS.forEach(sel => {
+    // Enmascarar por ID
+    NUMS_IDS.forEach(id => {
+      const el = $(id);
+      if (!el || el.textContent === MASK) return;
+      el.dataset.realVal = el.textContent;
+      el.textContent = MASK;
+      el.style.color = 'var(--text3)';
+      el.style.letterSpacing = '2px';
+    });
+    // Enmascarar por clase
+    NUMS_CLASSES.forEach(sel => {
       document.querySelectorAll(sel).forEach(el => {
-        // Solo si no está ya enmascarado
-        if (!el.dataset.original) {
-          el.dataset.original = el.textContent;
-          el.textContent = MASK;
-          el.style.color = 'var(--text3)';
-          el.style.letterSpacing = '2px';
-        }
+        if (!el.textContent.trim() || el.textContent === MASK) return;
+        el.dataset.realVal = el.textContent;
+        el.textContent = MASK;
+        el.style.color = 'var(--text3)';
+        el.style.letterSpacing = '2px';
       });
     });
     if (btn) { btn.classList.add('on'); btn.title = 'Mostrar números'; }
-    setText('hide-btn-ico', '🙈');
+    const ico = $('hide-btn-ico'); if(ico) ico.textContent = '🙈';
   } else {
-    // Restaurar texto original
-    NUMS_SELECTORS.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        if (el.dataset.original !== undefined) {
-          el.textContent = el.dataset.original;
-          el.style.color = '';
-          el.style.letterSpacing = '';
-          delete el.dataset.original;
-        }
-      });
+    // Restaurar todo
+    document.querySelectorAll('[data-real-val]').forEach(el => {
+      el.textContent = el.dataset.realVal;
+      el.style.color = '';
+      el.style.letterSpacing = '';
+      delete el.dataset.realVal;
     });
     if (btn) { btn.classList.remove('on'); btn.title = 'Ocultar números'; }
-    setText('hide-btn-ico', '👁');
+    const ico = $('hide-btn-ico'); if(ico) ico.textContent = '👁';
   }
 }
 
-// Reaplicar después de cada sync (los números se reescriben)
-const _origSetText = setText;
-// Hook: cuando se actualiza el DOM, si estamos en modo oculto re-enmascaramos
-function setTextMasked(id, txt) {
-  _origSetText(id, txt);
-  if (NUMS_OCULTOS) {
-    const el = $(id);
-    if (el && NUMS_SELECTORS.some(s => s === '#'+id || (el.matches && el.matches(s)))) {
-      el.dataset.original = txt;
-      el.textContent = '••••••';
-      el.style.color = 'var(--text3)';
-      el.style.letterSpacing = '2px';
-    }
-  }
-}
 // Aplicar al cargar
 try { aplicarEstadoNums(); } catch(e) {}
 
