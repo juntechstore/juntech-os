@@ -2607,8 +2607,8 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       if(!r[0]) return;
       const tipo=str(r[2]).toUpperCase(), cat=str(r[3]).toUpperCase(), monto=num(r[5]), metodo=str(r[6]).toUpperCase();
       if(cat.includes('FONDO EMERGENCIA')){ fondo += tipo==='INGRESO'?monto:-monto; }
-      if(cat.includes('PERSONAL (INGRESO)')){ ingP+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
-      else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
+      if(cat.includes('PERSONAL (INGRESO)')){ ingP+=monto; if(tipo==='INGRESO' && metodo!=='NINGUNA'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
+      else if(cat.includes('PERSONAL (GASTO)')){ gastP+=monto; if(tipo==='EGRESO' && metodo!=='NINGUNA'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } }
       else if(cat.includes('PASAR GANANCIA')){ guardados+=monto; }
       else if(cat.includes('CAPITALIZACION')){ caps+=monto; }
       // --- DISTRIBUCIÓN DE GANANCIA (aditivo): Fondo de Emergencia proveniente de Ganancia
@@ -2623,6 +2623,11 @@ const item = {nombre:n, sku:pMap[n].sku, costo:costoR[n]||pMap[n].costo, precio:
       // que la plata recuperada quedaría "flotando" en Capital (residuo) en vez de volver
       // a la Ganancia de la que salió. No toca ninguna otra categoría existente.
       else if(cat.includes('GARANTIA') && cat.includes('RECUPERO GANANCIA')){ recGarantiaGan+=monto; if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } }
+      // GARANTIA GASTO GANANCIA: resta de Ganancia Disponible sin tocar totalCaja ni activosTotales.
+      // Es un egreso contable puro — la plata no salió de ningún cajón físico, salió de stock.
+      // Al no tocar totalCaja, capJ (Capital) sube automáticamente el mismo monto que baja ganD,
+      // que es exactamente lo que se busca: el costo del reemplazo pasa de Ganancia a Capital.
+      else if(cat.includes('GARANTIA GASTO GANANCIA')){ if(tipo==='EGRESO') gastosJ+=monto; }
       else { 
         if(tipo==='INGRESO'){ addSaldo(saldos,metodo,monto,1); totalCaja+=monto; } 
         else if(tipo==='EGRESO'){ addSaldo(saldos,metodo,monto,-1); totalCaja-=monto; } 
@@ -3786,15 +3791,18 @@ async function registrarCostoGarantia(fuente, monto, motivo, idGarantia) {
   const idMov = idGarantia + '-COSTO';
   
   if (fuente === 'BILLETERA') {
-    // Sale de Billetera Personal — usa PERSONAL (GASTO) que sí resta de billJ en cargarTodo()
-    // Método NINGUNA porque no sale de caja física, es un apunte contable
+    // Resta de Billetera — usa PASAR GANANCIA A BILLETERA al revés:
+    // en realidad es un gasto personal que no toca caja física
+    // gastP sube → billJ baja. No toca totalCaja.
     await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PERSONAL (GASTO)', motivo, monto, 'NINGUNA']]);
   } else if (fuente === 'GANANCIA') {
-    // Sale de Ganancia Disponible — usa GASTO OPERATIVO que sí resta de ganD en cargarTodo()
-    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GASTO OPERATIVO [GARANTIA]', motivo, monto, 'NINGUNA']]);
+    // Resta de Ganancia sin tocar caja física ni activos totales.
+    // Usamos la misma categoría que CAPITALIZACION pero con signo opuesto en ganD:
+    // Lo agregamos a gastosJ via categoria GASTO GARANTIA procesada aparte.
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA GASTO GANANCIA', motivo, monto, 'NINGUNA']]);
   } else {
-    // Sale de Capital — registra en Caja y en Ledger
-    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GASTO OPERATIVO [GARANTIA]', motivo, monto, 'NINGUNA']]);
+    // Capital — tampoco toca caja física, solo el ledger
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA GASTO GANANCIA', motivo, monto, 'NINGUNA']]);
     await registrarMovimientoCapital('GARANTIA', -monto, idMov, motivo);
   }
 }
@@ -3860,6 +3868,13 @@ async function registrarGarantia() {
     //   pero su costo tiene que descontarse de Ganancia/Billetera/Capital según lo que eligió)
     if (montoCosto > 0) {
       await registrarCostoGarantia(fuente, montoCosto, 'Garantía '+id+' — '+nombreFallo+(cliente?' ('+cliente+')':'')+(GAR_RESOLUCION==='PRODUCTO'?' [reemplazo: '+productoReemplazo+']':''), id);
+    }
+
+    // Si es reemplazo de producto, el costo sube al Capital — igual que cuando vendés:
+    // salió mercadería del negocio y ese costo hay que tenerlo disponible para reponer.
+    // Ganancia baja (fuente) pero Capital sube el mismo monto para equilibrar.
+    if (GAR_RESOLUCION === 'PRODUCTO' && montoCosto > 0) {
+      await registrarMovimientoCapital('RECUPERO_COSTO', montoCosto, id+'-CAP', 'Garantía: costo de reemplazo a Capital para reponer — '+productoReemplazo);
     }
 
     // 3) Registro en la hoja propia del módulo
