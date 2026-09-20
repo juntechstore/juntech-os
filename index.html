@@ -3784,12 +3784,17 @@ async function descontarStockPorGarantia(nombreProducto, cantidad, motivo) {
 async function registrarCostoGarantia(fuente, monto, motivo, idGarantia) {
   const fecha = new Date().toLocaleString('es-AR', {hour:'2-digit', minute:'2-digit'});
   const idMov = idGarantia + '-COSTO';
+  
   if (fuente === 'BILLETERA') {
-    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PERSONAL (GASTO)', motivo, monto, 'EFECTIVO']]);
+    // Sale de Billetera Personal — usa PERSONAL (GASTO) que sí resta de billJ en cargarTodo()
+    // Método NINGUNA porque no sale de caja física, es un apunte contable
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'PERSONAL (GASTO)', motivo, monto, 'NINGUNA']]);
   } else if (fuente === 'GANANCIA') {
-    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA (GASTO GANANCIA)', motivo, monto, 'EFECTIVO']]);
-  } else { // CAPITAL
-    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GARANTIA (COSTO CAPITAL)', motivo, monto, 'EFECTIVO']]);
+    // Sale de Ganancia Disponible — usa GASTO OPERATIVO que sí resta de ganD en cargarTodo()
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GASTO OPERATIVO [GARANTIA]', motivo, monto, 'NINGUNA']]);
+  } else {
+    // Sale de Capital — registra en Caja y en Ledger
+    await append('Caja!A:G', [[idMov, fecha, 'EGRESO', 'GASTO OPERATIVO [GARANTIA]', motivo, monto, 'NINGUNA']]);
     await registrarMovimientoCapital('GARANTIA', -monto, idMov, motivo);
   }
 }
@@ -3803,11 +3808,14 @@ async function registrarReembolsoProveedor(fuente, monto, motivo, idGarantia, me
   const idMov = idGarantia + '-REEMB';
   const met = metodo || 'EFECTIVO';
   if (fuente === 'BILLETERA') {
+    // Reintegra a Billetera Personal — usa PERSONAL (INGRESO)
     await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'PERSONAL (INGRESO)', motivo, monto, met]]);
   } else if (fuente === 'GANANCIA') {
+    // Reintegra a Ganancia — usa GARANTIA (RECUPERO GANANCIA) que cargarTodo() suma a recGarantiaGan
     await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'GARANTIA (RECUPERO GANANCIA)', motivo, monto, met]]);
-  } else { // CAPITAL
-    await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'GARANTIA (REEMBOLSO CAPITAL)', motivo, monto, met]]);
+  } else {
+    // Reintegra a Capital
+    await append('Caja!A:G', [[idMov, fecha, 'INGRESO', 'GARANTIA (RECUPERO GANANCIA)', motivo, monto, met]]);
     await registrarMovimientoCapital('GARANTIA', monto, idMov, motivo);
   }
 }
@@ -3841,24 +3849,26 @@ async function registrarGarantia() {
     const id = 'GAR-' + Date.now();
     const fecha = new Date().toLocaleDateString('es-AR') + ' ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 
-    // ✓ CORREGIDO: Stock — el producto que falló YA se descontó cuando se vendió.
-    // SOLO descuentas el reemplazo (si aplica).
+    // 1) Stock: SOLO el reemplazo se descuenta (el fallado ya salió al vender)
     if (GAR_RESOLUCION === 'PRODUCTO') {
       await descontarStockPorGarantia(productoReemplazo, cant, 'Garantía: reemplazo entregado ('+id+')');
     }
 
-    // 2) Impacto financiero: solo si hubo plata real de por medio (reembolso en dinero).
-    if (GAR_RESOLUCION === 'DINERO') {
-      await registrarCostoGarantia(fuente, montoCosto, 'Garantía '+id+' — '+nombreFallo+(cliente?' ('+cliente+')':''), id);
+    // 2) Impacto financiero — SIEMPRE se imputa a la fuente elegida
+    // Si es DINERO: plata real que sale de la fuente
+    // Si es PRODUCTO: el costo del reemplazo se imputa igualmente (el producto salió del stock
+    //   pero su costo tiene que descontarse de Ganancia/Billetera/Capital según lo que eligió)
+    if (montoCosto > 0) {
+      await registrarCostoGarantia(fuente, montoCosto, 'Garantía '+id+' — '+nombreFallo+(cliente?' ('+cliente+')':'')+(GAR_RESOLUCION==='PRODUCTO'?' [reemplazo: '+productoReemplazo+']':''), id);
     }
 
-    // 3) Registro en la hoja propia del módulo (siempre, sin importar el tipo).
+    // 3) Registro en la hoja propia del módulo
     await append('Garantias!A:N', [[
       id, fecha, nombreFallo, prodFallo.sku||'-', prodFallo.costo||0, cliente||'-',
       GAR_RESOLUCION, montoCosto, productoReemplazo||'-', fuente, 'SIN_RECLAMO', 0, '-', motivo
     ]]);
 
-    toast('✓ Garantía registrada');
+    toast('✓ Garantía registrada — se descontó '+fmt(montoCosto)+' de '+fuente.toLowerCase());
     if(inputFallo) inputFallo.value=''; $('gar-cant').value='1'; $('gar-cliente').value='';
     $('gar-monto-dinero').value=''; $('gar-prod-reemplazo').value=''; $('gar-motivo').value='';
     garSetResolucion('DINERO');
