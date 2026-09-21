@@ -540,8 +540,15 @@
           <label class="f-label">Buscar Producto (Solo en Stock)</label>
           <div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="v-search" list="v-lista" placeholder="Escribí el nombre..." onchange="selProduct()" autocomplete="off"><datalist id="v-lista"></datalist></div>
         </div>
+        <!-- SELECTOR DE VARIANTE (aparece solo si el producto tiene variantes) -->
+        <div class="field" id="v-variante-row" style="display:none;">
+          <label class="f-label">Variante</label>
+          <select class="f-in" id="v-variante" onchange="selVariante()">
+            <option value="">— Elegí una variante —</option>
+          </select>
+        </div>
         <div class="prod-prev" id="prod-prev">
-          <div class="pp-top"><span class="pp-name" id="pp-nombre">—</span><span class="pill pill-blue" id="pp-stock">—</span></div>
+          <div class="pp-top"><span class="pp-name" id="pp-nombre">—</span><span class="pill pill-green" id="pp-stock">—</span></div>
           <div class="pp-meta"><span>Precio: <b id="pp-precio">—</b></span><span>Costo: <b id="pp-costo">—</b></span></div>
           <div style="font-size:10px; color:var(--text2); margin-top:5px;" id="pp-mov">🕒 Último mov: —</div>
         </div>
@@ -922,8 +929,8 @@
       </div>
 
       <div class="card">
-        <div class="card-title">📲 Calculadora de Precios × Cantidad → WhatsApp</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Definí cuánto querés ganar por cantidad. Genera el mensaje listo para mandar por WhatsApp en ARS y USD.</div>
+        <div class="card-title">📲 Calculadora de Precios × Cantidad → WhatsApp + Catálogo</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Definí cuánto querés ganar por cantidad. Genera el mensaje para WhatsApp y armá tu catálogo para compartir.</div>
 
         <div class="field">
           <label class="f-label">Producto</label>
@@ -944,8 +951,9 @@
         <div id="wsp-filas"></div>
         <button class="btn btn-ghost" onclick="wspAgregarFila()" style="border-color:var(--purple);color:var(--purple);margin-bottom:14px;font-size:12px;">+ Agregar cantidad</button>
 
-        <div style="margin-bottom:8px;">
-          <button class="btn btn-ghost" onclick="wspCambiarEmojis()" style="font-size:11px;margin-bottom:6px;">🎲 Cambiar emojis del mensaje</button>
+        <div class="f-row" style="margin-bottom:10px;">
+          <button class="btn btn-ghost" onclick="wspCambiarEmojis()" style="font-size:11px;margin-bottom:0;">🎲 Cambiar emojis</button>
+          <button class="btn btn-ghost" onclick="wspAgregarAlCatalogo()" style="font-size:11px;margin-bottom:0;border-color:var(--green);color:var(--green);">+ Agregar al catálogo</button>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -962,6 +970,19 @@
         </div>
       </div>
 
+      <!-- CATÁLOGO ACUMULADO -->
+      <div class="card" id="card-catalogo-armado" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span class="card-title" style="margin:0;">🛍️ Catálogo armado</span>
+          <span class="pill pill-green" id="catalogo-count">0 productos</span>
+        </div>
+        <div id="catalogo-items-lista" style="margin-bottom:12px;"></div>
+        <div class="f-row">
+          <button class="btn btn-ghost" onclick="catalogoLimpiar()" style="border-color:var(--red);color:var(--red);margin-bottom:0;font-size:12px;">🗑 Limpiar</button>
+          <button class="btn btn-ghost" onclick="exportarCatalogoDesdeCalc()" style="border-color:var(--green);color:var(--green);margin-bottom:0;font-size:12px;">🌐 Generar catálogo web</button>
+        </div>
+      </div>
+
       <div class="section-header">Catálogo</div>
       <div class="card">
         <div class="card-title">Crear Producto Nuevo</div>
@@ -975,6 +996,30 @@
           <div class="field"><label class="f-label">Precio Sugerido ($)</label><input class="f-in" id="n-precio" type="text" placeholder="Ej: 5000*1.5" onchange="evalMath(this)"></div>
         </div>
         <button class="btn btn-ghost" id="btn-crear-prod" onclick="crearProductoDB()" style="border-color:var(--cyan); color:var(--cyan); margin-top:8px;">✨ Guardar en Base de Datos</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎨 Gestionar Variantes</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Agregá variantes (sabor, color, talle) a un producto existente. Cada variante tiene su propio stock.</div>
+        <div class="field">
+          <label class="f-label">Producto base</label>
+          <input class="f-in" id="var-prod-base" list="e-lista" placeholder="Ej: ELFBAR ICEKING 40K" autocomplete="off">
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Nombre de la variante</label><input class="f-in" id="var-nombre" placeholder="Ej: Menta, Sandía, Rojo..."></div>
+          <div class="field"><label class="f-label">Stock inicial</label><input class="f-in" id="var-stock" type="number" min="0" value="0"></div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Costo (opcional)</label><input class="f-in" id="var-costo" type="text" placeholder="Si difiere del padre"></div>
+          <div class="field"><label class="f-label">Precio (opcional)</label><input class="f-in" id="var-precio" type="text" placeholder="Si difiere del padre"></div>
+        </div>
+        <button class="btn btn-ghost" id="btn-crear-variante" onclick="crearVariante()" style="border-color:var(--purple);color:var(--purple);">+ Agregar variante</button>
+
+        <div style="margin-top:14px;" id="var-lista-wrap" style="display:none">
+          <div class="f-label" style="margin-bottom:8px;">Variantes existentes</div>
+          <div id="var-lista"><div class="empty" style="font-size:12px">Buscá un producto para ver sus variantes</div></div>
+        </div>
+        <button class="btn btn-ghost" onclick="verVariantesDeProducto()" style="margin-top:8px;font-size:12px;border-color:var(--text3);color:var(--text2);">🔍 Ver variantes del producto</button>
       </div>
 
       <div class="card">
@@ -2741,7 +2786,7 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
-    // Si los números están ocultos, reenmascarar después del sync
+    try { await cargarVariantes(); } catch(e) { console.error('Variantes:', e); }
     try { if(typeof aplicarEstadoNums === 'function' && NUMS_OCULTOS) aplicarEstadoNums(); } catch(e) {}
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
@@ -4769,6 +4814,242 @@ async function crearProductoDB(){
 try { actualizarVisibilidadFijoVar(); } catch(e) {}
 
 // ================================================================
+// MÓDULO VARIANTES DE PRODUCTO
+// ----------------------------------------------------------------
+// Hoja "Variantes" (se crea sola):
+//   A: ProductoPadre | B: Variante | C: Stock | D: Costo | E: Precio
+//
+// Lógica:
+// - Al seleccionar un producto en Venta, si tiene variantes aparece
+//   el selector. Al elegir variante, se usa el stock/costo/precio
+//   de esa variante específica.
+// - El stock del padre NO se usa cuando tiene variantes — se suma
+//   el stock de todas sus variantes para mostrar el total.
+// - Las entradas de stock para variantes usan AJUSTES con el nombre
+//   completo "PADRE - VARIANTE" para compatibilidad con el sistema.
+// ================================================================
+
+let DB_VARIANTES = {}; // { 'PRODUCTO PADRE': [{variante, stock, costo, precio}, ...] }
+let VARIANTES_HOJA_LISTA = false;
+
+async function asegurarHojaVariantes() {
+  if (VARIANTES_HOJA_LISTA) return;
+  await asegurarHoja('Variantes', ['ProductoPadre','Variante','Stock','Costo','Precio']);
+  VARIANTES_HOJA_LISTA = true;
+}
+
+async function cargarVariantes() {
+  await asegurarHojaVariantes();
+  let rows = [];
+  try { rows = await get('Variantes!A2:E'); } catch(e) {}
+  DB_VARIANTES = {};
+
+  // Calcular stock de variantes igual que productos: entradas - salidas - ajustes
+  // Usamos el nombre compuesto "PADRE - VARIANTE" en Entradas/Salidas/AJUSTES
+  rows.forEach(r => {
+    if (!r[0] || !r[1]) return;
+    const padre = str(r[0]).toUpperCase();
+    const variante = str(r[1]);
+    if (!DB_VARIANTES[padre]) DB_VARIANTES[padre] = [];
+    DB_VARIANTES[padre].push({
+      variante,
+      stockBase: num(r[2]),
+      costo: num(r[3]),
+      precio: num(r[4]),
+      nombreCompleto: padre + ' - ' + variante.toUpperCase()
+    });
+  });
+
+  // Calcular stock real de cada variante desde Entradas/Salidas/AJUSTES
+  if (Object.keys(DB_VARIANTES).length > 0) {
+    // Usar los datos ya cargados en DB (eRows, sRows, aRows no están disponibles acá,
+    // así que usamos los stocks calculados en DB.todo para el nombre compuesto)
+    Object.keys(DB_VARIANTES).forEach(padre => {
+      DB_VARIANTES[padre].forEach(v => {
+        // Buscar en DB.todo si existe una entrada con nombre compuesto
+        const prodComp = DB.todo.find(p => p.nombre === v.nombreCompleto);
+        if (prodComp) {
+          v.stock = prodComp.stock;
+          if (!v.costo) v.costo = prodComp.costo;
+          if (!v.precio) v.precio = prodComp.precio;
+        } else {
+          v.stock = v.stockBase; // fallback al stock inicial de la hoja Variantes
+        }
+      });
+    });
+  }
+
+  // Actualizar DB.todo: si un producto tiene variantes, su stock = suma de variantes
+  Object.keys(DB_VARIANTES).forEach(padre => {
+    const prod = DB.todo.find(p => p.nombre === padre);
+    if (prod) {
+      prod.tieneVariantes = true;
+      prod.variantes = DB_VARIANTES[padre];
+      prod.stock = DB_VARIANTES[padre].reduce((s, v) => s + (v.stock || 0), 0);
+    }
+  });
+}
+
+// Crear una variante nueva
+async function crearVariante() {
+  const padre = ($('var-prod-base').value || '').trim().toUpperCase();
+  const variante = ($('var-nombre').value || '').trim();
+  const stockInicial = parseInt($('var-stock').value || 0);
+  const costo = parseFloat(($('var-costo').value || '').toString().replace(',','.')) || 0;
+  const precio = parseFloat(($('var-precio').value || '').toString().replace(',','.')) || 0;
+
+  if (!padre || !variante) { toast('Falta el producto base o el nombre de la variante', 'err'); return; }
+
+  // Verificar que el producto padre existe
+  const prodPadre = DB.todo.find(p => p.nombre === padre);
+  if (!prodPadre) { toast('El producto "'+padre+'" no existe en el catálogo', 'err'); return; }
+
+  setBtn('btn-crear-variante', true, '');
+  try {
+    await asegurarHojaVariantes();
+
+    // Guardar en hoja Variantes
+    await append('Variantes!A:E', [[padre, variante, stockInicial, costo || prodPadre.costo, precio || prodPadre.precio]]);
+
+    // Si tiene stock inicial, crear el producto compuesto en Productos y Entradas
+    const nombreComp = padre + ' - ' + variante.toUpperCase();
+    const existeComp = DB.todo.find(p => p.nombre === nombreComp);
+    if (!existeComp) {
+      // Crear como producto en la base para que el sistema lo trackee
+      const maxSku = Math.max(0, ...DB.todo.map(p => parseInt(p.sku) || 0));
+      const sku = String(maxSku + 1).padStart(3, '0');
+      await append('Productos!A:F', [[sku, nombreComp, prodPadre.sku, prodPadre.cat || '', costo || prodPadre.costo, precio || prodPadre.precio]]);
+    }
+
+    if (stockInicial > 0) {
+      const fecha = new Date().toLocaleDateString('es-AR');
+      await append('Entradas!A:G', [[nombreComp, '', stockInicial, costo || prodPadre.costo, stockInicial*(costo||prodPadre.costo), fecha, 'INICIAL']]);
+    }
+
+    toast('✓ Variante "'+variante+'" creada para '+padre);
+    $('var-nombre').value = ''; $('var-stock').value = '0'; $('var-costo').value = ''; $('var-precio').value = '';
+    await cargarTodo();
+    verVariantesDeProducto();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+  setBtn('btn-crear-variante', false, '+ Agregar variante');
+}
+
+// Ver las variantes de un producto en el panel
+function verVariantesDeProducto() {
+  const padre = ($('var-prod-base').value || '').trim().toUpperCase();
+  const box = $('var-lista');
+  if (!box) return;
+  if (!padre) { box.innerHTML = '<div class="empty" style="font-size:12px">Escribí el nombre del producto arriba</div>'; return; }
+  const variantes = DB_VARIANTES[padre] || [];
+  if (!variantes.length) { box.innerHTML = '<div class="empty" style="font-size:12px">Sin variantes para "'+padre+'"</div>'; return; }
+  box.innerHTML = variantes.map(v => `
+    <div class="bal-row">
+      <span class="bal-key">${v.variante}</span>
+      <span class="bal-val" style="color:${(v.stock||0) > 0 ? 'var(--green)' : 'var(--red)'}">${v.stock||0} u · ${fmt(v.precio||0)}</span>
+    </div>
+  `).join('');
+}
+
+// Cuando seleccionan un producto en Venta, mostrar variantes si las tiene
+function selVariante() {
+  const sel = $('v-variante');
+  const prev = $('prod-prev');
+  if (!sel || !currentProd) return;
+  const varNombre = sel.value;
+  if (!varNombre) { if(prev) prev.style.display='none'; return; }
+
+  const varData = (currentProd.variantes || []).find(v => v.variante === varNombre);
+  if (!varData) return;
+
+  // Actualizar la preview con datos de la variante
+  setText('pp-nombre', currentProd.nombre + ' — ' + varNombre);
+  setText('pp-stock', (varData.stock||0) + ' u');
+  const precio = varData.precio || currentProd.precio;
+  const costo = varData.costo || currentProd.costo;
+  setText('pp-precio', fmt(precio));
+  setText('pp-costo', fmt(costo));
+
+  // Setear precio en el input
+  const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
+  if(vPrecio) vPrecio.value = precio;
+  if(vPrecioLista) vPrecioLista.value = precio;
+
+  // Guardar variante seleccionada en currentProd para que addToCart la use
+  currentProd._varSeleccionada = varData;
+  currentProd._varNombre = varNombre;
+  currentProd.stock = varData.stock || 0; // para la validación de stock
+
+  if(prev) prev.style.display='block';
+}
+
+// Hook: modificar selProduct para mostrar variantes
+const _selProduct_orig = selProduct;
+selProduct = function() {
+  _selProduct_orig();
+  // Después de seleccionar, verificar si tiene variantes
+  const vSearch = $('v-search');
+  if (!vSearch || !currentProd) return;
+  const varRow = $('v-variante-row');
+  const varSel = $('v-variante');
+  const variantes = currentProd.variantes || [];
+  if (variantes.length > 0) {
+    // Tiene variantes — mostrar selector
+    varSel.innerHTML = '<option value="">— Elegí una variante —</option>' +
+      variantes.filter(v => (v.stock||0) > 0).map(v =>
+        `<option value="${v.variante}">${v.variante} (${v.stock||0} u · ${fmt(v.precio||currentProd.precio)})</option>`
+      ).join('') +
+      variantes.filter(v => (v.stock||0) <= 0).map(v =>
+        `<option value="${v.variante}" disabled>${v.variante} (sin stock)</option>`
+      ).join('');
+    if(varRow) varRow.style.display = 'block';
+    // Ocultar preview hasta que elijan variante
+    const prev = $('prod-prev'); if(prev) prev.style.display='none';
+  } else {
+    if(varRow) varRow.style.display = 'none';
+    currentProd._varSeleccionada = null;
+    currentProd._varNombre = null;
+  }
+};
+
+// Hook: modificar addToCart para usar el nombre compuesto de la variante
+const _addToCart_orig = addToCart;
+addToCart = function() {
+  if (currentProd && currentProd.variantes && currentProd.variantes.length > 0) {
+    // Tiene variantes — verificar que eligió una
+    if (!currentProd._varSeleccionada) {
+      toast('Elegí una variante primero', 'err'); return;
+    }
+    // Temporalmente cambiar el sysName para que use el nombre compuesto
+    const nombreOrig = currentProd.nombre;
+    const costoOrig = currentProd.costo;
+    const precioOrig = currentProd.precio;
+    const stockOrig = currentProd.stock;
+    currentProd.nombre = nombreOrig + ' - ' + currentProd._varNombre.toUpperCase();
+    currentProd.costo = currentProd._varSeleccionada.costo || costoOrig;
+    currentProd.precio = currentProd._varSeleccionada.precio || precioOrig;
+    currentProd.stock = currentProd._varSeleccionada.stock || 0;
+    _addToCart_orig();
+    // Restaurar
+    currentProd.nombre = nombreOrig;
+    currentProd.costo = costoOrig;
+    currentProd.precio = precioOrig;
+    currentProd.stock = stockOrig;
+    // Limpiar selector de variante
+    const varRow = $('v-variante-row');
+    const varSel = $('v-variante');
+    if(varRow) varRow.style.display = 'none';
+    if(varSel) varSel.value = '';
+    currentProd._varSeleccionada = null;
+    currentProd._varNombre = null;
+  } else {
+    _addToCart_orig();
+  }
+};
+
+// Llamar cargarVariantes al final de cargarTodo
+const _cargarTodo_variantes_hook = true; // flag para evitar doble hook
+
+// ================================================================
 // ================================================================
 // MÓDULO CATÁLOGO EXPORTABLE
 // ----------------------------------------------------------------
@@ -4892,7 +5173,185 @@ body{background:#09090b;color:#fafafa;font-family:'Inter',system-ui,sans-serif;f
   }
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
-let NUMS_OCULTOS = false;
+
+// ================================================================
+// CATÁLOGO DESDE CALCULADORA (acumula productos con precios por cantidad)
+// ================================================================
+let CATALOGO_ITEMS = []; // [{nombre, costo, tc, filas:[{cant,ganar}], cat}]
+
+function wspAgregarAlCatalogo() {
+  const prod = ($('wsp-prod') ? $('wsp-prod').value : '').trim() || 'Producto';
+  const costo = parseFloat(($('wsp-costo') ? $('wsp-costo').value : '').toString().replace(',','.')) || 0;
+  const tc = parseFloat(($('wsp-tc') ? $('wsp-tc').value : '').toString().replace(',','.')) || 0;
+  const filasValidas = WSP_FILAS.filter(f => f.cant > 0);
+
+  if (!prod || prod === 'Producto') { toast('Escribí el nombre del producto', 'err'); return; }
+  if (!costo) { toast('Falta el costo', 'err'); return; }
+  if (!filasValidas.length) { toast('Agregá al menos una cantidad', 'err'); return; }
+
+  // Evitar duplicados — si ya está, lo reemplaza
+  const idx = CATALOGO_ITEMS.findIndex(i => i.nombre === prod);
+  const prodDB = DB.todo.find(p => p.nombre === prod);
+  const item = { nombre: prod, costo, tc, filas: filasValidas.map(f => ({...f})), cat: prodDB?.cat || 'General', stock: prodDB?.stock || 0 };
+  if (idx >= 0) CATALOGO_ITEMS[idx] = item;
+  else CATALOGO_ITEMS.push(item);
+
+  renderCatalogoArmado();
+  toast('✓ "'+prod+'" agregado al catálogo ('+CATALOGO_ITEMS.length+' productos)');
+}
+
+function renderCatalogoArmado() {
+  const card = $('card-catalogo-armado');
+  const lista = $('catalogo-items-lista');
+  const count = $('catalogo-count');
+  if (!card) return;
+  if (!CATALOGO_ITEMS.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  if (count) count.textContent = CATALOGO_ITEMS.length + ' producto' + (CATALOGO_ITEMS.length !== 1 ? 's' : '');
+  if (lista) {
+    lista.innerHTML = CATALOGO_ITEMS.map((item, idx) => {
+      const precios = item.filas.map(f => `x${f.cant}: ${fmt(Math.round(item.costo + (f.ganar||0)))}`).join(' · ');
+      return `<div class="bal-row">
+        <span class="bal-key" style="font-size:11px">${item.nombre}<br><span style="font-size:10px;color:var(--text3)">${precios}</span></span>
+        <button onclick="catalogoQuitarItem(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:4px">✕</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+function catalogoQuitarItem(idx) {
+  CATALOGO_ITEMS.splice(idx, 1);
+  renderCatalogoArmado();
+}
+
+function catalogoLimpiar() {
+  CATALOGO_ITEMS = [];
+  renderCatalogoArmado();
+  toast('Catálogo limpiado');
+}
+
+function exportarCatalogoDesdeCalc() {
+  if (!CATALOGO_ITEMS.length) { toast('El catálogo está vacío', 'err'); return; }
+  generarHTMLCatalogo(CATALOGO_ITEMS);
+}
+
+// Función central que genera el HTML del catálogo
+// Acepta dos modos: items de la calc (con filas de precios) o productos simples del inventario
+function generarHTMLCatalogo(items) {
+  const tc = getTCActual() || 0;
+  const fecha = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'long', year:'numeric'});
+  const hora = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+  const tcInfo = tc > 0 ? `· u$s $${Math.round(tc).toLocaleString('es-AR')}` : '';
+
+  // Agrupar por categoría
+  const porCat = {};
+  items.forEach(item => {
+    const cat = item.cat || 'General';
+    if (!porCat[cat]) porCat[cat] = [];
+    porCat[cat].push(item);
+  });
+
+  let itemsHTML = '';
+  Object.entries(porCat).forEach(([cat, prods]) => {
+    itemsHTML += `<div class="cat-section"><div class="cat-label">${cat}</div><div class="grid">`;
+    prods.forEach(item => {
+      // Modo calc: tiene filas de cantidades
+      if (item.filas && item.filas.length) {
+        const filasHTML = item.filas.map(f => {
+          const precioARS = Math.round(item.costo + (f.ganar||0));
+          const precioUSD = (item.tc||tc) > 0 ? ` <span class="precio-usd">u$s ${(precioARS/(item.tc||tc)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>` : '';
+          return `<div class="fila-precio"><span class="fila-cant">x${f.cant}</span><span class="fila-val">${fmt(precioARS)}${precioUSD}</span></div>`;
+        }).join('');
+        const stockBadge = (item.stock||0) <= 0 ? '' : `<span class="badge badge-green">En stock</span>`;
+        itemsHTML += `<div class="prod-card"><div class="prod-nombre">${item.nombre}</div>${stockBadge}<div class="filas-precios">${filasHTML}</div></div>`;
+      } else {
+        // Modo inventario: precio único
+        const precioARS = item.precio || 0;
+        const precioUSD = tc > 0 ? `<div class="precio-usd">u$s ${(precioARS/tc).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>` : '';
+        const stock = item.stock || 0;
+        const stockBadge = stock <= 0 ? '<span class="badge badge-red">Sin stock</span>' : stock <= (item.umbral||2) ? `<span class="badge badge-orange">Últimas ${stock} u.</span>` : '<span class="badge badge-green">Disponible</span>';
+        itemsHTML += `<div class="prod-card ${stock<=0?'sin-stock':''}"><div class="prod-nombre">${item.nombre}</div>${stockBadge}<div class="prod-precio">${fmt(precioARS)}</div>${precioUSD}</div>`;
+      }
+    });
+    itemsHTML += `</div></div>`;
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo Juntech Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#09090b;color:#fafafa;font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 60px}
+.header{background:linear-gradient(135deg,#0f1f14,#09090b);border-bottom:1px solid #27272a;padding:28px 20px 24px;text-align:center}
+.header-title{font-size:1.7rem;font-weight:800;letter-spacing:-.3px;margin-bottom:6px}
+.header-title span{color:#22c55e}
+.header-sub{font-size:12px;color:#52525b}
+.header-badge{display:inline-block;background:#22c55e15;color:#22c55e;border:1px solid #22c55e30;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;margin-top:10px}
+.content{max-width:900px;margin:0 auto;padding:0 16px}
+.cat-section{margin-top:32px}
+.cat-label{font-size:9px;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.prod-card{background:#0f0f11;border:1px solid #27272a;border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;gap:7px;transition:border-color .15s}
+.prod-card:hover{border-color:#22c55e40}
+.prod-card.sin-stock{opacity:.45}
+.prod-nombre{font-size:12.5px;font-weight:700;line-height:1.3;flex:1}
+.prod-precio{font-size:1.2rem;font-weight:800;color:#22c55e;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.precio-usd{font-size:10px;color:#a78bfa;font-weight:600}
+.filas-precios{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.fila-precio{display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
+.fila-cant{color:#52525b;font-weight:700;font-size:10px}
+.fila-val{font-weight:700;color:#22c55e;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700}
+.badge-green{background:#22c55e12;color:#22c55e;border:1px solid #22c55e30}
+.badge-orange{background:#f9731612;color:#f97316;border:1px solid #f9731630}
+.badge-red{background:#ef444412;color:#ef4444;border:1px solid #ef444430}
+.wsp-btn{display:block;width:fit-content;margin:32px auto 0;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:700;font-size:.9rem}
+.footer{text-align:center;padding:36px 20px 0;color:#3f3f46;font-size:11px}
+.footer strong{color:#52525b}
+@media(max-width:500px){.grid{grid-template-columns:1fr 1fr}.header-title{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title">JUNTECH<span> STORE</span></div>
+  <div class="header-sub">Lista de precios · ${fecha} · ${hora} ${tcInfo}</div>
+  <div class="header-badge">⚡ Precios actualizados</div>
+</div>
+<div class="content">${itemsHTML}
+  <a class="wsp-btn" href="https://wa.me/543513000000" target="_blank">💬 Consultá por WhatsApp</a>
+</div>
+<div class="footer">
+  <p>Precios en pesos argentinos · Sujetos a disponibilidad de stock</p>
+  <p style="margin-top:4px">Generado con <strong>JuntechOS v6.0</strong></p>
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) {
+    const a = document.createElement('a');
+    a.href = url; a.download = 'catalogo-juntech-'+new Date().toISOString().slice(0,10)+'.html'; a.click();
+    toast('✓ Catálogo descargado');
+  } else {
+    toast('✓ Catálogo generado — guardalo o compartí el archivo');
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// Redireccionar exportarCatalogoHTML para usar la función central
+function exportarCatalogoHTML() {
+  const seleccionados = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
+  if (!seleccionados.length) { toast('Seleccioná al menos un producto primero', 'err'); return; }
+  const productos = DB.todo.filter(p => seleccionados.includes(p.nombre));
+  if (!productos.length) { toast('Ningún producto seleccionado tiene datos', 'err'); return; }
+  generarHTMLCatalogo(productos);
+}
 try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
 
 const NUMS_IDS = new Set([
