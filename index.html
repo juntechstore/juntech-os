@@ -929,29 +929,41 @@
       </div>
 
       <div class="card">
-        <div class="card-title">📲 Calculadora de Precios × Cantidad → WhatsApp + Catálogo</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Definí cuánto querés ganar por cantidad. Genera el mensaje para WhatsApp y armá tu catálogo para compartir.</div>
+        <div class="card-title">📲 Calculadora de Precios → WhatsApp + Catálogo</div>
+
+        <!-- Moneda y producto -->
+        <div class="curr-toggle" style="margin-bottom:12px;">
+          <button type="button" class="curr-btn on" id="wsp-moneda-ars" onclick="wspSetMoneda('ARS')">$ Precios en ARS</button>
+          <button type="button" class="curr-btn" id="wsp-moneda-usd" onclick="wspSetMoneda('USD')">u$s Precios en USDT</button>
+        </div>
 
         <div class="field">
           <label class="f-label">Producto</label>
-          <input class="f-in" id="wsp-prod" list="e-lista" placeholder="Seleccioná del inventario o escribí uno" oninput="wspAutoFillCosto()" autocomplete="off">
+          <input class="f-in" id="wsp-prod" list="e-lista" placeholder="Del inventario o escribí uno" oninput="wspAutoFillCosto()" autocomplete="off">
         </div>
+
         <div class="f-row">
           <div class="field">
-            <label class="f-label">Costo unitario (ARS)</label>
-            <input class="f-in" id="wsp-costo" type="text" inputmode="decimal" placeholder="Ej: 15000" oninput="wspCalcular()">
+            <label class="f-label" id="wsp-costo-label">Costo unitario ($)</label>
+            <input class="f-in" id="wsp-costo" type="text" placeholder="Ej: 15000 o 8.5*1600" onblur="wspEvalMath(this)" oninput="wspCalcular()">
           </div>
-          <div class="field">
-            <label class="f-label">Cotización USD (para preview)</label>
-            <input class="f-in" id="wsp-tc" type="text" inputmode="decimal" placeholder="Ej: 1600" oninput="wspCalcular()">
+          <div class="field" id="wsp-tc-field">
+            <label class="f-label">Cotización USDT ($)</label>
+            <input class="f-in" id="wsp-tc" type="text" placeholder="Se toma automático" oninput="wspCalcular()">
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px;">Cantidades y ganancia</div>
+        <!-- Filas de cantidad + precio -->
+        <div style="display:grid;grid-template-columns:60px 1fr 1fr 28px;gap:6px;margin-bottom:4px;padding:0 2px;">
+          <div class="f-label">Cant.</div>
+          <div class="f-label" id="wsp-col-precio-label">Precio de venta ($)</div>
+          <div class="f-label">Ganancia/u</div>
+          <div></div>
+        </div>
         <div id="wsp-filas"></div>
-        <button class="btn btn-ghost" onclick="wspAgregarFila()" style="border-color:var(--purple);color:var(--purple);margin-bottom:14px;font-size:12px;">+ Agregar cantidad</button>
+        <button class="btn btn-ghost" onclick="wspAgregarFila()" style="border-color:var(--purple);color:var(--purple);margin-bottom:14px;font-size:12px;">+ Agregar fila</button>
 
-        <div class="f-row" style="margin-bottom:10px;">
+        <div class="f-row" style="margin-bottom:12px;">
           <button class="btn btn-ghost" onclick="wspCambiarEmojis()" style="font-size:11px;margin-bottom:0;">🎲 Cambiar emojis</button>
           <button class="btn btn-ghost" onclick="wspAgregarAlCatalogo()" style="font-size:11px;margin-bottom:0;border-color:var(--green);color:var(--green);">+ Agregar al catálogo</button>
         </div>
@@ -959,12 +971,12 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Preview ARS 🇦🇷</div>
-            <div id="wsp-preview-ars" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos para ver el mensaje</div>
+            <div id="wsp-preview-ars" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos</div>
             <button class="btn btn-ghost" onclick="wspCopiar('ars')" style="margin-top:6px;font-size:11px;border-color:var(--cyan);color:var(--cyan);">📋 Copiar ARS</button>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px;">Preview USD 🇺🇸</div>
-            <div id="wsp-preview-usd" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos para ver el mensaje</div>
+            <div id="wsp-preview-usd" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;min-height:60px;">Completá los datos</div>
             <button class="btn btn-ghost" onclick="wspCopiar('usd')" style="margin-top:6px;font-size:11px;border-color:var(--blue);color:var(--blue);">📋 Copiar USD</button>
           </div>
         </div>
@@ -5510,14 +5522,13 @@ async function pfGuardarDeuda() {
 }
 
 // ================================================================
-// MÓDULO CALCULADORA PRECIOS × CANTIDAD → WHATSAPP (aditivo)
-// ----------------------------------------------------------------
-// No guarda nada en Sheets — es 100% en pantalla.
-// Genera dos mensajes listos: uno en ARS y uno en USD.
-// Los emojis se pueden randomizar para que cada mensaje se vea diferente.
+// ================================================================
+// MÓDULO CALCULADORA PRECIOS × CANTIDAD → WHATSAPP + CATÁLOGO
 // ================================================================
 
-let WSP_FILAS = [{cant: 1, ganar: 0}, {cant: 3, ganar: 0}, {cant: 5, ganar: 0}];
+let WSP_MONEDA = 'ARS'; // 'ARS' o 'USD'
+// Filas: cada una tiene cant + precio (el precio es lo que cobrás, no la ganancia)
+let WSP_FILAS = [{cant:1, precio:''}, {cant:3, precio:''}, {cant:5, precio:''}];
 const WSP_EMOJIS_SETS = [
   ['📦','✅','🔥','💰','⚡'],
   ['🎯','💎','🚀','💵','📲'],
@@ -5526,48 +5537,105 @@ const WSP_EMOJIS_SETS = [
 ];
 let WSP_EMOJI_IDX = 0;
 
+// Evalúa matemáticas en un campo (ej: "8.5*1600", "15000+2000*3")
+function wspEvalMath(el) {
+  if (!el || !el.value) return;
+  let v = el.value.toString().replace(/,/g, '.').trim();
+  if (/[+\-*/]/.test(v)) {
+    try {
+      const res = new Function('return ' + v)();
+      if (!isNaN(res) && isFinite(res)) {
+        el.value = WSP_MONEDA === 'USD' ? parseFloat(res.toFixed(4)) : Math.round(res);
+      }
+    } catch(e) {}
+  }
+  wspCalcular();
+}
+
+function wspSetMoneda(m) {
+  WSP_MONEDA = m;
+  const bA = $('wsp-moneda-ars'), bU = $('wsp-moneda-usd');
+  if(bA) bA.classList.toggle('on', m==='ARS');
+  if(bU) bU.classList.toggle('on', m==='USD');
+  // Actualizar labels
+  const lCosto = $('wsp-costo-label');
+  if(lCosto) lCosto.textContent = m==='USD' ? 'Costo unitario (u$s)' : 'Costo unitario ($)';
+  const lCol = $('wsp-col-precio-label');
+  if(lCol) lCol.textContent = m==='USD' ? 'Precio de venta (u$s)' : 'Precio de venta ($)';
+  // Mostrar/ocultar campo TC
+  const tcF = $('wsp-tc-field');
+  if(tcF) tcF.style.display = m==='USD' ? 'none' : 'block';
+  // Autocomplete cotización
+  if(m==='ARS') {
+    const tcEl = $('wsp-tc');
+    if(tcEl && !tcEl.value) tcEl.value = Math.round(getTCActual()) || '';
+  }
+  wspRenderFilas();
+  wspCalcular();
+}
+
 function wspAutoFillCosto() {
-  const inp = $('wsp-prod');
-  if (!inp) return;
+  const inp = $('wsp-prod'); if(!inp) return;
   const p = DB.todo.find(x => x.nombre === inp.value);
   const costoEl = $('wsp-costo');
-  if (p && costoEl && !costoEl.value) costoEl.value = p.costo;
+  if(p && costoEl) {
+    if(WSP_MONEDA === 'USD') {
+      const tc = getTCActual() || 1;
+      if(!costoEl.value) costoEl.value = (p.costo / tc).toFixed(2);
+    } else {
+      if(!costoEl.value) costoEl.value = p.costo;
+    }
+  }
   const tcEl = $('wsp-tc');
-  if (tcEl && !tcEl.value) tcEl.value = Math.round(getTCActual()) || '';
+  if(tcEl && !tcEl.value) tcEl.value = Math.round(getTCActual()) || '';
   wspCalcular();
 }
 
 function wspAgregarFila() {
-  WSP_FILAS.push({cant: '', ganar: 0});
+  WSP_FILAS.push({cant:'', precio:''});
   wspRenderFilas();
 }
 
 function wspEliminarFila(idx) {
   WSP_FILAS.splice(idx, 1);
   wspRenderFilas();
+  wspCalcular();
+}
+
+function wspGetCosto() {
+  const v = ($('wsp-costo') ? $('wsp-costo').value : '').toString().replace(',','.');
+  return parseFloat(v) || 0;
+}
+
+function wspGetTC() {
+  const v = ($('wsp-tc') ? $('wsp-tc').value : '').toString().replace(',','.');
+  return parseFloat(v) || getTCActual() || 1;
 }
 
 function wspRenderFilas() {
-  const div = $('wsp-filas');
-  if (!div) return;
-  div.innerHTML = WSP_FILAS.map((f, i) => `
-    <div style="display:grid;grid-template-columns:1fr 1fr 30px;gap:8px;margin-bottom:8px;align-items:flex-end;">
-      <div>
-        <div class="f-label">Cantidad</div>
-        <input class="f-in" type="number" min="1" value="${f.cant}" placeholder="Ej: 5"
-          onchange="WSP_FILAS[${i}].cant=parseInt(this.value)||0; wspCalcular()"
-          style="padding:8px 10px;font-size:12px;">
-      </div>
-      <div>
-        <div class="f-label">Ganar por unidad (ARS)</div>
-        <input class="f-in" type="text" value="${f.ganar}" placeholder="Ej: 5000"
-          onchange="WSP_FILAS[${i}].ganar=parseFloat(this.value.toString().replace(',','.'))||0; wspCalcular()"
-          style="padding:8px 10px;font-size:12px;">
-      </div>
-      <button class="btn btn-ghost" onclick="wspEliminarFila(${i})"
-        style="padding:4px 8px;margin:0;color:var(--red);border-color:var(--red);font-size:12px;height:36px;">✕</button>
-    </div>
-  `).join('');
+  const div = $('wsp-filas'); if(!div) return;
+  const isUSD = WSP_MONEDA === 'USD';
+  div.innerHTML = WSP_FILAS.map((f, i) => {
+    const costo = wspGetCosto();
+    const precioNum = parseFloat(String(f.precio).replace(',','.')) || 0;
+    const ganancia = costo > 0 && precioNum > 0 ? (precioNum - costo) : 0;
+    const ganStr = ganancia > 0
+      ? `<span style="color:var(--green);font-size:10px;font-weight:700">+${isUSD ? 'u$s '+ganancia.toFixed(2) : fmt(Math.round(ganancia))}/u</span>`
+      : ganancia < 0
+        ? `<span style="color:var(--red);font-size:10px;font-weight:700">${isUSD ? 'u$s '+ganancia.toFixed(2) : fmt(Math.round(ganancia))}/u</span>`
+        : '<span style="color:var(--text3);font-size:10px">—</span>';
+    return `<div style="display:grid;grid-template-columns:60px 1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center;">
+      <input class="f-in" type="number" min="1" value="${f.cant}" placeholder="Ej: 5"
+        onchange="WSP_FILAS[${i}].cant=parseInt(this.value)||0; wspCalcular()"
+        style="padding:7px 8px;font-size:12px;text-align:center;">
+      <input class="f-in" type="text" value="${f.precio}" placeholder="${isUSD?'Ej: 12.50':'Ej: 20000 o 8.5*2400'}"
+        onblur="WSP_FILAS[${i}].precio=this.value; wspEvalMath(this)"
+        oninput="WSP_FILAS[${i}].precio=this.value; wspCalcular()"
+        style="padding:7px 8px;font-size:12px;">
+      <div style="text-align:center">${ganStr}</div>
+      <button onclick="wspEliminarFila(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px">✕</button>
+    </div>`;
+  }).join('');
 }
 
 function wspCambiarEmojis() {
@@ -5578,53 +5646,52 @@ function wspCambiarEmojis() {
 
 function wspCalcular() {
   const prod = ($('wsp-prod') ? $('wsp-prod').value : '') || 'Producto';
-  const costo = parseFloat(($('wsp-costo') ? $('wsp-costo').value : '').toString().replace(',','.')) || 0;
-  const tc = parseFloat(($('wsp-tc') ? $('wsp-tc').value : '').toString().replace(',','.')) || 0;
+  const costo = wspGetCosto();
+  const tc = wspGetTC();
+  const isUSD = WSP_MONEDA === 'USD';
   const emojis = WSP_EMOJIS_SETS[WSP_EMOJI_IDX];
+  const filasValidas = WSP_FILAS.filter(f => f.cant > 0 && parseFloat(String(f.precio).replace(',','.')) > 0);
 
-  if (!costo || !WSP_FILAS.length) {
-    setHTML('wsp-preview-ars', '<span style="color:var(--text3)">Completá los datos para ver el mensaje</span>');
-    setHTML('wsp-preview-usd', '<span style="color:var(--text3)">Completá los datos para ver el mensaje</span>');
-    return;
+  // Actualizar ganancia en filas en tiempo real
+  wspRenderFilas();
+
+  if (!costo || !filasValidas.length) {
+    const msg = '<span style="color:var(--text3)">Completá producto, costo y precios</span>';
+    setHTML('wsp-preview-ars', msg); setHTML('wsp-preview-usd', msg); return;
   }
 
-  // Genera las líneas de precio
+  const hoy = new Date().toLocaleDateString('es-AR');
   let lineasARS = '', lineasUSD = '';
-  const filasValidas = WSP_FILAS.filter(f => f.cant > 0);
+
   filasValidas.forEach((f, i) => {
-    const precioARS = Math.round(costo + (f.ganar || 0));
+    const precioRaw = parseFloat(String(f.precio).replace(',','.')) || 0;
+    const precioARS = isUSD ? Math.round(precioRaw * tc) : Math.round(precioRaw);
+    const precioUSD = isUSD ? precioRaw : precioARS / tc;
     const totalARS = precioARS * f.cant;
+    const totalUSD = precioUSD * f.cant;
     const emo = emojis[i % emojis.length];
     lineasARS += `${emo} x${f.cant} → $${precioARS.toLocaleString('es-AR')}/u = $${totalARS.toLocaleString('es-AR')}\n`;
-    if (tc > 0) {
-      const precioUSD = (precioARS / tc).toFixed(2);
-      const totalUSD = (totalARS / tc).toFixed(2);
-      lineasUSD += `${emo} x${f.cant} → u$s ${precioUSD}/u = u$s ${totalUSD}\n`;
-    }
+    lineasUSD += `${emo} x${f.cant} → u$s ${precioUSD.toFixed(2)}/u = u$s ${totalUSD.toFixed(2)}\n`;
   });
 
-  const hoy = new Date().toLocaleDateString('es-AR');
-  const msgARS = `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios ARS · ${hoy}\n\n${lineasARS}\n💬 Escribime para coordinar entrega.`;
-  const msgUSD = tc > 0
-    ? `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios USD · ${hoy} (a $${Math.round(tc).toLocaleString('es-AR')}/u$s)\n\n${lineasUSD}\n💬 Escribime para coordinar entrega.`
-    : 'Ingresá la cotización USD para ver este preview.';
+  const msgARS = `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios ARS · ${hoy}\n\n${lineasARS}\n💬 Escribime para coordinar.`;
+  const msgUSD = `${emojis[0]} *${prod.toUpperCase()}*\n${emojis[1]} Precios USD · ${hoy} (TC: $${Math.round(tc).toLocaleString('es-AR')})\n\n${lineasUSD}\n💬 Escribime para coordinar.`;
 
   const arsEl = $('wsp-preview-ars'), usdEl = $('wsp-preview-usd');
-  if (arsEl) arsEl.textContent = msgARS;
-  if (usdEl) usdEl.textContent = msgUSD;
+  if(arsEl) arsEl.textContent = msgARS;
+  if(usdEl) usdEl.textContent = msgUSD;
 }
 
 function wspCopiar(moneda) {
   const el = moneda === 'ars' ? $('wsp-preview-ars') : $('wsp-preview-usd');
-  if (!el || !el.textContent || el.textContent.includes('Completá')) {
-    toast('Completá los datos primero', 'err'); return;
-  }
+  if (!el || !el.textContent || el.textContent.includes('Completá')) { toast('Completá los datos primero', 'err'); return; }
   navigator.clipboard.writeText(el.textContent)
-    .then(() => toast('✓ Mensaje copiado — listo para pegar en WhatsApp'))
+    .then(() => toast('✓ Copiado — pegalo en WhatsApp'))
     .catch(() => toast('Error al copiar', 'err'));
 }
 
-// Inicializar filas de la calculadora
+// Inicializar
+try { wspSetMoneda('ARS'); } catch(e) {}
 try { wspRenderFilas(); } catch(e) {}
 </script>
 </body>
