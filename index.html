@@ -471,9 +471,33 @@
         </details>
       </div>
 
+      <!-- TENDENCIA DE GANANCIA -->
+      <div class="card" id="card-tendencia">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span class="card-title" style="margin:0;">📈 Tendencia de Ganancia</span>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="curr-btn" id="tend-btn-7d" onclick="tendSetPeriodo(7)" style="padding:4px 10px;font-size:10px;flex:none;">7d</button>
+            <button type="button" class="curr-btn on" id="tend-btn-30d" onclick="tendSetPeriodo(30)" style="padding:4px 10px;font-size:10px;flex:none;">30d</button>
+            <button type="button" class="curr-btn" id="tend-btn-90d" onclick="tendSetPeriodo(90)" style="padding:4px 10px;font-size:10px;flex:none;">90d</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:8px;align-items:baseline;">
+          <div>
+            <div class="f-label" style="margin-bottom:2px;">Ganancia del período</div>
+            <div style="font-size:1.6rem;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;" id="tend-total">—</div>
+          </div>
+          <div id="tend-vs" style="font-size:11px;color:var(--text3);"></div>
+        </div>
+        <div id="tend-grafico" style="overflow-x:auto;"></div>
+        <div style="display:flex;gap:16px;margin-top:6px;font-size:10px;color:var(--text3);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:3px;background:var(--green);display:inline-block;"></span>Ganancia diaria</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:14px;height:0;border-top:1.5px dashed var(--text3);display:inline-block;"></span>Promedio</span>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">Resumen de Deudas (Todo junto)</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Suma clientes + personales + proveedores, por moneda. Esto es lo que hay en la pestaña Cuentas, resumido.</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Suma clientes + personales + proveedores, por moneda.</div>
         <div id="h-deudas-resumen"></div>
       </div>
 
@@ -2795,6 +2819,7 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     try { await cargarSeguimientos(); } catch(e) { console.error('Seguimiento de clientes: no se pudo cargar', e); }
     try { await cargarTurnos(); } catch(e) { console.error('Turnos y retiros: no se pudo cargar', e); }
     try { renderHomeHeader(); } catch(e) { console.error('Header de Home: no se pudo armar', e); }
+    try { calcularTendenciaGanancia(sRows, sRowsHist); } catch(e) { console.error('Tendencia:', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
@@ -5364,6 +5389,119 @@ function exportarCatalogoHTML() {
   if (!productos.length) { toast('Ningún producto seleccionado tiene datos', 'err'); return; }
   generarHTMLCatalogo(productos);
 }
+
+// ================================================================
+// MÓDULO TENDENCIA DE GANANCIA — HOME
+// ================================================================
+let TEND_DIAS = 30;
+let TEND_CACHE = {}; // cache por período para no releer Sheets cada vez
+
+function tendSetPeriodo(dias) {
+  TEND_DIAS = dias;
+  [7,30,90].forEach(d => {
+    const btn = $('tend-btn-'+d+'d');
+    if(btn) btn.classList.toggle('on', d === dias);
+  });
+  renderTendencia();
+}
+
+// Llama esta función desde cargarTodo pasando sRows ya leídas
+function calcularTendenciaGanancia(sRows, sRowsHist) {
+  const todas = (sRows||[]).concat(sRowsHist||[]);
+  const ahora = Date.now();
+  const unDia = 86400000;
+
+  // Calcular para 90d (el más largo), de ahí sacamos los subperíodos
+  const porDia90 = {};
+  todas.forEach(r => {
+    if(!r[0]) return;
+    const fd = parseExcelDate(r[5]);
+    if(!fd.t || fd.t < ahora - 90*unDia) return;
+    const subNeto = num(r[4]), costoTotal = num(r[7]);
+    const diaKey = new Date(fd.t).setHours(0,0,0,0);
+    porDia90[diaKey] = (porDia90[diaKey]||0) + (subNeto - costoTotal);
+  });
+
+  TEND_CACHE = { porDia: porDia90, ahora };
+  renderTendencia();
+}
+
+function renderTendencia() {
+  if(!TEND_CACHE.porDia) return;
+  const { porDia, ahora } = TEND_CACHE;
+  const unDia = 86400000;
+  const dias = [];
+  for(let t = ahora - TEND_DIAS*unDia; t <= ahora; t += unDia) {
+    const key = new Date(t).setHours(0,0,0,0);
+    dias.push({ key, val: porDia[key]||0 });
+  }
+
+  const total = dias.reduce((s,d) => s+d.val, 0);
+  const promedio = total / dias.length;
+
+  // Comparar con el período anterior
+  let totalAnterior = 0;
+  for(let t = ahora - TEND_DIAS*2*unDia; t < ahora - TEND_DIAS*unDia; t += unDia) {
+    const key = new Date(t).setHours(0,0,0,0);
+    totalAnterior += porDia[key]||0;
+  }
+  const diff = total - totalAnterior;
+  const pct = totalAnterior !== 0 ? ((diff/Math.abs(totalAnterior))*100).toFixed(0) : null;
+
+  const tendEl = $('tend-total');
+  if(tendEl) tendEl.textContent = fmt(Math.round(total));
+
+  const vsEl = $('tend-vs');
+  if(vsEl) {
+    if(pct !== null) {
+      const sube = diff >= 0;
+      vsEl.innerHTML = `<span style="color:${sube?'var(--green)':'var(--red)'};font-weight:700">${sube?'▲':'▼'} ${Math.abs(pct)}%</span> <span style="color:var(--text3)">vs ${TEND_DIAS}d anteriores</span>`;
+    } else {
+      vsEl.textContent = '';
+    }
+  }
+
+  // Gráfico SVG
+  const cont = $('tend-grafico');
+  if(!cont) return;
+
+  const vals = dias.map(d => d.val);
+  const max = Math.max(...vals, 1);
+  const min = Math.min(...vals, 0);
+  const rango = (max - min) || 1;
+  const altMax = 90, padTop = 10, padBot = 20;
+  const svgH = altMax + padTop + padBot;
+  const anchoBarra = dias.length > 60 ? 4 : dias.length > 30 ? 7 : 12;
+  const gap = dias.length > 60 ? 1 : 2;
+  const svgW = Math.max(dias.length * (anchoBarra + gap), 280);
+  const ceroY = padTop + altMax - ((0 - min) / rango * altMax);
+
+  let barras = '';
+  dias.forEach((d, i) => {
+    const x = i * (anchoBarra + gap);
+    const h = Math.abs(d.val / rango * altMax);
+    const sube = d.val >= 0;
+    const y = sube ? ceroY - h : ceroY;
+    const color = sube ? '#22c55e' : '#ef4444';
+    const fechaObj = new Date(d.key);
+    const label = `${fechaObj.getDate()}/${fechaObj.getMonth()+1}: ${fmt(Math.round(d.val))}`;
+    barras += `<rect x="${x}" y="${Math.max(y, padTop)}" width="${anchoBarra}" height="${Math.max(h,1)}" fill="${color}" opacity="${d.val===0?0.2:0.85}" rx="2"><title>${label}</title></rect>`;
+    // Etiquetas cada N días
+    const step = dias.length > 60 ? 15 : dias.length > 30 ? 7 : 5;
+    if(i % step === 0) {
+      barras += `<text x="${x + anchoBarra/2}" y="${svgH - 4}" font-size="8" fill="var(--text3)" text-anchor="middle">${fechaObj.getDate()}/${fechaObj.getMonth()+1}</text>`;
+    }
+  });
+
+  // Línea cero
+  const lineaCero = `<line x1="0" y1="${ceroY}" x2="${svgW}" y2="${ceroY}" stroke="var(--border)" stroke-width="1"/>`;
+  // Línea promedio
+  const yProm = padTop + altMax - ((promedio - min) / rango * altMax);
+  const lineaProm = promedio !== 0 ? `<line x1="0" y1="${yProm}" x2="${svgW}" y2="${yProm}" stroke="var(--text3)" stroke-width="1" stroke-dasharray="3 2"/><text x="${svgW-2}" y="${yProm-3}" font-size="8" fill="var(--text3)" text-anchor="end">${fmt(Math.round(promedio))}</text>` : '';
+
+  cont.innerHTML = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" style="display:block;min-width:100%">${lineaCero}${lineaProm}${barras}</svg>`;
+}
+
 try { NUMS_OCULTOS = localStorage.getItem('jt_nums_ocultos') === 'true'; } catch(e) {}
 
 const NUMS_IDS = new Set([
