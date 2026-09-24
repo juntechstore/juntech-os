@@ -2824,7 +2824,10 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
     try { await cargarVariantes(); } catch(e) { console.error('Variantes:', e); }
-    try { if(typeof aplicarEstadoNums === 'function' && NUMS_OCULTOS) aplicarEstadoNums(); } catch(e) {}
+    // Reenmascarar DESPUÉS de que todo el DOM se actualizó
+    if(typeof NUMS_OCULTOS !== 'undefined' && NUMS_OCULTOS) {
+      setTimeout(() => { try { aplicarEstadoNums(); } catch(e) {} }, 100);
+    }
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
@@ -3029,14 +3032,52 @@ function selProduct(){
   const vSearch = $('v-search'); if(!vSearch) return;
   const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
   if(!p){ if(prev) prev.style.display='none'; currentProd=null; return; }
-  currentProd=p; setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u'); setText('pp-mov', '🕒 Último mov: '+p.ultimoMov);
+  currentProd=p;
+
+  // Manejar variantes
+  const varRow = $('v-variante-row'), varSel = $('v-variante');
+  const variantes = p.variantes || [];
+  if (variantes.length > 0) {
+    if(varSel) {
+      varSel.innerHTML = '<option value="">— Elegí una variante —</option>' +
+        variantes.map(v => {
+          const stk = v.stock || 0;
+          const precio = v.precio || p.precio;
+          return `<option value="${v.variante}" ${stk<=0?'style="color:var(--text3)"':''}>${v.variante}${stk>0?' — '+stk+' u · '+fmt(precio):' — sin stock'}</option>`;
+        }).join('');
+    }
+    if(varRow) varRow.style.display = 'block';
+    if(prev) prev.style.display = 'none'; // ocultar hasta que elijan variante
+    return; // no mostrar preview del padre
+  }
+
+  if(varRow) varRow.style.display = 'none';
+  currentProd._varSeleccionada = null;
+  setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u'); setText('pp-mov', '🕒 Último mov: '+p.ultimoMov);
   const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
-  if(vPrecio) vPrecio.value = p.precio; if(vPrecioLista) vPrecioLista.value = p.precio; 
+  if(vPrecio) vPrecio.value = p.precio; if(vPrecioLista) vPrecioLista.value = p.precio;
   if(prev) prev.style.display='block';
 }
 
 function addToCart(){
   if(!currentProd) return;
+
+  // Si tiene variantes y no eligió ninguna, bloquear
+  if ((currentProd.variantes||[]).length > 0 && !currentProd._varSeleccionada) {
+    toast('Elegí una variante primero', 'err'); return;
+  }
+
+  // Si hay variante seleccionada, usar nombre compuesto temporalmente
+  let nombreOrig, costoOrig, precioOrig, stockOrig;
+  if (currentProd._varSeleccionada) {
+    nombreOrig = currentProd.nombre; costoOrig = currentProd.costo;
+    precioOrig = currentProd.precio; stockOrig = currentProd.stock;
+    currentProd.nombre = nombreOrig + ' - ' + currentProd._varNombre.toUpperCase();
+    currentProd.costo = currentProd._varSeleccionada.costo || costoOrig;
+    currentProd.precio = currentProd._varSeleccionada.precio || precioOrig;
+    currentProd.stock = currentProd._varSeleccionada.stock || 0;
+  }
+
   const vCant = $('v-cant'), vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista'), vAlias = $('v-alias'), vGar = $('v-gar'), vSearch = $('v-search'), vRate = $('v-rate-val');
   const cant = parseFloat(vCant ? vCant.value : 1)||1;
   const precioIngresado = parseFloat(vPrecio ? vPrecio.value : currentProd.precio)||currentProd.precio;
@@ -3057,6 +3098,16 @@ function addToCart(){
   cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : ''), precioUSD, tcUsado});
   
   if(vSearch) vSearch.value=''; if(vPrecio) vPrecio.value=''; if(vPrecioLista) vPrecioLista.value=''; if(vGar) vGar.value=''; if(vAlias) vAlias.value=''; if(vCant) vCant.value='1'; 
+  // Restaurar producto padre si había variante
+  if (nombreOrig !== undefined) {
+    currentProd.nombre = nombreOrig; currentProd.costo = costoOrig;
+    currentProd.precio = precioOrig; currentProd.stock = stockOrig;
+    currentProd._varSeleccionada = null; currentProd._varNombre = null;
+    const varRow = $('v-variante-row'), varSel = $('v-variante');
+    if(varRow) varRow.style.display = 'none';
+    if(varSel) varSel.value = '';
+  }
+
   const prev=$('prod-prev'); if(prev) prev.style.display='none'; currentProd=null; renderCart(); pulsoConfirmacionCarrito();
 }
 
@@ -5020,73 +5071,8 @@ function selVariante() {
 }
 
 // Hook: modificar selProduct para mostrar variantes
-const _selProduct_orig = selProduct;
-selProduct = function() {
-  _selProduct_orig();
-  // Después de seleccionar, verificar si tiene variantes
-  const vSearch = $('v-search');
-  if (!vSearch || !currentProd) return;
-  const varRow = $('v-variante-row');
-  const varSel = $('v-variante');
-  const variantes = currentProd.variantes || [];
-  if (variantes.length > 0) {
-    // Tiene variantes — mostrar selector
-    varSel.innerHTML = '<option value="">— Elegí una variante —</option>' +
-      variantes.filter(v => (v.stock||0) > 0).map(v =>
-        `<option value="${v.variante}">${v.variante} (${v.stock||0} u · ${fmt(v.precio||currentProd.precio)})</option>`
-      ).join('') +
-      variantes.filter(v => (v.stock||0) <= 0).map(v =>
-        `<option value="${v.variante}" disabled>${v.variante} (sin stock)</option>`
-      ).join('');
-    if(varRow) varRow.style.display = 'block';
-    // Ocultar preview hasta que elijan variante
-    const prev = $('prod-prev'); if(prev) prev.style.display='none';
-  } else {
-    if(varRow) varRow.style.display = 'none';
-    currentProd._varSeleccionada = null;
-    currentProd._varNombre = null;
-  }
-};
+// Llamar cargarVariantes al final de cargarTodo — lógica integrada en selProduct/addToCart directamente
 
-// Hook: modificar addToCart para usar el nombre compuesto de la variante
-const _addToCart_orig = addToCart;
-addToCart = function() {
-  if (currentProd && currentProd.variantes && currentProd.variantes.length > 0) {
-    // Tiene variantes — verificar que eligió una
-    if (!currentProd._varSeleccionada) {
-      toast('Elegí una variante primero', 'err'); return;
-    }
-    // Temporalmente cambiar el sysName para que use el nombre compuesto
-    const nombreOrig = currentProd.nombre;
-    const costoOrig = currentProd.costo;
-    const precioOrig = currentProd.precio;
-    const stockOrig = currentProd.stock;
-    currentProd.nombre = nombreOrig + ' - ' + currentProd._varNombre.toUpperCase();
-    currentProd.costo = currentProd._varSeleccionada.costo || costoOrig;
-    currentProd.precio = currentProd._varSeleccionada.precio || precioOrig;
-    currentProd.stock = currentProd._varSeleccionada.stock || 0;
-    _addToCart_orig();
-    // Restaurar
-    currentProd.nombre = nombreOrig;
-    currentProd.costo = costoOrig;
-    currentProd.precio = precioOrig;
-    currentProd.stock = stockOrig;
-    // Limpiar selector de variante
-    const varRow = $('v-variante-row');
-    const varSel = $('v-variante');
-    if(varRow) varRow.style.display = 'none';
-    if(varSel) varSel.value = '';
-    currentProd._varSeleccionada = null;
-    currentProd._varNombre = null;
-  } else {
-    _addToCart_orig();
-  }
-};
-
-// Llamar cargarVariantes al final de cargarTodo
-const _cargarTodo_variantes_hook = true; // flag para evitar doble hook
-
-// ================================================================
 // ================================================================
 // MÓDULO CATÁLOGO EXPORTABLE
 // ----------------------------------------------------------------
@@ -5753,8 +5739,8 @@ function wspGetTC() {
 function wspRenderFilas() {
   const div = $('wsp-filas'); if(!div) return;
   const isUSD = WSP_MONEDA === 'USD';
+  const costo = wspGetCosto();
   div.innerHTML = WSP_FILAS.map((f, i) => {
-    const costo = wspGetCosto();
     const precioNum = parseFloat(String(f.precio).replace(',','.')) || 0;
     const ganancia = costo > 0 && precioNum > 0 ? (precioNum - costo) : 0;
     const ganStr = ganancia > 0
@@ -5763,14 +5749,14 @@ function wspRenderFilas() {
         ? `<span style="color:var(--red);font-size:10px;font-weight:700">${isUSD ? 'u$s '+ganancia.toFixed(2) : fmt(Math.round(ganancia))}/u</span>`
         : '<span style="color:var(--text3);font-size:10px">—</span>';
     return `<div style="display:grid;grid-template-columns:60px 1fr 1fr 28px;gap:6px;margin-bottom:6px;align-items:center;">
-      <input class="f-in" type="number" min="1" value="${f.cant}" placeholder="Ej: 5"
+      <input class="f-in" type="number" min="1" value="${f.cant||''}" placeholder="Cant."
         onchange="WSP_FILAS[${i}].cant=parseInt(this.value)||0; wspCalcular()"
         style="padding:7px 8px;font-size:12px;text-align:center;">
-      <input class="f-in" type="text" value="${f.precio}" placeholder="${isUSD?'Ej: 12.50':'Ej: 20000 o 8.5*2400'}"
+      <input class="f-in" type="text" value="${f.precio||''}" placeholder="${isUSD?'u$s precio':'$ precio o fórmula'}"
         onblur="WSP_FILAS[${i}].precio=this.value; wspEvalMath(this)"
         oninput="WSP_FILAS[${i}].precio=this.value; wspCalcular()"
         style="padding:7px 8px;font-size:12px;">
-      <div style="text-align:center">${ganStr}</div>
+      <div data-gan="${i}" style="text-align:center">${ganStr}</div>
       <button onclick="wspEliminarFila(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px">✕</button>
     </div>`;
   }).join('');
@@ -5790,8 +5776,21 @@ function wspCalcular() {
   const emojis = WSP_EMOJIS_SETS[WSP_EMOJI_IDX];
   const filasValidas = WSP_FILAS.filter(f => f.cant > 0 && parseFloat(String(f.precio).replace(',','.')) > 0);
 
-  // Actualizar ganancia en filas en tiempo real
-  wspRenderFilas();
+  // Actualizar solo los indicadores de ganancia en las filas SIN re-renderizar el HTML
+  // (re-renderizar destruye el foco del input que se está editando)
+  WSP_FILAS.forEach((f, i) => {
+    const ganEl = document.querySelector(`#wsp-filas [data-gan="${i}"]`);
+    if (!ganEl || !costo) return;
+    const precioNum = parseFloat(String(f.precio).replace(',','.')) || 0;
+    const ganancia = precioNum > 0 ? precioNum - costo : 0;
+    if (ganancia > 0) {
+      ganEl.innerHTML = `<span style="color:var(--green);font-size:10px;font-weight:700">+${isUSD ? 'u$s '+ganancia.toFixed(2) : fmt(Math.round(ganancia))}/u</span>`;
+    } else if (ganancia < 0) {
+      ganEl.innerHTML = `<span style="color:var(--red);font-size:10px;font-weight:700">${isUSD ? 'u$s '+ganancia.toFixed(2) : fmt(Math.round(ganancia))}/u</span>`;
+    } else {
+      ganEl.innerHTML = '<span style="color:var(--text3);font-size:10px">—</span>';
+    }
+  });
 
   if (!costo || !filasValidas.length) {
     const msg = '<span style="color:var(--text3)">Completá producto, costo y precios</span>';
