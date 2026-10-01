@@ -318,6 +318,9 @@
       #tabla-auditoria th, #tabla-remito th { background: #f2f2f2; font-weight: bold; }
       .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
     }
+    /* ── MODO VENDEDOR: no se muestran costos ── */
+    .modo-vendedor .pp-meta span:last-child { display: none; }
+
     /* ── ESTADO DE RESULTADOS (impresión) ── */
     #resultados-print { display: none; }
     @media print {
@@ -346,6 +349,7 @@
       <div><span class="brand-name">JUNTECH<span>OS</span></span><span class="brand-ver" style="font-size:9px;color:var(--text3);margin-left:5px">v6.0</span></div>
     </div>
     <div class="hdr-right" style="display:flex;align-items:center;gap:8px">
+      <span id="vend-barra" style="display:none;align-items:center;gap:6px;background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:20px;padding:3px 6px 3px 10px;font-size:11px;font-weight:700;">👤 <span id="vend-nombre"></span><button onclick="salirModoVendedor()" style="background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:12px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:inherit;">Salir</button></span>
       <div class="dot-on" id="dot-on"></div>
       <button class="hide-btn" id="hide-btn" onclick="toggleNums()" title="Ocultar/mostrar números">
         <span id="hide-btn-ico">👁</span><span id="hide-btn-txt" style="display:none">Ocultar</span>
@@ -370,7 +374,10 @@
 
     <div class="sb-group">
       <div class="sb-group-label">Negocio</div>
-      <button class="sb-item on" onclick="goTab('home',this)" id="sb-home">
+      <button class="sb-item on" onclick="goTab('resumen',this)" id="sb-resumen">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Resumen
+      </button>
+      <button class="sb-item" onclick="goTab('home',this)" id="sb-home">
         <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Dashboard
       </button>
       <button class="sb-item" onclick="goTab('sell',this)" id="sb-sell">
@@ -445,7 +452,73 @@
   </div>
 
   <div class="scroll">
-    <div class="tab on" id="tab-home">
+    <div class="tab on" id="tab-resumen">
+      <div class="home-header">
+        <div class="home-header-title" id="res-titulo">Resumen</div>
+        <div class="home-header-sub" id="res-sub">Cargando...</div>
+      </div>
+      <div class="kpi-row" id="res-kpis"></div>
+
+      <div class="card">
+        <div class="card-title">🎯 Para hacer hoy</div>
+        <div id="res-auto"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ Mis tareas</div>
+        <div class="f-row">
+          <div class="field" style="margin-bottom:8px;"><input class="f-in" id="tarea-texto" placeholder="Ej: Llamar a Pedro por el pedido"></div>
+          <div class="field" style="margin-bottom:8px;"><input class="f-in" id="tarea-fecha" type="date"></div>
+        </div>
+        <button class="btn btn-ghost" onclick="agregarTarea()" style="border-color:var(--green);color:var(--green);">+ Agregar tarea</button>
+        <div id="res-tareas"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏷️ Promociones y combos</div>
+        <div id="res-promos"><div class="empty">Cargando...</div></div>
+        <button class="btn btn-ghost" onclick="goTab('stock',document.getElementById('sb-stock'))" style="margin-top:10px;font-size:12px;">Crear o editar promociones → Stock</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🤖 Consultar con IA</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Arma un informe con los datos más importantes de tu negocio para que se lo pegues a una IA (Claude, ChatGPT, etc.) y le preguntes lo que quieras. No se envía nada a ningún lado: lo copiás vos.</div>
+        <div class="field"><label class="f-label">¿Qué querés preguntarle?</label>
+          <select class="f-in" id="res-ia-pregunta">
+            <option value="¿Qué debería comprar esta semana y en qué cantidades? Priorizá lo que se me va a acabar.">Qué comprar esta semana</option>
+            <option value="Tengo stock parado. Armame un plan de promociones y combos para liberar esa plata sin perder plata.">Plan para liberar stock parado</option>
+            <option value="¿Cómo puedo mejorar mi margen de ganancia? Decime qué productos y precios revisar.">Mejorar mi margen</option>
+            <option value="Hacé un resumen ejecutivo de cómo viene el negocio y decime las 3 cosas más importantes para hacer esta semana.">Resumen ejecutivo y prioridades</option>
+            <option value="">Sin pregunta (solo los datos)</option>
+          </select></div>
+        <button class="btn btn-purple" onclick="copiarInformeIA()">📋 Copiar informe para la IA</button>
+        <textarea class="f-in" id="res-ia-texto" rows="6" readonly style="font-size:11px;margin-top:6px;display:none;"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔒 Seguridad y registro</div>
+        <div id="seg-estado" style="font-size:12px;line-height:1.5;margin-bottom:10px;">Cargando...</div>
+        <div class="field" id="seg-pin-actual-box" style="display:none;"><label class="f-label">PIN actual</label><input class="f-in" id="seg-pin-actual" type="password" inputmode="numeric" maxlength="8" placeholder="••••"></div>
+        <div class="field"><label class="f-label">PIN nuevo (4 a 8 números)</label><input class="f-in" id="seg-pin-nuevo" type="password" inputmode="numeric" maxlength="8" placeholder="••••"></div>
+        <div class="f-row">
+          <button class="btn btn-blue" onclick="segGuardarPin()" style="margin:0;font-size:12px;">💾 Guardar PIN</button>
+          <button class="btn btn-ghost" id="btn-seg-quitar" onclick="segQuitarPin()" style="margin:0;font-size:12px;display:none;border-color:var(--red);color:var(--red);">Quitar PIN</button>
+        </div>
+        <div style="font-size:10px;color:var(--text2);margin:10px 0;line-height:1.4;">El PIN se guarda como una huella irreversible en la hoja Config. Si lo olvidás, borrá la fila PIN_SEGURIDAD de esa hoja y queda sin PIN.</div>
+        <div style="border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;">
+          <div class="f-label" style="margin-bottom:6px;">👤 Modo vendedor en ESTE dispositivo</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:8px;line-height:1.5;">Pensado para prestarle el sistema a un vendedor: solo ve la pantalla de Vender, no ve costos ni ganancias, y para anular o devolver una venta, o vender bajo el costo, hace falta TU PIN cada vez. Para salir del modo también. Necesitás tener un PIN creado. <b>Importante:</b> esto ordena y frena errores, pero quien tenga acceso a la planilla de Google puede abrirla directamente; si el vendedor no tiene que ver esos datos, no le compartas la planilla.</div>
+          <div class="field"><input class="f-in" id="vend-nombre-in" placeholder="Nombre del vendedor"></div>
+          <button class="btn btn-ghost" onclick="activarModoVendedor()" style="font-size:12px;">Activar modo vendedor</button>
+        </div>
+        <button class="btn btn-ghost" onclick="verAuditoria()" style="font-size:12px;margin-top:12px;">📜 Ver registro de auditoría</button>
+        <div id="seg-auditoria" style="margin-top:8px;"></div>
+      </div>
+
+      <button class="btn btn-ghost" onclick="goTab('home',document.getElementById('sb-home'))" style="margin-top:4px;">Ver el dashboard completo →</button>
+    </div>
+
+    <div class="tab" id="tab-home">
       <div class="home-header">
         <div class="home-header-title" id="home-header-fecha">—</div>
         <div class="home-header-sub" id="home-header-sub">Cargando...</div>
@@ -593,6 +666,7 @@
           <div class="pp-top"><span class="pp-name" id="pp-nombre">—</span><span class="pill pill-green" id="pp-stock">—</span></div>
           <div class="pp-meta"><span>Precio: <b id="pp-precio">—</b></span><span>Costo: <b id="pp-costo">—</b></span></div>
           <div style="font-size:10px; color:var(--text2); margin-top:5px;" id="pp-mov">🕒 Último mov: —</div>
+          <div id="pp-promo" style="display:none;font-size:11px;font-weight:700;color:var(--orange);margin-top:6px;"></div>
         </div>
         <div class="f-row">
           <div class="field"><label class="f-label">Cantidad</label><input class="f-in" id="v-cant" type="number" value="1" min="1"></div>
@@ -624,10 +698,11 @@
         <div class="prod-prev" id="combo-prev">
           <div class="pp-top"><span class="pp-name" id="combo-prev-nombre">—</span><span class="pill pill-blue" id="combo-prev-stock">—</span></div>
           <div id="combo-prev-componentes" style="font-size:11px; color:var(--text2); margin:6px 0; line-height:1.6;"></div>
+          <div id="combo-variantes-box"></div>
           <div class="pp-meta"><span>Precio combo: <b id="combo-prev-precio">—</b></span><span>Vs. lista: <b id="combo-prev-desc">—</b></span></div>
         </div>
         <div class="f-row">
-          <div class="field"><label class="f-label">Cantidad de combos</label><input class="f-in" id="combo-cant" type="number" value="1" min="1"></div>
+          <div class="field"><label class="f-label">Cantidad de combos</label><input class="f-in" id="combo-cant" type="number" value="1" min="1" oninput="comboRenderPickers()"></div>
           <div class="field" style="display:flex; align-items:flex-end;"><button class="btn btn-ghost" onclick="agregarComboAlCarrito()" style="border-color:var(--purple); color:var(--purple); margin-bottom:0;">+ Agregar al carrito</button></div>
         </div>
       </div>
@@ -972,6 +1047,7 @@
       <div class="card">
         <div class="card-title">Entrada de Stock (Compra)</div>
         <div class="field"><label class="f-label">Producto</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="e-prod" list="e-lista" placeholder="Buscar producto..." onchange="selEntrada()" autocomplete="off"><datalist id="e-lista"></datalist></div></div>
+        <div class="field" id="e-variante-row" style="display:none;"><label class="f-label">Variante (sabor, color, talle)</label><select class="f-in" id="e-variante"><option value="">— Elegí una variante —</option></select></div>
         <div class="curr-toggle">
           <button type="button" class="curr-btn on" id="e-curr-ars" onclick="setMonedaEntrada('ARS')">$ Pesos</button>
           <button type="button" class="curr-btn" id="e-curr-usd" onclick="setMonedaEntrada('USD')">u$s Dólares</button>
@@ -1140,6 +1216,28 @@
       </div>
 
       <div class="card">
+        <div class="card-title">🏷️ Promociones con fecha</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Bajá el precio de un producto entre dos fechas (y hasta agotar un cupo, si querés). El sistema lo aplica solo al vender y deja de aplicarlo cuando vence. También podés programarla para más adelante.</div>
+        <div class="field"><label class="f-label">Producto</label><input class="f-in" id="promo-prod" list="e-lista" placeholder="Buscar producto..." autocomplete="off"></div>
+        <div class="curr-toggle">
+          <button type="button" class="curr-btn on" id="promo-modo-precio" onclick="promoSetModo('PRECIO')">Precio fijo $</button>
+          <button type="button" class="curr-btn" id="promo-modo-pct" onclick="promoSetModo('PORCENTAJE')">% de descuento</button>
+        </div>
+        <div class="field"><label class="f-label" id="promo-valor-label">Precio promocional ($)</label><input class="f-in" id="promo-valor" type="text" inputmode="decimal" placeholder="Ej: 2000" onchange="evalMath(this)"></div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Desde (vacío = hoy)</label><input class="f-in" id="promo-desde" type="date"></div>
+          <div class="field"><label class="f-label">Hasta (vacío = sin fin)</label><input class="f-in" id="promo-hasta" type="date"></div>
+        </div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Cupo de unidades (opcional)</label><input class="f-in" id="promo-cupo" type="number" min="1" placeholder="Ej: 30"></div>
+          <div class="field"><label class="f-label">Nota (opcional)</label><input class="f-in" id="promo-nota" placeholder="Ej: Promo de octubre"></div>
+        </div>
+        <button class="btn btn-purple" id="btn-promo-crear" onclick="crearPromo()">💾 Crear promoción</button>
+        <div class="f-label" style="margin:14px 0 6px;">Promociones y vigencias de combos</div>
+        <div id="promos-lista"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
         <div class="card-title">📦 Crear Combo</div>
         <div style="font-size:10px;color:var(--text2);margin-bottom:12px;">Arma un combo con productos reales de tu catálogo. No crea un producto nuevo: al venderse, se descuenta el stock real de cada componente. Podés editar o borrar combos desde la lista de abajo (las ventas ya hechas no se tocan).</div>
         <div class="field"><label class="f-label">Buscar componente</label><div class="search-wrap" style="margin:0"><span class="search-ico">🔍</span><input class="f-in ico" id="combo-comp-prod" list="combo-comp-lista" placeholder="Buscar producto..." autocomplete="off"><datalist id="combo-comp-lista"></datalist></div></div>
@@ -1150,6 +1248,12 @@
         <div id="combo-comp-items" style="margin-bottom:12px;"></div>
         <div class="field"><label class="f-label">Nombre del Combo</label><input class="f-in" id="combo-nombre" placeholder="Ej: COMBO CARGADOR + CABLE + FUNDA" style="text-transform: uppercase;"></div>
         <div class="field"><label class="f-label">Precio Total del Combo ($)</label><input class="f-in" id="combo-precio-total" type="text" placeholder="Ej: 25000" onchange="evalMath(this)"></div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:6px;">Vigencia (opcional): si la completás, el sistema solo deja vender este combo entre esas fechas y hasta agotar el cupo.</div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">Vigente desde</label><input class="f-in" id="combo-desde" type="date"></div>
+          <div class="field"><label class="f-label">Hasta</label><input class="f-in" id="combo-hasta" type="date"></div>
+        </div>
+        <div class="field"><label class="f-label">Cupo: máximo de combos a vender (opcional)</label><input class="f-in" id="combo-cupo" type="number" min="1" placeholder="Ej: 20"></div>
         <button class="btn btn-purple" id="btn-guardar-combo" onclick="guardarCombo()">💾 Guardar Combo</button>
         <button class="btn btn-ghost" id="btn-combo-cancelar" onclick="cancelarEdicionCombo()" style="display:none;">Cancelar edición</button>
       </div>
@@ -1239,6 +1343,14 @@
           <button type="button" class="curr-btn" id="an-rent-365" onclick="anSetRent(365)">1 año</button>
         </div>
         <div id="an-rent-lista"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💲 Revisión de precios</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Detecta productos que hoy te dejan menos margen del que querés (por ejemplo porque subió el costo en la última compra) y te sugiere el precio que corrige eso. Vos decidís cuáles aplicar: nada cambia solo. Los productos con variantes no se tocan desde acá.</div>
+        <div class="field"><label class="f-label">Margen que quiero ganar sobre el precio de venta (%)</label><input class="f-in" id="an-margen-obj" type="number" min="1" max="95" value="30" oninput="anRenderPrecios()"></div>
+        <div id="an-precios-resumen"></div>
+        <div id="an-precios-lista"><div class="empty">Cargando...</div></div>
       </div>
 
       <div class="card">
@@ -1432,7 +1544,7 @@
 
 <!-- NAV INFERIOR (solo visible en móvil via CSS) -->
 <div class="nav" id="main-nav">
-  <button class="nav-btn on" onclick="goTab('home',this)">
+  <button class="nav-btn on" onclick="goTab('resumen',this)">
     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
   </button>
   <button class="nav-btn" onclick="goTab('sell',this)">
@@ -1579,6 +1691,16 @@
     <div class="field"><label class="f-label">Motivo (opcional)</label><input class="f-in" id="anu-motivo" placeholder="Ej: Se equivocó de modelo"></div>
     <button class="btn btn-red" id="btn-anu-confirmar" onclick="confirmarAnulacion()">Confirmar</button>
     <button class="btn btn-ghost" onclick="cerrarModalAnular()">Cancelar</button>
+  </div>
+</div>
+<div class="modal-bg" id="modal-pin">
+  <div class="modal-box" style="max-width:320px; text-align:left;">
+    <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px;">🔒 PIN de seguridad</div>
+    <div style="font-size:12px; color:var(--text2); margin-bottom:12px;">Ingresá tu PIN para <b id="pin-motivo">continuar</b>.</div>
+    <input class="f-in" id="pin-input" type="password" inputmode="numeric" maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter') confirmarPin()">
+    <div id="pin-error" style="font-size:11px; color:var(--red); min-height:16px; margin:6px 0;"></div>
+    <button class="btn btn-blue" onclick="confirmarPin()">Confirmar</button>
+    <button class="btn btn-ghost" onclick="cancelarPin()">Cancelar</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1782,11 +1904,13 @@ function toast(msg, tipo='ok'){
   }, 2800);
 }
 function goTab(id, el){
+  if (typeof VENDEDOR !== 'undefined' && VENDEDOR && id !== 'sell') return; // en modo vendedor solo existe Vender
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('on'));
   const tab = $('tab-'+id); if(tab) tab.classList.add('on');
   if (id === 'analisis') { try { renderAnalisis(); } catch(e) { console.error('Análisis:', e); } }
+  if (id === 'resumen') { try { renderResumen(); } catch(e) { console.error('Resumen:', e); } }
   if(el) el.classList.add('on');
   // Sincronizar sidebar item correspondiente
   const sbItem = $('sb-'+id); if(sbItem) sbItem.classList.add('on');
@@ -2099,8 +2223,9 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 //    lote, así nunca se lee un dato viejo después de escribir.
 // ================================================================
 let _GET_CACHE = null;      // Map rango -> filas (vale solo durante una carga completa)
+let _CACHE_VER = 0;         // sube con cada escritura: un lote leído ANTES de una escritura se descarta
 let _TITULOS_HOJAS = null;  // Set con los nombres de hojas que existen en la planilla
-const RANGOS_PREFETCH = ['Productos!A2:G','Entradas!A2:G','Salidas!A2:M','SalidasHistorial!A2:M','AJUSTES!A2:D','CuentasCorrientes!A2:F','Caja!A2:G','Directorio!A2:D','PasivosPersonales!A2:I','Garantias!A2:O','Combos!A2:E','SeguimientoClientes!A2:D','Turnos!A2:G','Variantes!A2:E','CajaUSD!A2:F','CapitalMovimientos!A2:F','Config!A2:B','Salidas!A2:P','CuentasProveedores!A2:G'];
+const RANGOS_PREFETCH = ['Productos!A2:G','Entradas!A2:G','Salidas!A2:M','SalidasHistorial!A2:M','AJUSTES!A2:D','CuentasCorrientes!A2:F','Caja!A2:G','Directorio!A2:D','PasivosPersonales!A2:I','Garantias!A2:O','Combos!A2:E','SeguimientoClientes!A2:D','Turnos!A2:G','Variantes!A2:E','CajaUSD!A2:F','CapitalMovimientos!A2:F','Config!A2:B','Salidas!A2:P','CuentasProveedores!A2:G','Promociones!A2:K','Tareas!A2:E','Salidas!A2:Q'];
 
 function sesionVencida(){
   try { localStorage.removeItem('jt_token'); localStorage.removeItem('jt_expiry'); } catch(e) {}
@@ -2124,8 +2249,9 @@ function reconectarSesion(){
 }
 const ERR_SESION = 'Tu sesión de Google venció. Tocá "Reconectar" (arriba) y repetí la operación.';
 
-async function get(range){
-  if (_GET_CACHE && _GET_CACHE.has(range)) return _GET_CACHE.get(range);
+async function get(range, sinCache){
+  // sinCache=true: siempre lee de la planilla (para decidir sobre datos que se van a modificar).
+  if (!sinCache && _GET_CACHE && _GET_CACHE.has(range)) return _GET_CACHE.get(range);
   let r;
   try { r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueRenderOption=UNFORMATTED_VALUE', { headers:{ 'Authorization':'Bearer '+accessToken } }); }
   catch(e) { throw new Error('Sin conexión con Google Sheets'); }
@@ -2138,7 +2264,7 @@ async function get(range){
   try { const data = await r.json(); return data.values || []; } catch(e) { return []; }
 }
 async function append(range,values){
-  _GET_CACHE = null;
+  _GET_CACHE = null; _CACHE_VER++;
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { method:'POST', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) });
   if (r.status === 401) { sesionVencida(); throw new Error(ERR_SESION); }
   if (!r.ok) {
@@ -2148,7 +2274,7 @@ async function append(range,values){
   }
 }
 async function updateCell(range,values){
-  _GET_CACHE = null;
+  _GET_CACHE = null; _CACHE_VER++;
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { method:'PUT', headers:{ Authorization:'Bearer '+accessToken,'Content-Type':'application/json' }, body:JSON.stringify({values}) });
   if (r.status === 401) { sesionVencida(); throw new Error(ERR_SESION); }
   if (!r.ok) throw new Error('No se pudo actualizar "'+range+'" (código '+r.status+')');
@@ -2169,6 +2295,7 @@ async function cargarTitulosHojas(forzar){
 // sesión), simplemente no hay lote y todo sigue funcionando hoja por hoja, como antes.
 async function prefetchHojas(){
   _GET_CACHE = null;
+  const verInicio = _CACHE_VER;
   let titulos;
   try { titulos = await cargarTitulosHojas(); }
   catch(e) { if (e.message === ERR_SESION) throw e; return; }
@@ -2184,7 +2311,8 @@ async function prefetchHojas(){
     (data.valueRanges || []).forEach((vr, i) => m.set(existentes[i], vr.values || []));
     // Hojas que todavía no existen: el resultado de siempre era [] — se replica.
     RANGOS_PREFETCH.forEach(rg => { if (!m.has(rg) && !titulos.has(rg.split('!')[0])) m.set(rg, []); });
-    if (m.size) _GET_CACHE = m;
+    // Si hubo una escritura mientras se leía, ese lote ya es viejo: se descarta (se lee hoja por hoja, fresco).
+    if (m.size && verInicio === _CACHE_VER) _GET_CACHE = m;
   } catch(e) { if (e.message === ERR_SESION) throw e; _GET_CACHE = null; }
 }
 // ================================================================
@@ -2853,7 +2981,7 @@ async function guardarUmbralProducto(fila, valor) {
 function renderAlertasStock() {
   const box = $('home-alertas'), countEl = $('alertas-count');
   if (!box) return;
-  const bajos = (DB.todo || []).filter(p => p.stock <= p.umbral).sort((a,b) => a.stock - b.stock);
+  const bajos = (DB.todo || []).filter(p => !p.tieneVariantes && p.stock <= p.umbral).sort((a,b) => a.stock - b.stock);
   if (countEl) countEl.textContent = bajos.length;
   if (!bajos.length) { box.innerHTML = '<div class="empty" style="font-size:12px;">Todo el stock está por encima de su umbral. 👍</div>'; return; }
   let html = '';
@@ -2873,6 +3001,7 @@ async function _cargarTodoReal(){
   try{
     await prefetchHojas();
     await cargarConfigUmbral();
+    try { await cargarConfigPin(); } catch(e) { console.error('PIN:', e); }
     const pRows = await get('Productos!A2:G');
     const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2, umbral: (r[6]!==undefined && str(r[6])!=='') ? num(r[6]) : null}; });
 
@@ -3097,6 +3226,9 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
        DB.directorio.forEach(c => { const o = document.createElement('option'); o.value = c; cliLista.appendChild(o); });
     }
 
+    // Las variantes se resuelven ANTES de armar listas, catálogo y alertas: cada producto con variantes
+    // se ve como UN solo producto (con su stock total) y las variantes se eligen adentro.
+    try { await cargarVariantes(); } catch(e) { console.error('Variantes:', e); }
     poblarListas();
     renderCatalogo(); // Rellena el catálogo de Stock
     renderAlertasStock();
@@ -3108,21 +3240,24 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     try { await cargarTurnos(); } catch(e) { console.error('Turnos y retiros: no se pudo cargar', e); }
     try { await cargarProveedores(); } catch(e) { console.error('Proveedores: no se pudo cargar', e); }
     try { await cargarVentasRecientes(); } catch(e) { console.error('Ventas recientes: no se pudo cargar', e); }
+    try { await cargarPromociones(); } catch(e) { console.error('Promociones: no se pudo cargar', e); }
+    try { await cargarTareas(); } catch(e) { console.error('Tareas: no se pudo cargar', e); }
     try { renderHomeHeader(); } catch(e) { console.error('Header de Home: no se pudo armar', e); }
     try { calcularTendenciaGanancia(sRows, sRowsHist); } catch(e) { console.error('Tendencia:', e); }
 
     setText('h-hora', new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
     try { actualizarTabsNuevos(); } catch(e) { console.error('Tabs nuevos:', e); }
-    try { await cargarVariantes(); } catch(e) { console.error('Variantes:', e); }
     // Reenmascarar DESPUÉS de que todo el DOM se actualizó
     if(typeof NUMS_OCULTOS !== 'undefined' && NUMS_OCULTOS) {
       setTimeout(() => { try { aplicarEstadoNums(); } catch(e) {} }, 100);
     }
     toast('✓ Datos actualizados');
   }catch(e){ toast('Error: '+e.message,'err'); }
+  // El análisis se calcula acá con el lote de lectura (0 llamadas extra a Google) y alimenta Resumen y Análisis.
+  try { await anCargarDatos(true); } catch(e) { AN_DATA = null; }
   _GET_CACHE = null;
-  AN_DATA = null; // el análisis se vuelve a calcular con los datos frescos
   try { const ta = $('tab-analisis'); if (ta && ta.classList.contains('on')) renderAnalisis(); } catch(e) {}
+  try { renderResumen(); } catch(e) { console.error('Resumen:', e); }
   if(btn) { btn.classList.remove('loading'); btn.textContent='↻ Sync'; }
 }
 
@@ -3145,7 +3280,7 @@ function poblarListas(){
   const vl=$('v-lista'); const el=$('e-lista'); const ccl=$('combo-comp-lista');
   if(vl) vl.innerHTML=''; if(el) el.innerHTML=''; if(ccl) ccl.innerHTML='';
   DB.prods.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(vl) vl.appendChild(o); });
-  DB.todo.forEach(p => { const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); if(ccl) ccl.appendChild(o.cloneNode(true)); });
+  DB.todo.forEach(p => { if (p.esVariante) return; const o=document.createElement('option'); o.value=p.nombre; if(el) el.appendChild(o.cloneNode(true)); if(ccl) ccl.appendChild(o.cloneNode(true)); });
   poblarListasGarantia();
   poblarListaCambio();
 }
@@ -3155,6 +3290,7 @@ function renderCatalogo(){
    const div = $('cat-lista'); if(!div) return;
    let html = '';
    DB.todo.forEach(p => {
+       if (p.esVariante) return;
        let badge;
        if (p.stock > p.umbral) badge = `<span class="pill" style="background:#39d35315;color:var(--success);border:1px solid #39d35330;">OK</span>`;
        else if (p.stock > 0) badge = `<span class="pill" style="background:var(--danger-soft-bg);color:var(--danger);border:1px solid var(--danger-soft-border);">Bajo ⚠</span>`;
@@ -3176,6 +3312,7 @@ function renderCatalogo(){
          </summary>
          <div style="padding-top:8px; font-size:var(--fs-xs); color:var(--text2);">
            SKU: ${p.sku} | 🕒 Último mov: ${p.ultimoMov}
+           ${p.tieneVariantes ? '<div style="margin-top:6px;line-height:1.6;">' + p.variantes.map(v => escHTML(v.variante) + ': <b>' + (v.stock || 0) + ' u.</b>').join(' · ') + '</div>' : ''}
            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;">${umbralTag} <input class="f-in" type="number" min="0" value="${p.umbralPropio !== null ? p.umbralPropio : ''}" placeholder="${UMBRAL_GLOBAL_DEFAULT}" style="width:50px;padding:2px 5px;font-size:10px;height:20px;" onclick="event.stopPropagation()" onchange="guardarUmbralProducto(${p.fila}, this.value)"></div>
          </div>
        </details>`;
@@ -3338,6 +3475,7 @@ async function ejecutarTransferencia() {
 
 function selProduct(){
   const vSearch = $('v-search'); if(!vSearch) return;
+  promoLimpiarSel();
   const p=DB.todo.find(x=>x.nombre===vSearch.value); const prev=$('prod-prev');
   if(!p){ if(prev) prev.style.display='none'; currentProd=null; return; }
   currentProd=p;
@@ -3364,6 +3502,7 @@ function selProduct(){
   setText('pp-nombre', p.nombre); setText('pp-stock', p.stock+' u'); setText('pp-mov', '🕒 Último mov: '+p.ultimoMov);
   const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
   if(vPrecio) vPrecio.value = p.precio; if(vPrecioLista) vPrecioLista.value = p.precio;
+  aplicarPromoPrecio(p.nombre, p.precio);
   if(prev) prev.style.display='block';
 }
 
@@ -3403,7 +3542,7 @@ function addToCart(){
 
   if(cant>currentProd.stock && !confirm('! Stock insuficiente ('+currentProd.stock+' u). ¿Agregar igual?')) return;
   
-  cart.push({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : ''), precioUSD, tcUsado});
+  promoAdjuntar({nombre:(vAlias ? vAlias.value.trim() : '')||currentProd.nombre, sysName:currentProd.nombre, sku:currentProd.sku, cant, precio, precioLista, costo:currentProd.costo, garantia:(vGar ? vGar.value : ''), precioUSD, tcUsado});
   
   if(vSearch) vSearch.value=''; if(vPrecio) vPrecio.value=''; if(vPrecioLista) vPrecioLista.value=''; if(vGar) vGar.value=''; if(vAlias) vAlias.value=''; if(vCant) vCant.value='1'; 
   // Restaurar producto padre si había variante
@@ -3428,7 +3567,7 @@ function renderCart(){
     let pTxt = fmt(item.precio);
     if(item.precio < item.precioLista) pTxt = `<span style="text-decoration:line-through; color:var(--text3); font-size:11px; margin-right:4px;">${fmt(item.precioLista)}</span>${fmt(item.precio)}`;
     const usdTag = item.precioUSD ? `<div class="usd-tag">u$s ${item.precioUSD.toLocaleString('en-US',{minimumFractionDigits:2})} — cotización $${item.tcUsado} de ese día</div>` : '';
-    html += `<div class="cart-item-wrap" data-idx="${i}"><div class="cart-item-del-bg">🗑️ Eliminar</div><div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${usdTag}${(item.costo > 0 && item.precio < item.costo) ? `<div style="font-size:10px;color:var(--red);font-weight:700;">⚠ Bajo el costo (${fmt(item.costo)})</div>` : ''}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div></div>`; 
+    html += `<div class="cart-item-wrap" data-idx="${i}"><div class="cart-item-del-bg">🗑️ Eliminar</div><div class="cart-item"><div class="cart-name">${item.cant}x ${item.nombre}${usdTag}${item.promo ? '<div style="font-size:10px;color:var(--orange);font-weight:700;">🏷️ Promo</div>' : ''}${(item.costo > 0 && item.precio < item.costo) ? `<div style="font-size:10px;color:var(--red);font-weight:700;">⚠ Bajo el costo (${fmt(item.costo)})</div>` : ''}</div><span class="cart-price">${pTxt} (x${item.cant})</span><button class="cart-del" onclick="removeCart(${i})">✕</button></div></div>`; 
   });
   div.innerHTML = html; setText('cart-count', cart.length + ' items'); setText('cart-sub', fmt(sub)); calcTotal();
   div.querySelectorAll('.cart-item-wrap').forEach(wrap => {
@@ -3569,7 +3708,9 @@ async function procesarVenta(){
       let msg = '⚠️ ATENCIÓN: esta venta está por debajo del costo.\n\n';
       bajoCosto.slice(0, 6).forEach(i => { msg += '• ' + i.cant + 'x ' + i.nombre + ': cobrás ' + fmt(i.precio) + ' c/u, te cuesta ' + fmt(i.costo) + ' (perdés ' + fmt((i.costo - i.precio) * i.cant) + ')\n'; });
       msg += '\n' + (gananciaNetaVenta < 0 ? 'En total esta venta RESTA ' + fmt(-gananciaNetaVenta) + ' de tu Ganancia Disponible.' : 'En total la venta igual deja ' + fmt(gananciaNetaVenta) + ' de ganancia.') + '\n\n¿Confirmás igual?';
-      if (!confirm(msg)) return;
+      // Vendedor: no se le muestran costos; hace falta el PIN del dueño para vender bajo el costo.
+      if (VENDEDOR) { if (!(await requierePin('autorizar una venta por debajo del costo'))) return; } else if (!confirm(msg)) return;
+      auditar('VENTA_BAJO_COSTO', 'Cliente ' + cli + ' · ' + bajoCosto.map(i => i.cant + 'x ' + i.nombre + ' a ' + fmt(i.precio) + ' (costo ' + fmt(i.costo) + ')').join(' · ') + ' · Resultado de la venta: ' + fmt(gananciaNetaVenta), '');
     }
   }
   
@@ -3597,7 +3738,7 @@ async function procesarVenta(){
   setBtn('btn-vender',true,'');
   
   try{
-    const fecha = new Date(); const id = '#'+fecha.getDate().toString().padStart(2,'0')+(fecha.getMonth()+1).toString().padStart(2,'0')+fecha.getHours().toString().padStart(2,'0')+fecha.getMinutes().toString().padStart(2,'0')+fecha.getSeconds().toString().padStart(2,'0');
+    const fecha = new Date(); const id = nuevoIdTicket();
     const fechaStr = fecha.toLocaleDateString('es-AR')+' '+fecha.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
     
     // Todas las líneas de la venta se escriben JUNTAS (1 viaje a Google en vez de 1 por producto).
@@ -3606,17 +3747,12 @@ async function procesarVenta(){
       const item = cart[i]; 
       const descuentoProporcional = sub > 0 ? desc * ((item.cant * item.precio) / sub) : 0;
       const subNeto = (item.cant * item.precio) - descuentoProporcional;
-      filasSalidas.push([item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-', item.precioUSD || '', item.tcUsado || '', id]);
+      filasSalidas.push([item.sysName, item.sku||'-', item.cant, item.precio, subNeto, fechaStr, metodo, item.costo*item.cant, '', cli, Math.round(descuentoProporcional), i===0 ? descMot : '-', item.garantia||'-', item.precioUSD || '', item.tcUsado || '', id, item.promo || '']);
       // --- MÓDULO CAPITAL (aditivo): recupero de costo al vender ---
       // Referencia = ticket + índice de línea, siempre única por ítem vendido.
       movsCapital.push({ evento:'RECUPERO_COSTO', monto:item.costo*item.cant, referencia:id+'-'+i, observaciones:'Recupero de costo — Ticket '+id+' línea '+i+' ('+item.sysName+')' });
     }
-    try { await append('Salidas!A:P', filasSalidas); }
-    catch (eP) {
-      // Red de seguridad: si la hoja Salidas no tuviera la columna P (ticket), la venta se guarda igual, como siempre.
-      if (/grid|exceed|range|column/i.test(String(eP.message))) await append('Salidas!A:O', filasSalidas.map(f => f.slice(0, 15)));
-      else throw eP;
-    }
+    await appendSalidas(filasSalidas);
     // El pago (Caja / Cuenta Corriente) y el registro de Capital no dependen entre sí: van en paralelo.
     const promesaCapital = registrarMovimientosCapitalLote(movsCapital);
     
@@ -3756,6 +3892,7 @@ function cerrarModalCapital() {
 }
 
 async function sincronizarCapital() {
+  if (!(await requierePin('inicializar el Ledger de Capital'))) return;
   setBtn('btn-mc-sync', true, '');
   try {
     await _capitalCargarEstado(true); // fuerza una lectura fresca antes de decidir
@@ -3830,9 +3967,11 @@ async function aplicarCorreccionManualCapital() {
   const signo = monto > 0 ? '+' : '';
   if (!confirm('¿Confirmás aplicar '+signo+fmt(monto)+' al Ledger de Capital?\n\nMotivo: '+motivo+'\n\nEsto NO toca Caja ni Ganancia — solo corrige el número de Capital.')) return;
 
+  if (!(await requierePin('corregir el Capital'))) return;
   try {
     const ref = 'CORR-MANUAL-'+Date.now();
     await registrarMovimientoCapital('CORRECCION_MANUAL', monto, ref, motivo);
+    auditar('CORRECCION_CAPITAL', (monto > 0 ? '+' : '') + monto + ' · ' + motivo, ref);
     // Misma verificación forzada que usa sincronizarCapital: confirma contra la
     // planilla real antes de decir que salió bien.
     await _capitalCargarEstado(true);
@@ -4247,7 +4386,8 @@ function poblarListasGarantia() {
   (DB.todo || []).forEach(p => {
     if (lF) { const o = document.createElement('option'); o.value = p.nombre; lF.appendChild(o); }
   });
-  (DB.prods || []).forEach(p => {
+  // El repuesto tiene que ser un producto real con stock (para una variante, la variante puntual).
+  (DB.todo || []).filter(p => p.stock > 0 && !p.tieneVariantes).forEach(p => {
     if (lR) { const o = document.createElement('option'); o.value = p.nombre; lR.appendChild(o); }
   });
 }
@@ -4620,7 +4760,19 @@ function calcularPrecios() {
 // FIN MÓDULO CALCULADORA DE PRECIOS
 // ================================================================
 
-function selEntrada(){ const eSearch=$('e-prod'); if(!eSearch) return; const p = DB.todo.find(x => x.nombre===eSearch.value); const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo; }
+function selEntrada(){
+  const eSearch=$('e-prod'); if(!eSearch) return;
+  const p = DB.todo.find(x => x.nombre===eSearch.value);
+  const eCosto=$('e-costo'); if(p && eCosto) eCosto.value=p.costo;
+  // Producto con variantes: se elige la variante dentro del mismo formulario.
+  const row=$('e-variante-row'), sel=$('e-variante');
+  if (row && sel) {
+    if (p && p.tieneVariantes) {
+      sel.innerHTML = '<option value="">— Elegí una variante —</option>' + p.variantes.map(v => `<option value="${escHTML(v.variante)}">${escHTML(v.variante)} (${v.stock || 0} u.)</option>`).join('');
+      row.style.display = 'block';
+    } else { row.style.display = 'none'; sel.innerHTML = '<option value="">— Elegí una variante —</option>'; }
+  }
+}
 
 // ================================================================
 // MÓDULO COMBOS (aditivo)
@@ -4723,6 +4875,8 @@ async function guardarCombo() {
   const precioTotal = parseFloat(($('combo-precio-total').value || '').toString().replace(',', '.')) || 0;
   if (!nombre) { toast('Falta el nombre del combo', 'err'); return; }
   if (precioTotal <= 0) { toast('Falta el precio total del combo', 'err'); return; }
+  const vig = comboLeerVigencia();
+  if (vig === false) return;
 
   setBtn('btn-guardar-combo', true, '');
   try {
@@ -4732,10 +4886,12 @@ async function guardarCombo() {
     // Editar = guardar la versión nueva y recién después marcar la vieja como eliminada
     // (si algo falla en el medio, queda duplicado en vez de perderse el combo).
     const editando = COMBO_EDITANDO;
+    if (editando) auditar('EDITAR_COMBO', nombre + ' → $' + precioTotal + ' (' + comboCart.map(i => i.cantidad + 'x ' + i.nombre).join(' + ') + ')', editando);
     if (editando) { await append('Combos!A:E', [[editando, nombre, '__ELIMINADO__', 0, 0]]); COMBO_EDITANDO = null; const bc = $('btn-combo-cancelar'); if (bc) bc.style.display = 'none'; }
+    await comboGuardarVigencia(idCombo, editando, nombre, vig);
     toast(editando ? '✓ Combo actualizado' : '✓ Combo guardado');
     comboCart = []; renderComboCompItems();
-    $('combo-nombre').value = ''; $('combo-precio-total').value = '';
+    $('combo-nombre').value = ''; $('combo-precio-total').value = ''; comboLimpiarVigencia();
     await cargarTodo();
   } catch (e) { toast('Error: ' + e.message, 'err'); }
   setBtn('btn-guardar-combo', false, COMBO_EDITANDO ? '💾 Guardar cambios' : '💾 Guardar Combo');
@@ -4746,7 +4902,7 @@ function selCombo() {
   const inp = $('combo-search'), prev = $('combo-prev');
   if (!inp) return;
   const c = Object.values(DB.combos || {}).find(x => x.nombre === inp.value);
-  if (!c) { if (prev) prev.style.display = 'none'; currentCombo = null; return; }
+  if (!c) { if (prev) prev.style.display = 'none'; currentCombo = null; const vb = $('combo-variantes-box'); if (vb) vb.innerHTML = ''; return; }
   currentCombo = c;
   setText('combo-prev-nombre', c.nombre);
   setText('combo-prev-stock', (c.valido ? c.stockDisponible : '0') + ' combo(s)');
@@ -4757,10 +4913,12 @@ function selCombo() {
     if (!c.valido) {
       compDiv.innerHTML = '<span style="color:var(--red)">⚠️ Alguno de los componentes de este combo ya no está en el catálogo — no se puede vender.</span>';
     } else {
-      compDiv.innerHTML = c.componentes.map(comp => `• ${comp.cantidad}x ${comp.nombre}`).join('<br>');
+      compDiv.innerHTML = c.componentes.map(comp => { const pv = DB.todo.find(p => p.nombre === comp.nombre); return `• ${comp.cantidad}x ${comp.nombre}${pv && pv.tieneVariantes ? ' <span style="color:var(--purple)">(elegís el sabor de cada uno abajo)</span>' : ''}`; }).join('<br>');
     }
   }
   if (prev) prev.style.display = 'block';
+  comboRenderPickers();
+  comboMostrarVigencia();
 }
 
 function agregarComboAlCarrito() {
@@ -4769,16 +4927,36 @@ function agregarComboAlCarrito() {
   const cantInp = $('combo-cant');
   const cantCombos = parseInt(cantInp ? cantInp.value : 1, 10) || 1;
   if (cantCombos <= 0) { toast('Cantidad inválida', 'err'); return; }
+  // Vigencia y cupo: si el combo tiene promoción, solo se vende dentro de fechas y mientras quede cupo.
+  const infoVig = comboPromoInfo(currentCombo);
+  if (infoVig.tiene && !infoVig.activa) { toast('Este combo no está vigente: ' + infoVig.motivo, 'err'); return; }
+  if (infoVig.activa) { const restCombo = promoRestante(infoVig.activa); if (cantCombos > restCombo) { toast('Solo quedan ' + restCombo + ' combo(s) en promo', 'err'); return; } }
+  const largoAntes = cart.length;
 
   if (cantCombos > currentCombo.stockDisponible && !confirm('! Stock insuficiente para ' + cantCombos + ' combo(s) (alcanza para ' + currentCombo.stockDisponible + '). ¿Agregar igual?')) return;
 
-  currentCombo.componentes.forEach(comp => {
+  // Componentes con variantes (ej: "2 ElfBar IceKing" de cualquier sabor): hay que haber elegido cada uno.
+  {
+    const selsC = Array.from(document.querySelectorAll('#combo-variantes-box select.combo-var-sel'));
+    if (selsC.some(x => !x.value)) { toast('Elegí la variante de cada unidad del combo', 'err'); return; }
+    const faltantes = [];
+    currentCombo.componentes.forEach((comp, ci) => {
+      const pv = DB.todo.find(p => p.nombre === comp.nombre);
+      if (!pv || !pv.tieneVariantes) return;
+      const cu = {}; selsC.filter(x => +x.dataset.comp === ci).forEach(x => { cu[x.value] = (cu[x.value] || 0) + 1; });
+      Object.keys(cu).forEach(vn => { const v = pv.variantes.find(y => y.variante === vn); if (v && cu[vn] > (v.stock || 0)) faltantes.push(pv.nombre + ' - ' + vn + ': pedís ' + cu[vn] + ', hay ' + (v.stock || 0)); });
+    });
+    if (faltantes.length && !confirm('! Stock insuficiente:\n' + faltantes.join('\n') + '\n¿Agregar igual?')) return;
+  }
+
+  currentCombo.componentes.forEach((comp, ci) => {
     const prod = DB.todo.find(p => p.nombre === comp.nombre);
     if (!prod) return; // ya validado por currentCombo.valido, pero por las dudas
     const peso = currentCombo.sumaLista > 0 ? ((prod.precio || 0) * comp.cantidad) / currentCombo.sumaLista : 0;
     const montoAsignadoPorCombo = peso * currentCombo.precioTotal; // $ que le toca a este componente en UN combo
     const precioUnitarioProrrateado = Math.round(montoAsignadoPorCombo / comp.cantidad);
     const cantidadTotal = comp.cantidad * cantCombos;
+    if (prod.tieneVariantes) { comboPushVariantes(prod, ci, precioUnitarioProrrateado); return; }
     cart.push({
       nombre: prod.nombre + ' [combo: ' + currentCombo.nombre + ']',
       sysName: prod.nombre,
@@ -4793,11 +4971,13 @@ function agregarComboAlCarrito() {
     });
   });
 
+  if (infoVig.activa) for (let k = largoAntes; k < cart.length; k++) cart[k].promo = infoVig.activa.id;
   toast('✓ Combo agregado al carrito');
   const searchInp = $('combo-search'); if (searchInp) searchInp.value = '';
   if (cantInp) cantInp.value = '1';
   const prev = $('combo-prev'); if (prev) prev.style.display = 'none';
   currentCombo = null;
+  comboRenderPickers();
   renderCart();
   pulsoConfirmacionCarrito();
 }
@@ -4833,7 +5013,7 @@ async function cargarSeguimientos() {
   rows.forEach(r => {
     if (!r[0]) return;
     const persona = str(r[0]).toUpperCase();
-    map[persona] = { fechaContactar: str(r[1]), nota: str(r[2]) }; // la última fila de cada persona pisa a las anteriores
+    map[persona] = { fechaContactar: promoIso(r[1]), nota: str(r[2]) }; // la última fila de cada persona pisa a las anteriores
   });
   DB.seguimientos = map;
   renderSeguimientosHome();
@@ -5084,7 +5264,7 @@ function renderHomeHeader() {
   }
   if (subEl) {
     const partes = [];
-    const bajos = (DB.todo || []).filter(p => p.stock <= p.umbral).length;
+    const bajos = (DB.todo || []).filter(p => !p.tieneVariantes && p.stock <= p.umbral).length;
     if (bajos > 0) partes.push(bajos + (bajos === 1 ? ' alerta de stock' : ' alertas de stock'));
     const proximoTurno = Object.values(DB.turnos || {})
       .filter(t => t.estado === 'PENDIENTE' && t.fechaHora)
@@ -5170,7 +5350,13 @@ function previewEntradaImpacto() {
 function addEntrada(){ 
   const eP=$('e-prod'), eC=$('e-cant'), eCo=$('e-costo'), eProv=$('e-prov'), eRate=$('e-rate-val'), eMet=$('e-metodo'); 
   if(!eP||!eC||!eCo) return; 
-  const n=eP.value, c=parseFloat(eC.value)||0, costoIngresado=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-', metodo=eMet?eMet.value:'NINGUNA'; 
+  let n=eP.value; const c=parseFloat(eC.value)||0, costoIngresado=parseFloat(eCo.value)||0, prov=eProv?eProv.value.trim().toUpperCase()||'-':'-', metodo=eMet?eMet.value:'NINGUNA'; 
+  const prodSel = DB.todo.find(x => x.nombre === n);
+  if (prodSel && prodSel.tieneVariantes) {
+    const vSel = $('e-variante') ? $('e-variante').value : '';
+    if (!vSel) { toast('Este producto tiene variantes: elegí cuál', 'err'); return; }
+    n = prodSel.nombre + ' - ' + vSel.toUpperCase(); // mismo nombre compuesto que ya usa todo el sistema
+  }
   if(!n||c<=0) return; 
 
   let co = costoIngresado, costoUSD = null, tcUsado = null;
@@ -5193,6 +5379,7 @@ function addEntrada(){
   }
   entradaCart.push({nombre:n, cant:c, costo:co, metodo, prov:prov, costoUSD, tcUsado, pagoReal, deuda}); 
   eP.value=''; eC.value=''; eCo.value=''; if(eProv) eProv.value='';
+  if($('e-variante-row')) { $('e-variante-row').style.display='none'; $('e-variante').innerHTML='<option value="">— Elegí una variante —</option>'; }
   if($('e-pago-real')) $('e-pago-real').value=''; if($('e-deuda-tipo')) $('e-deuda-tipo').value='NO'; if($('e-deuda-monto')) $('e-deuda-monto').value=''; entradaActualizarDeuda(); 
   if (typeof previewEntradaImpacto === 'function') previewEntradaImpacto(); 
   renderEntrada(); 
@@ -5354,8 +5541,12 @@ async function cargarVariantes() {
       prod.tieneVariantes = true;
       prod.variantes = DB_VARIANTES[padre];
       prod.stock = DB_VARIANTES[padre].reduce((s, v) => s + (v.stock || 0), 0);
+      // Marca cada "PADRE - VARIANTE" como hijo, para no mostrarlo como producto suelto.
+      DB_VARIANTES[padre].forEach(v => { const hijo = DB.todo.find(p => p.nombre === v.nombreCompleto); if (hijo) { hijo.esVariante = true; hijo.padre = padre; } });
     }
   });
+  // Productos vendibles (con stock): los hijos no van sueltos, van adentro de su producto.
+  DB.prods = DB.todo.filter(p => p.stock > 0 && !p.esVariante);
 }
 
 // Crear una variante nueva
@@ -5441,6 +5632,7 @@ function selVariante() {
   const vPrecio = $('v-precio'), vPrecioLista = $('v-precio-lista');
   if(vPrecio) vPrecio.value = precio;
   if(vPrecioLista) vPrecioLista.value = precio;
+  aplicarPromoPrecio(currentProd.nombre, precio);
 
   // Guardar variante seleccionada en currentProd para que addToCart la use
   currentProd._varSeleccionada = varData;
@@ -6213,6 +6405,787 @@ try { wspSetMoneda('ARS'); } catch(e) {}
 try { wspRenderFilas(); } catch(e) {}
 
 // ================================================================
+// MÓDULO REVISIÓN DE PRECIOS POR MARGEN (aditivo)
+// ----------------------------------------------------------------
+// Compara el margen actual de cada producto (precio − costo) / precio contra el margen que querés.
+// El costo es el vigente en el sistema (el de la última compra). Si el margen quedó bajo, sugiere el
+// precio que lo corrige. Aplicar un precio escribe SOLO la columna Precio de ese producto en
+// "Productos" (nada de stock, costos ni caja). Siempre lo decidís vos, producto por producto.
+// ================================================================
+function anPrecios(prods, objetivoPct) {
+  const out = [];
+  (prods || []).forEach(p => {
+    if (p.tieneVariantes || p.esVariante || !(p.costo > 0) || !(p.precio > 0)) return;
+    const margen = (p.precio - p.costo) / p.precio * 100;
+    if (margen >= objetivoPct - 0.5) return;
+    const sugerido = anRedondearPrecio(p.costo / (1 - objetivoPct / 100));
+    if (sugerido <= p.precio) return;
+    out.push({ nombre: p.nombre, fila: p.fila, stock: p.stock, costo: p.costo, precio: p.precio, margen, sugerido, margenNuevo: (sugerido - p.costo) / sugerido * 100 });
+  });
+  return out.sort((a, b) => a.margen - b.margen);
+}
+function anRenderPrecios() {
+  const box = $('an-precios-lista');
+  if (!box) return;
+  const obj = Math.min(95, Math.max(1, parseFloat($('an-margen-obj') ? $('an-margen-obj').value : 30) || 30));
+  const lista = anPrecios(DB.todo, obj);
+  setHTML('an-precios-resumen', lista.length ? `<div style="font-size:12px;background:var(--s2);border-radius:8px;padding:10px;margin-bottom:10px;line-height:1.5;"><b>${lista.length}</b> producto(s) con margen menor a ${obj}%. <button class="btn btn-ghost" style="margin:8px 0 0;padding:7px;font-size:11px;" onclick="aplicarTodosPrecios()">Aplicar los ${lista.length} precios sugeridos</button></div>` : '');
+  if (!lista.length) { box.innerHTML = `<div class="empty">Todos tus productos rinden al menos ${obj}% de margen. 👍</div>`; return; }
+  box.innerHTML = lista.slice(0, 40).map(x => `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.5;"><b style="color:var(--text)">${anNombre(x.nombre)}</b><br><span style="font-size:10px;color:var(--text3);">Costo ${fmt(x.costo)} · precio ${fmt(x.precio)} · margen <span style="color:${x.margen < 10 ? 'var(--red)' : 'var(--orange)'}">${x.margen.toFixed(0)}%</span></span><br><span style="font-size:11px;color:var(--green);">Sugerido ${fmt(x.sugerido)} → margen ${x.margenNuevo.toFixed(0)}%</span></span><button class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:11px;width:auto;flex-shrink:0;" onclick="aplicarPrecioSugerido('${escJS(x.nombre)}')">Aplicar</button></div>`).join('');
+}
+async function _escribirPrecio(x) { await updateCell(`Productos!F${x.fila}`, [[x.sugerido]]); }
+async function aplicarPrecioSugerido(nombre) {
+  const obj = parseFloat($('an-margen-obj').value) || 30;
+  const x = anPrecios(DB.todo, obj).find(y => y.nombre === nombre);
+  if (!x) return;
+  if (!confirm('Cambiar el precio de "' + x.nombre + '" de ' + fmt(x.precio) + ' a ' + fmt(x.sugerido) + '?')) return;
+  try {
+    await _escribirPrecio(x);
+    auditar('PRECIO', x.nombre + ': ' + fmt(x.precio) + ' → ' + fmt(x.sugerido) + ' (margen ' + x.margen.toFixed(0) + '% → ' + x.margenNuevo.toFixed(0) + '%)', '');
+    toast('✓ Precio actualizado');
+    await cargarTodo();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+async function aplicarTodosPrecios() {
+  const obj = parseFloat($('an-margen-obj').value) || 30;
+  const lista = anPrecios(DB.todo, obj);
+  if (!lista.length) return;
+  if (!confirm('Vas a cambiar el precio de ' + lista.length + ' producto(s) al sugerido para ganar ' + obj + '%.\n\n' + lista.slice(0, 8).map(x => x.nombre + ': ' + fmt(x.precio) + ' → ' + fmt(x.sugerido)).join('\n') + (lista.length > 8 ? '\n…y ' + (lista.length - 8) + ' más' : '') + '\n\n¿Aplicar?')) return;
+  try {
+    for (const x of lista) await _escribirPrecio(x);
+    auditar('PRECIOS_MASIVO', lista.length + ' precios ajustados a margen ' + obj + '%: ' + lista.slice(0, 10).map(x => x.nombre + ' ' + fmt(x.precio) + '→' + fmt(x.sugerido)).join(', '), '');
+    toast('✓ ' + lista.length + ' precios actualizados');
+    await cargarTodo();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+// ================================================================
+// FIN MÓDULO REVISIÓN DE PRECIOS
+// ================================================================
+
+// ================================================================
+// MÓDULO MODO VENDEDOR (aditivo)
+// ----------------------------------------------------------------
+// Se activa en UN dispositivo (queda guardado en ese navegador): solo existe la pantalla Vender, no
+// se ven costos ni ganancias, y anular/devolver o vender bajo el costo piden TU PIN todas las veces.
+// Salir del modo también pide el PIN. Cada acción sensible queda en Auditoría con el nombre del vendedor.
+// OJO: es un orden de pantalla, no una barrera de seguridad total: quien tenga acceso de edición a la
+// planilla de Google puede abrirla directamente.
+// ================================================================
+let VENDEDOR = '';
+function cargarModoVendedor() {
+  try { VENDEDOR = localStorage.getItem('jt_vendedor') || ''; } catch(e) { VENDEDOR = ''; }
+  aplicarModoVendedor();
+}
+function aplicarModoVendedor() {
+  document.body.classList.toggle('modo-vendedor', !!VENDEDOR);
+  const bar = $('vend-barra');
+  if (bar) { bar.style.display = VENDEDOR ? 'flex' : 'none'; setText('vend-nombre', VENDEDOR); }
+  document.querySelectorAll('#sidebar .sb-item').forEach(b => { b.style.display = (VENDEDOR && b.id !== 'sb-sell') ? 'none' : ''; });
+  document.querySelectorAll('#sidebar .sb-group').forEach(g => { g.style.display = (VENDEDOR && !g.querySelector('#sb-sell')) ? 'none' : ''; });
+  document.querySelectorAll('#main-nav .nav-btn').forEach(b => { b.style.display = (VENDEDOR && !/goTab\('sell'/.test(b.getAttribute('onclick') || '')) ? 'none' : ''; });
+  if (VENDEDOR) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('on')); const t = $('tab-sell'); if (t) t.classList.add('on'); const sb = $('sb-sell'); if (sb) sb.classList.add('on'); }
+}
+async function activarModoVendedor() {
+  const nombre = ($('vend-nombre-in').value || '').trim();
+  if (!nombre) { toast('Poné el nombre del vendedor', 'err'); return; }
+  if (!PIN_HASH) { toast('Primero creá un PIN de seguridad (arriba): sin PIN el modo vendedor no protege nada', 'err'); return; }
+  PIN_UNLOCK_UNTIL = 0;
+  if (!(await requierePin('activar el modo vendedor'))) return;
+  try { localStorage.setItem('jt_vendedor', nombre); } catch(e) { toast('Este navegador no permite guardar el modo vendedor', 'err'); return; }
+  VENDEDOR = nombre;
+  auditar('MODO_VENDEDOR', 'Activado para ' + nombre, '');
+  aplicarModoVendedor();
+  toast('✓ Modo vendedor activado para ' + nombre);
+}
+async function salirModoVendedor() {
+  if (!(await requierePin('salir del modo vendedor'))) return;
+  const quien = VENDEDOR;
+  try { localStorage.removeItem('jt_vendedor'); } catch(e) {}
+  VENDEDOR = '';
+  auditar('MODO_VENDEDOR', 'Desactivado (era ' + quien + ')', '');
+  aplicarModoVendedor();
+  goTab('resumen', $('sb-resumen'));
+  toast('✓ Modo vendedor desactivado');
+}
+try { cargarModoVendedor(); } catch(e) { console.error('Modo vendedor:', e); }
+// ================================================================
+// FIN MÓDULO MODO VENDEDOR
+// ================================================================
+
+// ================================================================
+// MÓDULO PROMOCIONES CON FECHA Y CUPO (aditivo)
+// ----------------------------------------------------------------
+// Hoja "Promociones" (se crea sola), append-only: para cambiar o anular una promo se agrega una
+// fila nueva con el mismo ID (la última fila de cada ID es la que vale).
+//   A ID | B Tipo (PRECIO/COMBO) | C Objetivo (producto o ID de combo) | D Modo (PRECIO/PORCENTAJE)
+//   E Valor | F Desde | G Hasta | H Cupo | I Estado (ACTIVA/ANULADA) | J Nota | K Registro
+// "Que me lo respete": el sistema decide solo si una promo está ACTIVA hoy (dentro de fechas y con
+// cupo), la aplica al vender y deja de aplicarla al vencer o agotarse. Cada línea vendida en promo
+// lleva su ID en Salidas (columna Q) para contar el cupo usado (las anulaciones lo descuentan).
+// ================================================================
+const PROMO_COLS = ['ID','Tipo','Objetivo','Modo','Valor','Desde','Hasta','Cupo','Estado','Nota','Registro'];
+let currentPromo = null, PROMO_MODO = 'PRECIO';
+
+function p2(n) { return String(n).padStart(2, '0'); }
+function promoHoy() { const d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); }
+// Google Sheets convierte "2026-10-05" en una fecha real: se lee tanto el texto como el número de fecha.
+function promoIso(v) {
+  if (v === undefined || v === null || v === '') return '';
+  if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 86400000)); return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()); }
+  const t = String(v).trim().replace(/^'/, '');
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0];
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return m[3] + '-' + p2(m[2]) + '-' + p2(m[1]);
+  return '';
+}
+function promoFechaCelda(iso) { return iso ? "'" + iso : ''; }
+function promoDiasHasta(iso) {
+  const [a, m, d] = iso.split('-').map(Number), h = new Date();
+  return Math.round((new Date(a, m - 1, d).getTime() - new Date(h.getFullYear(), h.getMonth(), h.getDate()).getTime()) / 86400000);
+}
+function promoUsados(p) { return (DB.promoUsados || {})[p.id] || 0; }
+
+function promoEstado(p) {
+  if (p.estado === 'ANULADA') return 'ANULADA';
+  const hoy = promoHoy();
+  if (p.desde && hoy < p.desde) return 'PROGRAMADA';
+  if (p.hasta && hoy > p.hasta) return 'VENCIDA';
+  if (p.cupo > 0 && promoUsados(p) >= p.cupo - 0.0001) return 'AGOTADA';
+  return 'ACTIVA';
+}
+function promoEnCarrito(p) {
+  if (p.tipo === 'PRECIO') return cart.filter(i => i.promo === p.id).reduce((a, i) => a + i.cant, 0);
+  const combo = (DB.combos || {})[p.objetivo];
+  if (!combo) return 0;
+  const c0 = combo.componentes[0];
+  return cart.filter(i => i.promo === p.id && (i.sysName === c0.nombre || i.sysName.indexOf(c0.nombre + ' - ') === 0)).reduce((a, i) => a + i.cant, 0) / c0.cantidad;
+}
+function promoRestante(p) { return p.cupo > 0 ? Math.max(0, p.cupo - promoUsados(p) - promoEnCarrito(p)) : Infinity; }
+function promoPrecioFinal(p, base) { return p.modo === 'PORCENTAJE' ? Math.round(base * (1 - p.valor / 100)) : p.valor; }
+
+function mejorPromoPrecio(nombre, base) {
+  let mejor = null;
+  Object.values(DB.promos || {}).forEach(p => {
+    if (p.tipo !== 'PRECIO' || p.objetivo !== nombre || promoEstado(p) !== 'ACTIVA' || promoRestante(p) <= 0) return;
+    const pr = promoPrecioFinal(p, base);
+    if (pr > 0 && pr < base && (!mejor || pr < mejor.precio)) mejor = { promo: p, precio: pr };
+  });
+  return mejor;
+}
+function promoLimpiarSel() { currentPromo = null; const e = $('pp-promo'); if (e) { e.style.display = 'none'; e.textContent = ''; } }
+function aplicarPromoPrecio(nombre, base) {
+  promoLimpiarSel();
+  if (monedaVentaActual === 'USD') return; // las promos son en pesos
+  const m = mejorPromoPrecio(nombre, base);
+  if (!m) return;
+  currentPromo = { id: m.promo.id, precio: m.precio, base };
+  const vP = $('v-precio'), vL = $('v-precio-lista');
+  if (vP) vP.value = m.precio; if (vL) vL.value = base;
+  const rest = promoRestante(m.promo), e = $('pp-promo');
+  if (e) { e.style.display = 'block'; e.textContent = '🏷️ PROMO' + (m.promo.hasta ? ' hasta ' + formatFechaISO(m.promo.hasta) : '') + ': ' + fmt(m.precio) + ' (antes ' + fmt(base) + ')' + (rest !== Infinity ? ' · quedan ' + rest + ' u.' : ''); }
+}
+// Agrega la línea al carrito respetando el cupo: lo que exceda se carga a precio normal.
+function promoAdjuntar(item) {
+  const cp = currentPromo;
+  if (cp && monedaVentaActual === 'ARS' && item.precio === cp.precio) {
+    const p = (DB.promos || {})[cp.id], rest = p ? promoRestante(p) : 0;
+    if (rest >= item.cant) { item.promo = cp.id; cart.push(item); }
+    else if (rest > 0) {
+      cart.push(Object.assign({}, item, { cant: rest, promo: cp.id }));
+      cart.push(Object.assign({}, item, { cant: item.cant - rest, precio: cp.base, precioLista: cp.base }));
+      toast('Solo quedaban ' + rest + ' u. en promo: el resto se cargó a precio normal');
+    } else {
+      cart.push(Object.assign({}, item, { precio: cp.base, precioLista: cp.base }));
+      toast('La promo se agotó: se cargó a precio normal', 'err');
+    }
+  } else cart.push(item);
+  promoLimpiarSel();
+}
+
+// Escritura de Salidas con columnas extra (P = ticket, Q = promo). Si la planilla no las tuviera, se
+// reintenta con menos columnas: una venta nunca se pierde por eso.
+async function appendSalidas(filas) {
+  const esGrid = e => /grid|exceed|range|column/i.test(String(e.message));
+  try { await append('Salidas!A:Q', filas); return; } catch (e) { if (!esGrid(e)) throw e; }
+  try { await append('Salidas!A:P', filas.map(f => f.slice(0, 16))); return; } catch (e) { if (!esGrid(e)) throw e; }
+  await append('Salidas!A:O', filas.map(f => f.slice(0, 15)));
+}
+
+async function cargarPromociones() {
+  await asegurarHoja('Promociones', PROMO_COLS);
+  let rows = []; try { rows = await get('Promociones!A2:K'); } catch(e) {}
+  const promos = {};
+  rows.forEach(r => {
+    if (!r[0]) return;
+    const id = str(r[0]);
+    promos[id] = { id, tipo: str(r[1]).toUpperCase(), objetivo: str(r[2]), modo: str(r[3]).toUpperCase(), valor: num(r[4]), desde: promoIso(r[5]), hasta: promoIso(r[6]), cupo: num(r[7]), estado: str(r[8]).toUpperCase() || 'ACTIVA', nota: str(r[9]) };
+  });
+  DB.promos = promos;
+  // Cupo usado: unidades (PRECIO) o combos (COMBO) vendidos con el ID de la promo, ya neteados por anulaciones.
+  const usados = {};
+  let sal = []; try { sal = await get('Salidas!A2:Q'); } catch(e) {}
+  sal.forEach(r => {
+    const pid = str(r[16]); if (!pid || !promos[pid]) return;
+    const p = promos[pid], nom = str(r[0]), cant = num(r[2]);
+    if (p.tipo === 'PRECIO') { usados[pid] = (usados[pid] || 0) + cant; return; }
+    const combo = (DB.combos || {})[p.objetivo]; if (!combo) return;
+    const c0 = combo.componentes[0];
+    if (nom === c0.nombre || nom.indexOf(c0.nombre + ' - ') === 0) usados[pid] = (usados[pid] || 0) + cant / c0.cantidad;
+  });
+  DB.promoUsados = usados;
+  renderPromos();
+}
+
+function promoSetModo(m) {
+  PROMO_MODO = m;
+  const a = $('promo-modo-precio'), b = $('promo-modo-pct');
+  if (a) a.classList.toggle('on', m === 'PRECIO'); if (b) b.classList.toggle('on', m === 'PORCENTAJE');
+  setText('promo-valor-label', m === 'PRECIO' ? 'Precio promocional ($)' : 'Descuento (%)');
+  const v = $('promo-valor'); if (v) v.placeholder = m === 'PRECIO' ? 'Ej: 2000' : 'Ej: 15';
+}
+
+function promoFila(p, estado) {
+  return [p.id, p.tipo, p.objetivo, p.modo || '', p.valor || '', promoFechaCelda(p.desde), promoFechaCelda(p.hasta), p.cupo || '', estado, p.nota || '', fechaHoraAhora()];
+}
+
+async function crearPromo() {
+  const nombre = ($('promo-prod').value || '').trim();
+  const prod = (DB.todo || []).find(p => p.nombre === nombre && !p.esVariante);
+  if (!prod) { toast('Elegí un producto de la lista', 'err'); return; }
+  const valor = parseFloat(($('promo-valor').value || '').toString().replace(',', '.')) || 0;
+  if (PROMO_MODO === 'PORCENTAJE' ? !(valor > 0 && valor < 100) : !(valor > 0)) { toast(PROMO_MODO === 'PORCENTAJE' ? 'El descuento tiene que estar entre 0 y 100' : 'Poné el precio promocional', 'err'); return; }
+  const desde = $('promo-desde').value || promoHoy(), hasta = $('promo-hasta').value || '';
+  if (hasta && hasta < desde) { toast('La fecha "hasta" no puede ser anterior a "desde"', 'err'); return; }
+  const cupo = parseInt($('promo-cupo').value, 10) || 0;
+  const precioPromo = promoPrecioFinal({ modo: PROMO_MODO, valor }, prod.precio);
+  if (precioPromo >= prod.precio) { toast('La promo tiene que ser más barata que el precio actual (' + fmt(prod.precio) + ')', 'err'); return; }
+  if (prod.costo > 0 && precioPromo < prod.costo && !confirm('⚠️ El precio promocional (' + fmt(precioPromo) + ') está por debajo del costo (' + fmt(prod.costo) + '). Cada venta en promo resta de tu Ganancia. ¿Crear igual?')) return;
+  setBtn('btn-promo-crear', true, '');
+  try {
+    await asegurarHoja('Promociones', PROMO_COLS);
+    const p = { id: 'PROMO-' + Date.now(), tipo: 'PRECIO', objetivo: nombre, modo: PROMO_MODO, valor, desde, hasta, cupo, nota: ($('promo-nota').value || '').trim() };
+    await append('Promociones!A:K', [promoFila(p, 'ACTIVA')]);
+    auditar('PROMO_CREADA', nombre + ' → ' + (PROMO_MODO === 'PRECIO' ? fmt(valor) : valor + '%') + ' · ' + formatFechaISO(desde) + (hasta ? ' a ' + formatFechaISO(hasta) : ' sin fin') + (cupo ? ' · cupo ' + cupo : ''), p.id);
+    toast('✓ Promoción creada');
+    ['promo-prod','promo-valor','promo-desde','promo-hasta','promo-cupo','promo-nota'].forEach(id => { const e = $(id); if (e) e.value = ''; });
+    await cargarPromociones();
+    renderResumen();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+  setBtn('btn-promo-crear', false, '💾 Crear promoción');
+}
+
+async function anularPromo(id) {
+  const p = (DB.promos || {})[id];
+  if (!p) return;
+  if (!confirm('¿Anular esta promoción?\n\nDeja de aplicarse desde ahora. Las ventas ya hechas no se tocan.')) return;
+  try {
+    await append('Promociones!A:K', [promoFila(p, 'ANULADA')]);
+    auditar('PROMO_ANULADA', (p.tipo === 'COMBO' ? 'Combo ' : '') + p.objetivo, id);
+    toast('✓ Promoción anulada');
+    await cargarPromociones(); renderResumen();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+
+const PROMO_PILL = { ACTIVA: 'pill-green', PROGRAMADA: 'pill-blue', VENCIDA: 'pill-muted', AGOTADA: 'pill-orange', ANULADA: 'pill-muted' };
+function promoDetalle(p) {
+  const cuanto = p.tipo === 'COMBO' ? 'Vigencia del combo' : (p.modo === 'PORCENTAJE' ? p.valor + '% de descuento' : 'Precio ' + fmt(p.valor));
+  const uso = p.cupo > 0 ? ' · usadas ' + Math.round(promoUsados(p)) + '/' + p.cupo : '';
+  return cuanto + ' · ' + (p.desde ? formatFechaISO(p.desde) : '—') + ' → ' + (p.hasta ? formatFechaISO(p.hasta) : 'sin fin') + uso;
+}
+function renderPromos() {
+  const box = $('promos-lista');
+  if (!box) return;
+  const orden = { ACTIVA: 0, PROGRAMADA: 1, AGOTADA: 2, VENCIDA: 3, ANULADA: 4 };
+  const lista = Object.values(DB.promos || {}).map(p => ({ p, e: promoEstado(p) })).sort((a, b) => orden[a.e] - orden[b.e] || (b.p.desde || '').localeCompare(a.p.desde || '')).slice(0, 25);
+  if (!lista.length) { box.innerHTML = '<div class="empty">Todavía no creaste promociones.</div>'; return; }
+  box.innerHTML = lista.map(({ p, e }) => {
+    const nombre = p.tipo === 'COMBO' ? ((DB.combos || {})[p.objetivo] ? DB.combos[p.objetivo].nombre : 'Combo borrado') : p.objetivo;
+    const puedeAnular = e === 'ACTIVA' || e === 'PROGRAMADA' || e === 'AGOTADA';
+    return `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.5;"><b style="color:var(--text)">${p.tipo === 'COMBO' ? '📦 ' : '🏷️ '}${escHTML(nombre)}</b> <span class="pill ${PROMO_PILL[e]}">${e.toLowerCase()}</span><br><span style="font-size:10px;color:var(--text3);">${escHTML(promoDetalle(p))}${p.nota ? ' · ' + escHTML(p.nota) : ''}</span></span>${puedeAnular ? `<button class="btn btn-ghost" style="margin:0;padding:4px 9px;font-size:10px;width:auto;flex-shrink:0;border-color:var(--red);color:var(--red);" onclick="anularPromo('${escJS(p.id)}')">Anular</button>` : ''}</div>`;
+  }).join('');
+}
+
+// ---- Vigencia de combos
+function comboPromos(id) { return Object.values(DB.promos || {}).filter(p => p.tipo === 'COMBO' && p.objetivo === id && p.estado !== 'ANULADA'); }
+function comboPromoInfo(c) {
+  const ps = comboPromos(c.id);
+  if (!ps.length) return { tiene: false, activa: null, motivo: '' };
+  const act = ps.find(p => promoEstado(p) === 'ACTIVA' && promoRestante(p) > 0);
+  if (act) return { tiene: true, activa: act, motivo: '' };
+  const last = ps[ps.length - 1], est = promoEstado(last);
+  const motivos = { VENCIDA: 'venció el ' + formatFechaISO(last.hasta), AGOTADA: 'se agotó el cupo', PROGRAMADA: 'empieza el ' + formatFechaISO(last.desde) };
+  return { tiene: true, activa: null, motivo: motivos[est] || est.toLowerCase() };
+}
+function comboVigenciaTag(c) {
+  const i = comboPromoInfo(c);
+  if (!i.tiene) return '';
+  if (i.activa) { const p = i.activa, rest = promoRestante(p); return ' <span class="pill pill-orange" style="margin-top:4px;">🏷️ vigente' + (p.hasta ? ' hasta ' + formatFechaISO(p.hasta) : '') + (rest !== Infinity ? ' · quedan ' + Math.round(rest) : '') + '</span>'; }
+  return ' <span class="pill pill-red" style="margin-top:4px;">⛔ ' + escHTML(i.motivo) + '</span>';
+}
+function comboMostrarVigencia() {
+  if (!currentCombo) return;
+  const i = comboPromoInfo(currentCombo), d = $('combo-prev-componentes');
+  if (i.tiene && d) d.insertAdjacentHTML('beforeend', '<br>' + comboVigenciaTag(currentCombo));
+}
+function comboLeerVigencia() {
+  const d = ($('combo-desde') || {}).value || '', h = ($('combo-hasta') || {}).value || '', c = parseInt(($('combo-cupo') || {}).value, 10) || 0;
+  if (!d && !h && !c) return null;
+  const desde = d || promoHoy();
+  if (h && h < desde) { toast('La fecha "hasta" no puede ser anterior a "desde"', 'err'); return false; }
+  return { desde, hasta: h, cupo: c };
+}
+function comboLimpiarVigencia() { ['combo-desde','combo-hasta','combo-cupo'].forEach(id => { const e = $(id); if (e) e.value = ''; }); }
+function comboPrefillVigencia(id) {
+  comboLimpiarVigencia();
+  const ps = comboPromos(id), p = ps[ps.length - 1];
+  if (!p) return;
+  $('combo-desde').value = p.desde; $('combo-hasta').value = p.hasta; $('combo-cupo').value = p.cupo || '';
+}
+async function comboGuardarVigencia(idCombo, idViejo, nombre, vig) {
+  const viejos = idViejo ? comboPromos(idViejo) : [];
+  if (!vig && !viejos.length) return;
+  await asegurarHoja('Promociones', PROMO_COLS);
+  const fila = (p, estado, obj) => promoFila({ id: p.id, tipo: 'COMBO', objetivo: obj, desde: p.desde, hasta: p.hasta, cupo: p.cupo, nota: p.nota || ('Combo ' + nombre) }, estado);
+  if (vig) {
+    const base = viejos.length ? viejos[viejos.length - 1] : { id: 'PROMO-' + Date.now(), nota: '' };
+    // Si el combo ya tenía vigencia se conserva el mismo ID: el cupo ya usado se sigue contando.
+    await append('Promociones!A:K', [fila({ id: base.id, desde: vig.desde, hasta: vig.hasta, cupo: vig.cupo, nota: base.nota }, 'ACTIVA', idCombo)]);
+  } else {
+    for (const p of viejos) await append('Promociones!A:K', [fila(p, 'ANULADA', idViejo)]);
+  }
+}
+// ================================================================
+// FIN MÓDULO PROMOCIONES
+// ================================================================
+
+// ================================================================
+// MÓDULO TAREAS (aditivo)
+// ----------------------------------------------------------------
+// Hoja "Tareas", append-only con "última fila por ID gana": marcar hecha o borrar agrega una fila.
+//   A ID | B Texto | C Fecha (opcional) | D Estado (PENDIENTE/HECHA/BORRADA) | E Registro
+// ================================================================
+async function cargarTareas() {
+  await asegurarHoja('Tareas', ['ID','Texto','Fecha','Estado','Registro']);
+  let rows = []; try { rows = await get('Tareas!A2:E'); } catch(e) {}
+  const map = {};
+  rows.forEach(r => { if (r[0]) map[str(r[0])] = { id: str(r[0]), texto: str(r[1]), fecha: promoIso(r[2]), estado: str(r[3]).toUpperCase() || 'PENDIENTE' }; });
+  DB.tareas = map;
+  renderTareas();
+}
+function tareasPendientes() {
+  return Object.values(DB.tareas || {}).filter(t => t.estado === 'PENDIENTE').sort((a, b) => (a.fecha || '9999').localeCompare(b.fecha || '9999'));
+}
+function renderTareas() {
+  const box = $('res-tareas');
+  if (!box) return;
+  const lista = tareasPendientes(), hoy = promoHoy();
+  if (!lista.length) { box.innerHTML = '<div class="empty">No tenés tareas pendientes. 🎉</div>'; return; }
+  box.innerHTML = lista.map(t => {
+    const color = t.fecha && t.fecha < hoy ? 'var(--red)' : (t.fecha === hoy ? 'var(--orange)' : 'var(--text3)');
+    return `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.4;color:var(--text);">${escHTML(t.texto)}${t.fecha ? `<br><span style="font-size:10px;color:${color};">${t.fecha < hoy ? 'Venció el ' : (t.fecha === hoy ? 'Para hoy · ' : 'Para el ')}${formatFechaISO(t.fecha)}</span>` : ''}</span><span style="display:flex;gap:6px;flex-shrink:0;"><button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:12px;width:auto;border-color:var(--green);color:var(--green);" onclick="marcarTarea('${escJS(t.id)}','HECHA')">✓</button><button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:12px;width:auto;" onclick="marcarTarea('${escJS(t.id)}','BORRADA')">✕</button></span></div>`;
+  }).join('');
+}
+async function agregarTarea() {
+  const texto = ($('tarea-texto').value || '').trim(), fecha = $('tarea-fecha').value || '';
+  if (!texto) { toast('Escribí la tarea', 'err'); return; }
+  try {
+    await asegurarHoja('Tareas', ['ID','Texto','Fecha','Estado','Registro']);
+    await append('Tareas!A:E', [['TAREA-' + Date.now(), texto, promoFechaCelda(fecha), 'PENDIENTE', fechaHoraAhora()]]);
+    $('tarea-texto').value = ''; $('tarea-fecha').value = '';
+    toast('✓ Tarea agregada');
+    await cargarTareas(); renderResumen();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+async function marcarTarea(id, estado) {
+  const t = (DB.tareas || {})[id];
+  if (!t) return;
+  try {
+    await append('Tareas!A:E', [[id, t.texto, promoFechaCelda(t.fecha), estado, fechaHoraAhora()]]);
+    toast(estado === 'HECHA' ? '✓ Tarea hecha' : '✓ Tarea borrada');
+    await cargarTareas(); renderResumen();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+// ================================================================
+// FIN MÓDULO TAREAS
+// ================================================================
+
+// ================================================================
+// MÓDULO RESUMEN — pantalla de inicio (aditivo, solo lectura)
+// ----------------------------------------------------------------
+// Junta en un lugar lo importante del día: KPIs, cosas para hacer (calculadas solas a partir de
+// seguimientos, turnos, stock, reposición, promos, deudas), tus tareas, promos vigentes y el informe
+// para consultarle a una IA. No escribe nada ni cambia ningún cálculo.
+// ================================================================
+const RES_DIA = 86400000;
+function resInicioHoy() { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
+function resSumaVentas(desde, hasta) {
+  let vend = 0, cost = 0, un = 0;
+  ((AN_DATA && AN_DATA.ventas) || []).forEach(x => { if (x.t >= desde && x.t < hasta) { vend += x.sub; cost += x.costo; un += x.cant; } });
+  return { vend, gan: vend - cost, un };
+}
+function resDeuda() {
+  const r = { cobrar: 0, cobrarUSD: 0, provARS: 0, provUSD: 0 };
+  Object.values(DB.saldosCC || {}).forEach(s => { if (s.ARS > 0) r.cobrar += s.ARS; if (s.USD > 0) r.cobrarUSD += s.USD; });
+  Object.values(DB.proveedores || {}).forEach(s => { if (s.ARS > 0) r.provARS += s.ARS; if (s.USD > 0) r.provUSD += s.USD; });
+  return r;
+}
+function resChip(label, valor, extra, color) {
+  return `<div class="kpi-chip ${color || ''}"><div class="kpi-label">${label}</div><div class="kpi-val">${valor}</div>${extra ? `<div class="kpi-trend ${extra.cls}">${extra.txt}</div>` : ''}</div>`;
+}
+
+function resTareasAuto() {
+  const items = [], hoy = promoHoy(), ahora = Date.now();
+  const add = (icono, texto, color, ir) => items.push({ icono, texto, color: color || 'var(--text)', ir });
+  // Seguimientos
+  Object.entries(DB.seguimientos || {}).forEach(([p, sg]) => {
+    if (!sg.fechaContactar || sg.fechaContactar > hoy) return;
+    add('📞', `Contactar a <b>${escHTML(p)}</b>${sg.nota ? ' — ' + escHTML(sg.nota) : ''} <span style="color:var(--text3)">(${sg.fechaContactar < hoy ? 'venció el ' : 'hoy, '}${formatFechaISO(sg.fechaContactar)})</span>`, sg.fechaContactar < hoy ? 'var(--red)' : 'var(--orange)', 'cc');
+  });
+  // Turnos y retiros
+  Object.values(DB.turnos || {}).filter(t => t.estado === 'PENDIENTE' && t.fechaHora && t.fechaHora.slice(0, 10) <= hoy).forEach(t => {
+    add('🗓️', `${t.tipo === 'RETIRO' ? 'Retiro' : 'Turno'} de <b>${escHTML(t.cliente || 'sin nombre')}</b> — ${formatFechaHoraISO(t.fechaHora)}${t.nota ? ' (' + escHTML(t.nota) + ')' : ''}`, t.fechaHora.slice(0, 10) < hoy ? 'var(--red)' : 'var(--orange)', 'home');
+  });
+  // Stock bajo
+  const bajos = (DB.todo || []).filter(p => !p.tieneVariantes && p.stock <= p.umbral);
+  if (bajos.length) add('⚠️', `<b>${bajos.length}</b> producto(s) con stock bajo: ${bajos.slice(0, 3).map(p => escHTML(p.nombre)).join(', ')}${bajos.length > 3 ? '…' : ''}`, 'var(--orange)', 'analisis');
+  if (AN_DATA) {
+    const urg = anReposicion(DB.todo, AN_DATA.ventas, ahora, 14).filter(x => x.dias <= 7);
+    if (urg.length) add('🔁', `Reponer ya: ${urg.slice(0, 3).map(x => '<b>' + escHTML(x.nombre) + '</b> (' + (x.stock <= 0 ? 'sin stock' : '~' + Math.max(1, Math.floor(x.dias)) + ' días') + ')').join(', ')}${urg.length > 3 ? ' y ' + (urg.length - 3) + ' más' : ''}`, 'var(--red)', 'analisis');
+    const muertos = anStockMuerto(DB.todo, AN_DATA.ultimaVenta, AN_DATA.ultimaEntrada, ahora, 60);
+    if (muertos.length) add('🧊', `<b>${fmt(muertos.reduce((a, x) => a + x.inmovilizado, 0))}</b> parados en ${muertos.length} producto(s) sin vender hace más de 60 días`, 'var(--text)', 'analisis');
+  }
+  // Promos que vencen o se agotan
+  Object.values(DB.promos || {}).forEach(p => {
+    const e = promoEstado(p), nombre = p.tipo === 'COMBO' ? ((DB.combos || {})[p.objetivo] || {}).nombre || 'combo' : p.objetivo;
+    if (e === 'ACTIVA' && p.hasta) { const d = promoDiasHasta(p.hasta); if (d <= 3) add('🏷️', `La promo de <b>${escHTML(nombre)}</b> ${d <= 0 ? 'vence HOY' : 'vence en ' + d + ' día' + (d === 1 ? '' : 's')}`, 'var(--orange)', 'stock'); }
+    if (e === 'ACTIVA' && p.cupo > 0 && promoRestante(p) <= Math.max(1, p.cupo * 0.2)) add('🏷️', `Quedan ${Math.round(promoRestante(p))} en la promo de <b>${escHTML(nombre)}</b>`, 'var(--orange)', 'stock');
+    if (e === 'PROGRAMADA' && promoDiasHasta(p.desde) <= 2) add('🏷️', `La promo de <b>${escHTML(nombre)}</b> empieza el ${formatFechaISO(p.desde)}`, 'var(--text)', 'stock');
+  });
+  // Plata
+  const d = resDeuda();
+  if (d.provARS > 0.5 || d.provUSD > 0.005) add('🏭', `Debés a proveedores: ${[d.provARS > 0.5 ? fmt(d.provARS) : '', d.provUSD > 0.005 ? fmtUSD(d.provUSD) : ''].filter(Boolean).join(' + ')}`, 'var(--text)', 'cc');
+  if (d.cobrar > 0.5) add('💰', `Te deben <b>${fmt(d.cobrar)}</b> en Cuenta Corriente`, 'var(--text)', 'cc');
+  const ganD = DB.finanzas ? DB.finanzas.ganD : 0;
+  if (ganD > 1000) add('💸', `Tenés <b>${fmt(ganD)}</b> de Ganancia Disponible sin distribuir`, 'var(--text)', 'caja');
+  return items;
+}
+const RES_IR = { cc: 'cc', home: 'home', analisis: 'analisis', stock: 'stock', caja: 'caja' };
+
+function renderResumen() {
+  const tit = $('res-titulo');
+  if (!tit) return;
+  const ahora = new Date(), t0 = resInicioHoy();
+  const dia = ahora.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  tit.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
+
+  // KPIs
+  const h = resSumaVentas(t0, t0 + RES_DIA), a30 = resSumaVentas(ahora.getTime() - 30 * RES_DIA, ahora.getTime() + RES_DIA), p30 = resSumaVentas(ahora.getTime() - 60 * RES_DIA, ahora.getTime() - 30 * RES_DIA);
+  const dif = p30.vend > 0 ? (a30.vend - p30.vend) / p30.vend * 100 : null;
+  const deu = resDeuda(), ganD = DB.finanzas ? DB.finanzas.ganD : 0;
+  setHTML('res-kpis',
+    resChip('Ventas hoy', fmt(h.vend), null, 'green') +
+    resChip('Ganancia hoy', fmt(h.gan), null, 'cyan') +
+    resChip('Ventas (30d)', fmt(a30.vend), dif === null ? null : { cls: dif >= 0 ? 'up' : 'down', txt: (dif >= 0 ? '▲ ' : '▼ ') + Math.abs(dif).toFixed(0) + '% vs 30d previos' }, 'blue') +
+    resChip('Ganancia Disp.', fmt(ganD), null, 'purple') +
+    resChip('Te deben', fmt(deu.cobrar), null, 'orange'));
+
+  // Para hacer hoy
+  const items = resTareasAuto();
+  const pend = tareasPendientes().filter(t => t.fecha && t.fecha <= promoHoy()).length;
+  const partes = []; if (items.length) partes.push(items.length + (items.length === 1 ? ' aviso' : ' avisos')); if (pend) partes.push(pend + (pend === 1 ? ' tarea para hoy' : ' tareas para hoy'));
+  setText('res-sub', partes.length ? partes.join(' · ') : 'Todo al día ✨');
+  setHTML('res-auto', items.length ? items.map(i => `<div class="bal-row" style="align-items:flex-start;${i.ir ? 'cursor:pointer;' : ''}" ${i.ir ? `onclick="goTab('${RES_IR[i.ir]}',document.getElementById('sb-${RES_IR[i.ir]}'))"` : ''}><span class="bal-key" style="color:${i.color};line-height:1.45;">${i.icono} ${i.texto}</span></div>`).join('') : '<div class="empty">Nada urgente por ahora. 👍</div>');
+
+  // Promos
+  const promos = Object.values(DB.promos || {}).map(p => ({ p, e: promoEstado(p) })).filter(x => x.e === 'ACTIVA' || x.e === 'PROGRAMADA');
+  setHTML('res-promos', promos.length ? promos.map(({ p, e }) => {
+    const nombre = p.tipo === 'COMBO' ? ((DB.combos || {})[p.objetivo] || {}).nombre || 'Combo' : p.objetivo;
+    const dias = p.hasta ? promoDiasHasta(p.hasta) : null;
+    return `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.5;color:var(--text);">${p.tipo === 'COMBO' ? '📦' : '🏷️'} <b>${escHTML(nombre)}</b> <span class="pill ${PROMO_PILL[e]}">${e.toLowerCase()}</span><br><span style="font-size:10px;color:var(--text3);">${escHTML(promoDetalle(p))}${dias !== null && e === 'ACTIVA' ? ' · ' + (dias <= 0 ? 'vence hoy' : 'faltan ' + dias + ' días') : ''}</span></span></div>`;
+  }).join('') : '<div class="empty">No hay promociones vigentes ni programadas.</div>');
+  renderTareas();
+  renderSeguridad();
+}
+
+// ---- Informe para IA
+function resumenParaIA() {
+  const pregunta = ($('res-ia-pregunta') || {}).value || '';
+  const ahora = Date.now(), t0 = resInicioHoy(), F = DB.finanzas || {}, d = resDeuda();
+  const hoy = resSumaVentas(t0, t0 + RES_DIA), a30 = resSumaVentas(ahora - 30 * RES_DIA, ahora + RES_DIA), p30 = resSumaVentas(ahora - 60 * RES_DIA, ahora - 30 * RES_DIA);
+  const mg = a30.vend > 0 ? (a30.gan / a30.vend * 100).toFixed(1) : '0';
+  let txt = `Soy el dueño de un negocio de venta de tecnología y vapes en Argentina (Juntech Store). Estos son mis datos al ${new Date().toLocaleDateString('es-AR')}. Respondé en español, con pasos concretos y números.\n\n`;
+  txt += `VENTAS\n- Hoy: ${fmt(hoy.vend)} (ganancia ${fmt(hoy.gan)})\n- Últimos 30 días: ${fmt(a30.vend)}, ganancia bruta ${fmt(a30.gan)}, margen ${mg}%, ${Math.round(a30.un)} unidades\n- 30 días anteriores: ${fmt(p30.vend)}, ganancia bruta ${fmt(p30.gan)}\n\n`;
+  txt += `FINANZAS\n- Efectivo en cajas: ${$('h-total') ? $('h-total').textContent : '-'}\n- Ganancia Disponible: ${fmt(F.ganD || 0)}\n- Capital: ${$('h-cap') ? $('h-cap').textContent : '-'}\n- Me deben (clientes): ${fmt(d.cobrar)}${d.cobrarUSD > 0 ? ' + ' + fmtUSD(d.cobrarUSD) : ''}\n- Debo a proveedores: ${fmt(d.provARS)}${d.provUSD > 0 ? ' + ' + fmtUSD(d.provUSD) : ''}\n\n`;
+  if (AN_DATA) {
+    const repo = anReposicion(DB.todo, AN_DATA.ventas, ahora, 30).slice(0, 10);
+    txt += 'REPOSICIÓN SUGERIDA (para cubrir 30 días)\n' + (repo.length ? repo.map(x => `- ${x.nombre}: stock ${x.stock}, vendo ~${x.vel.toFixed(2)}/día, comprar ${x.comprar} (≈ ${fmt(x.inversion)})`).join('\n') : '- Nada urgente') + '\n\n';
+    const muertos = anStockMuerto(DB.todo, AN_DATA.ultimaVenta, AN_DATA.ultimaEntrada, ahora, 60).slice(0, 10);
+    txt += 'STOCK PARADO (más de 60 días sin venderse)\n' + (muertos.length ? muertos.map(x => `- ${x.nombre}: ${x.stock} u., ${fmt(x.inmovilizado)} parados, ${x.dias === null ? 'sin movimientos' : x.dias + ' días'}; precio ${fmt(x.precio)}, costo ${fmt(x.costo)}`).join('\n') : '- Ninguno') + '\n\n';
+    const rent = anRentabilidad(AN_DATA.ventas, ahora - 90 * RES_DIA, ahora + RES_DIA).sort((a, b) => b.ganancia - a.ganancia).slice(0, 10);
+    txt += 'PRODUCTOS QUE MÁS GANANCIA DEJAN (90 días)\n' + (rent.length ? rent.map(x => `- ${x.nombre}: ${Math.round(x.cant)} u., ganancia ${fmt(x.ganancia)}, margen ${x.margen.toFixed(0)}%`).join('\n') : '- Sin datos') + '\n\n';
+  }
+  const promos = Object.values(DB.promos || {}).filter(p => promoEstado(p) === 'ACTIVA');
+  txt += 'PROMOCIONES VIGENTES\n' + (promos.length ? promos.map(p => `- ${p.tipo === 'COMBO' ? 'Combo ' + (((DB.combos || {})[p.objetivo] || {}).nombre || '') : p.objetivo}: ${promoDetalle(p)}`).join('\n') : '- Ninguna') + '\n\n';
+  const tareas = tareasPendientes();
+  txt += 'MIS TAREAS PENDIENTES\n' + (tareas.length ? tareas.map(t => `- ${t.texto}${t.fecha ? ' (para el ' + formatFechaISO(t.fecha) + ')' : ''}`).join('\n') : '- Ninguna') + '\n';
+  if (pregunta) txt += `\nPREGUNTA: ${pregunta}\n`;
+  return txt;
+}
+function copiarInformeIA() {
+  const txt = resumenParaIA();
+  const ta = $('res-ia-texto');
+  if (ta) { ta.value = txt; ta.style.display = 'block'; }
+  navigator.clipboard.writeText(txt).then(() => toast('✓ Informe copiado: pegalo en tu IA')).catch(() => toast('No pude copiar solo: copialo de la caja de abajo', 'err'));
+}
+// ================================================================
+// FIN MÓDULO RESUMEN
+// ================================================================
+
+// Tarjetas plegables del Resumen y Stock (promos): ya se aplican a las que existen
+try { hacerPlegables('tab-resumen', ['Para hacer hoy', 'Mis tareas', 'Promociones y combos']); } catch(e) { console.error('plegables resumen', e); }
+
+// ================================================================
+// MÓDULO SEGURIDAD (PIN) Y AUDITORÍA (aditivo)
+// ----------------------------------------------------------------
+//  - PIN opcional de 4 a 8 números. Se guarda en la hoja Config como un "hash" (una huella
+//    irreversible): ni vos ni yo ni nadie que abra la planilla puede leer el PIN. Si lo
+//    olvidás, borrá la fila PIN_SEGURIDAD de la hoja Config y queda sin PIN.
+//  - Se pide para: anular/devolver ventas, borrar combos, corregir o inicializar el Capital.
+//    Una vez ingresado vale 5 minutos (para no pedírtelo en cada paso).
+//  - Auditoría: hoja "Auditoria" (se crea sola). Cada acción sensible queda anotada con fecha,
+//    qué se hizo y desde qué dispositivo. Nunca bloquea la operación si falla.
+// ================================================================
+let PIN_HASH = '', PIN_UNLOCK_UNTIL = 0, PIN_INTENTOS = 0, PIN_RESOLVER = null;
+
+function sha256hex(ascii) {
+  function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
+  const mp = Math.pow, maxWord = mp(2, 32);
+  let i, j, result = '';
+  const words = [], bitLen = ascii.length * 8;
+  const hash = sha256hex.h = sha256hex.h || [], k = sha256hex.k = sha256hex.k || [];
+  let pc = k.length;
+  const comp = {};
+  for (let c = 2; pc < 64; c++) {
+    if (!comp[c]) {
+      for (i = 0; i < 313; i += c) comp[i] = c;
+      hash[pc] = (mp(c, .5) * maxWord) | 0;
+      k[pc++] = (mp(c, 1 / 3) * maxWord) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii.length % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii.length; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return '';
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words.length] = ((bitLen / maxWord) | 0);
+  words[words.length] = (bitLen);
+  let h = hash.slice(0, 8);
+  for (j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16), old = h;
+    h = h.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = h[0], e = h[4];
+      const t1 = h[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & h[5]) ^ ((~e) & h[6])) + k[i] +
+        (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & h[1]) ^ (a & h[2]) ^ (h[1] & h[2]));
+      h = [(t1 + t2) | 0].concat(h);
+      h[4] = (h[4] + t1) | 0;
+    }
+    for (i = 0; i < 8; i++) h[i] = (h[i] + old[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) { const b = (h[i] >> (j * 8)) & 255; result += ((b < 16) ? 0 : '') + b.toString(16); }
+  return result;
+}
+
+async function pinHash(pin) {
+  const txt = 'juntechos|' + String(pin);
+  try {
+    if (window.crypto && window.crypto.subtle) {
+      const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch(e) {}
+  return sha256hex(unescape(encodeURIComponent(txt)));
+}
+
+async function cargarConfigPin() {
+  let rows = []; try { rows = await get('Config!A2:B'); } catch(e) {}
+  const f = rows.find(r => str(r[0]).toUpperCase() === 'PIN_SEGURIDAD');
+  PIN_HASH = f ? str(f[1]) : '';
+  renderSeguridad();
+}
+
+async function pinGuardarEnPlanilla(valor) {
+  await asegurarHoja('Config', ['Clave','Valor']);
+  const rows = await get('Config!A2:B');
+  const idx = rows.findIndex(r => str(r[0]).toUpperCase() === 'PIN_SEGURIDAD');
+  if (idx >= 0) await updateCell(`Config!B${idx + 2}`, [[valor]]);
+  else await append('Config!A:B', [['PIN_SEGURIDAD', valor]]);
+  PIN_HASH = valor;
+}
+
+function requierePin(motivo) {
+  return new Promise(resolve => {
+    if (!PIN_HASH) return resolve(true);
+    if (Date.now() < PIN_UNLOCK_UNTIL && !VENDEDOR) return resolve(true); // en modo vendedor el PIN se pide SIEMPRE
+    PIN_RESOLVER = resolve; PIN_INTENTOS = 0;
+    setText('pin-motivo', motivo || 'continuar');
+    const inp = $('pin-input'); if (inp) inp.value = '';
+    setText('pin-error', '');
+    mostrarModalSpring('modal-pin');
+    setTimeout(() => { const i2 = $('pin-input'); if (i2) i2.focus(); }, 60);
+  });
+}
+function _pinCerrar(resultado) {
+  ocultarModalSpring('modal-pin');
+  const r = PIN_RESOLVER; PIN_RESOLVER = null;
+  if (r) r(resultado);
+}
+async function confirmarPin() {
+  const v = ($('pin-input') ? $('pin-input').value : '').trim();
+  if (!v) return;
+  if (('h1:' + await pinHash(v)) === PIN_HASH) { if (!VENDEDOR) PIN_UNLOCK_UNTIL = Date.now() + 5 * 60000; _pinCerrar(true); return; }
+  PIN_INTENTOS++;
+  if (PIN_INTENTOS >= 3) {
+    auditar('PIN_FALLIDO', '3 intentos incorrectos de PIN', '');
+    toast('PIN incorrecto 3 veces: acción cancelada', 'err');
+    _pinCerrar(false); return;
+  }
+  setText('pin-error', 'PIN incorrecto (te quedan ' + (3 - PIN_INTENTOS) + ' intento' + (3 - PIN_INTENTOS === 1 ? '' : 's') + ')');
+  const inp = $('pin-input'); if (inp) { inp.value = ''; inp.focus(); }
+}
+function cancelarPin() { _pinCerrar(false); }
+
+function dispositivoCorto() {
+  const ua = (navigator.userAgent || '');
+  const so = /iPhone|iPad/.test(ua) ? 'iPhone/iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'Otro';
+  const nav = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : '';
+  return (VENDEDOR ? 'Vendedor ' + VENDEDOR + ' · ' : '') + so + (nav ? ' · ' + nav : '');
+}
+
+// Nunca interrumpe la operación que la llama: si falla, solo lo deja en consola.
+async function auditar(accion, detalle, referencia) {
+  try {
+    await asegurarHoja('Auditoria', ['Fecha','Accion','Detalle','Referencia','Dispositivo']);
+    await append('Auditoria!A:E', [[fechaHoraAhora(), accion, detalle, referencia || '', dispositivoCorto()]]);
+  } catch (e) { console.error('Auditoría: no se pudo registrar', accion, e); }
+}
+
+// ---- Tarjeta "Seguridad" (vive en la pestaña Resumen)
+function renderSeguridad() {
+  const est = $('seg-estado');
+  if (!est) return;
+  est.innerHTML = PIN_HASH
+    ? '🔒 <b>PIN activo.</b> Se pide para anular o devolver ventas, borrar combos y corregir el Capital.'
+    : '🔓 <b>Sin PIN.</b> Cualquiera que abra el sistema puede anular ventas. Te conviene crear uno.';
+  const act = $('seg-pin-actual-box'); if (act) act.style.display = PIN_HASH ? 'block' : 'none';
+  const q = $('btn-seg-quitar'); if (q) q.style.display = PIN_HASH ? 'flex' : 'none';
+}
+async function segGuardarPin() {
+  const nuevo = ($('seg-pin-nuevo').value || '').trim();
+  if (!/^\d{4,8}$/.test(nuevo)) { toast('El PIN tiene que ser de 4 a 8 números', 'err'); return; }
+  const tenia = !!PIN_HASH;
+  if (tenia && ('h1:' + await pinHash(($('seg-pin-actual').value || '').trim())) !== PIN_HASH) { toast('El PIN actual no es correcto', 'err'); return; }
+  try {
+    await pinGuardarEnPlanilla('h1:' + await pinHash(nuevo));
+    PIN_UNLOCK_UNTIL = Date.now() + 5 * 60000;
+    auditar('PIN', tenia ? 'PIN cambiado' : 'PIN creado', '');
+    $('seg-pin-nuevo').value = ''; $('seg-pin-actual').value = '';
+    toast('✓ PIN guardado'); renderSeguridad();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+async function segQuitarPin() {
+  if (!PIN_HASH) return;
+  if (('h1:' + await pinHash(($('seg-pin-actual').value || '').trim())) !== PIN_HASH) { toast('Poné tu PIN actual para quitarlo', 'err'); return; }
+  try {
+    await pinGuardarEnPlanilla('');
+    auditar('PIN', 'PIN quitado', '');
+    $('seg-pin-actual').value = '';
+    toast('✓ PIN quitado'); renderSeguridad();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+async function verAuditoria() {
+  let rows = []; try { rows = await get('Auditoria!A2:E'); } catch(e) {}
+  const box = $('seg-auditoria');
+  if (!box) return;
+  if (!rows.length) { box.innerHTML = '<div class="empty">Todavía no hay acciones registradas.</div>'; return; }
+  box.innerHTML = rows.slice(-30).reverse().map(r => `<div class="hist-item"><div class="hist-top"><span class="hist-mot">${escHTML(str(r[1]))}</span><span class="hist-meta">${escHTML(parseExcelDate(r[0]).s)}</span></div><div class="hist-meta">${escHTML(str(r[2]))}${r[4] ? ' · ' + escHTML(str(r[4])) : ''}</div></div>`).join('');
+}
+// ID de ticket: mismo formato de siempre (#DDMMHHMMSS) pero NUNCA repetido: si se pide otro en el mismo
+// segundo (doble toque, venta muy rápida) se toma el segundo siguiente. Un ID repetido juntaba dos ventas en una.
+let _ULT_TICKET_TS = 0;
+function nuevoIdTicket() {
+  const ts = Math.max(Date.now(), _ULT_TICKET_TS + 1000);
+  _ULT_TICKET_TS = ts;
+  const d = new Date(ts), p = n => String(n).padStart(2, '0');
+  return '#' + p(d.getDate()) + p(d.getMonth() + 1) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+}
+
+// Evita que un doble clic (o un segundo toque mientras se pide el PIN) ejecute dos veces la misma anulación.
+let ANU_BUSY = false;
+async function confirmarAnulacion() {
+  if (ANU_BUSY) return;
+  ANU_BUSY = true;
+  try { await _confirmarAnulacionReal(); } finally { ANU_BUSY = false; }
+}
+// ================================================================
+// FIN MÓDULO SEGURIDAD Y AUDITORÍA
+// ================================================================
+
+// ================================================================
+// COMBOS CON "CUALQUIER VARIANTE" (aditivo)
+// ----------------------------------------------------------------
+// Si un componente del combo es un producto con variantes (ej: "2 ElfBar IceKing"), al vender se
+// elige el sabor de cada unidad. No hace falta cargar un combo por cada mezcla posible: el combo
+// se define una sola vez con el producto, y el stock/costo/precio se toman de la variante elegida.
+// ================================================================
+function comboRenderPickers() {
+  const box = $('combo-variantes-box');
+  if (!box) return;
+  if (!currentCombo || !currentCombo.valido) { box.innerHTML = ''; return; }
+  const cantCombos = Math.max(1, parseInt($('combo-cant') ? $('combo-cant').value : 1, 10) || 1);
+  const previas = Array.from(box.querySelectorAll('select.combo-var-sel')).map(x => x.value);
+  let html = '';
+  currentCombo.componentes.forEach((comp, ci) => {
+    const prod = DB.todo.find(p => p.nombre === comp.nombre);
+    if (!prod || !prod.tieneVariantes) return;
+    const n = comp.cantidad * cantCombos;
+    const opts = '<option value="">— elegí —</option>' + prod.variantes.map(v => `<option value="${escHTML(v.variante)}">${escHTML(v.variante)} (${v.stock || 0} u.)</option>`).join('');
+    html += `<div class="f-label" style="margin:8px 0 4px;">${escHTML(prod.nombre)}: elegí ${n} ${n === 1 ? 'variante' : 'variantes'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">`;
+    for (let k = 0; k < n; k++) html += `<select class="f-in combo-var-sel" data-comp="${ci}" style="padding:7px 8px;font-size:12px;">${opts}</select>`;
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  Array.from(box.querySelectorAll('select.combo-var-sel')).forEach((x, i) => { if (previas[i]) x.value = previas[i]; });
+}
+
+function comboPushVariantes(prod, ci, precioUnit) {
+  const cuentas = {};
+  document.querySelectorAll('#combo-variantes-box select.combo-var-sel').forEach(x => { if (+x.dataset.comp === ci) cuentas[x.value] = (cuentas[x.value] || 0) + 1; });
+  Object.keys(cuentas).forEach(vn => {
+    const v = prod.variantes.find(y => y.variante === vn);
+    if (!v) return;
+    const hijo = DB.todo.find(p => p.nombre === v.nombreCompleto) || {};
+    cart.push({
+      nombre: v.nombreCompleto + ' [combo: ' + currentCombo.nombre + ']',
+      sysName: v.nombreCompleto,
+      sku: hijo.sku || prod.sku,
+      cant: cuentas[vn],
+      precio: precioUnit,
+      precioLista: v.precio || prod.precio,
+      costo: v.costo || prod.costo,
+      garantia: '',
+      precioUSD: null,
+      tcUsado: null
+    });
+  });
+}
+// ================================================================
+// FIN COMBOS CON VARIANTES
+// ================================================================
+
+// ================================================================
 // MÓDULO ANÁLISIS (aditivo, SOLO LECTURA)
 // ----------------------------------------------------------------
 // Reposición inteligente, stock muerto/liquidación, rentabilidad y estado de resultados.
@@ -6333,7 +7306,7 @@ async function renderAnalisis() {
   const mes = $('an-mes');
   if (mes && !mes.value) { const d = new Date(); mes.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   await anCargarDatos(false);
-  anRenderRepo(); anRenderMuerto(); anRenderRent(); anRenderEstado();
+  anRenderRepo(); anRenderMuerto(); anRenderRent(); anRenderEstado(); anRenderPrecios();
 }
 
 const anNombre = n => escHTML(n);
@@ -6687,6 +7660,7 @@ function ventasAgrupar(rows) {
       if (!g.metodo) { g.metodo = str(r[6]); g.fechaRaw = r[5]; g.fechaTxt = fd.s; g.t = fd.t; }
       l.precioUnit = num(r[3]);
       if (num(r[13])) { l.usdUnit = num(r[13]); l.tc = num(r[14]); }
+      if (str(r[16])) l.promo = str(r[16]);
     }
   });
   return Array.from(grupos.values()).filter(g => g.metodo);
@@ -6725,7 +7699,7 @@ function renderVentasRecientes() {
 
 function abrirAnulacion(i, modo) {
   const g = VENTAS_GRUPOS[i];
-  if (!g) return;
+  if (!g) { ANU = { modo: null, key: null }; return; }
   ANU = { modo, key: g.key };
   const lineas = ventaLineasPendientes(g);
   setText('anu-titulo', modo === 'ANULAR' ? '🗑 Anular venta completa' : '↩ Devolución de cliente');
@@ -6771,20 +7745,21 @@ function anuActualizarImpacto() {
   box.innerHTML = `${cuando} ${restock ? 'Vuelven ' + q + ' u. al stock.' : 'El producto NO vuelve al stock (se da de baja).'} La Ganancia baja <b>${fmt(sub - costo)}</b>.`;
 }
 
-async function confirmarAnulacion() {
+async function _confirmarAnulacionReal() {
   if (!ANU.key) return;
   const modo = ANU.modo;
+  if (!(await requierePin(modo === 'ANULAR' ? 'anular una venta' : 'registrar una devolución'))) return;
   const motivo = ($('anu-motivo').value || '').trim();
   // Datos frescos de la planilla: evita anular dos veces o sobre datos viejos.
   setBtn('btn-anu-confirmar', true, '');
   try {
-    const rows = await get('Salidas!A2:P');
+    const rows = await get('Salidas!A2:P', true);
     const g = ventasAgrupar(rows).find(x => x.key === ANU.key);
     if (!g) throw new Error('No encontré esa venta en Salidas (¿ya se archivó?).');
     const lineas = ventaLineasPendientes(g);
     if (!lineas.length) throw new Error('Esa venta ya no tiene productos pendientes (¿ya la anulaste?).');
-    const cajaRows = await get('Caja!A2:G');
-    const ccRows = await get('CuentasCorrientes!A2:F');
+    const cajaRows = await get('Caja!A2:G', true);
+    const ccRows = await get('CuentasCorrientes!A2:F', true);
 
     const stamp = Date.now();
     const hoy = fechaHoraAhora();
@@ -6809,7 +7784,7 @@ async function confirmarAnulacion() {
       let totalRem = 0;
       lineas.forEach((l, i) => {
         totalRem += l.sub;
-        salidasRows.push([l.nombre, l.sku || '-', -l.cant, l.precioUnit, -l.sub, fechaOrig, 'ANULACION', -l.costo, '', g.cli, 0, 'ANULACION' + notaMotivo, '-', '', '', pValor]);
+        salidasRows.push([l.nombre, l.sku || '-', -l.cant, l.precioUnit, -l.sub, fechaOrig, 'ANULACION', -l.costo, '', g.cli, 0, 'ANULACION' + notaMotivo, '-', '', '', pValor, l.promo || '']);
         movs.push({ evento: 'REVERSA_COSTO', monto: -l.costo, referencia: 'ANUL-' + stamp + '-' + i, observaciones: 'Anulación de venta ' + ref + ' (' + l.nombre + ')' });
       });
       const ratio = g.origSub > 0 ? Math.min(1, totalRem / g.origSub) : 1;
@@ -6837,7 +7812,7 @@ async function confirmarAnulacion() {
       if (!(q > 0) || q > l.cant + 0.0001) throw new Error('Cantidad inválida (se compraron ' + l.cant + ').');
       const sub = Math.round(l.sub / l.cant * q * 100) / 100, costo = Math.round(l.costo / l.cant * q * 100) / 100;
       const reem = $('anu-reembolso').value, restock = $('anu-restock').checked;
-      salidasRows.push([l.nombre, l.sku || '-', -q, l.precioUnit, -sub, hoy, 'DEVOLUCION', -costo, '', g.cli, 0, 'DEVOLUCION' + notaMotivo, '-', '', '', pValor]);
+      salidasRows.push([l.nombre, l.sku || '-', -q, l.precioUnit, -sub, hoy, 'DEVOLUCION', -costo, '', g.cli, 0, 'DEVOLUCION' + notaMotivo, '-', '', '', pValor, l.promo || '']);
       movs.push({ evento: 'REVERSA_COSTO', monto: -costo, referencia: 'DEV-' + stamp, observaciones: 'Devolución de cliente ' + ref + ' (' + q + 'x ' + l.nombre + ')' });
       if (reem === 'CC') {
         if (!g.cli || g.cli === 'CLIENTE') throw new Error('Para descontar de una Cuenta Corriente la venta tiene que tener un cliente.');
@@ -6850,7 +7825,7 @@ async function confirmarAnulacion() {
     }
 
     // Escritura: primero Salidas (lo que mueve stock y ganancia), después el resto.
-    await append('Salidas!A:P', salidasRows);
+    await appendSalidas(salidasRows);
     const etiqueta = modo === 'ANULAR' ? 'ANULACION VENTA' : 'DEVOLUCION CLIENTE';
     for (const op of cajaOps) {
       await _guardarMovimientoEnCaja('EGRESO', etiqueta, (modo === 'ANULAR' ? 'Anulación venta ' : 'Devolución ') + ref + ' - ' + g.cli, op.monto, op.metodo);
@@ -6859,6 +7834,7 @@ async function confirmarAnulacion() {
     await registrarMovimientosCapitalLote(movs);
     if (ajusteStock) { await asegurarHoja('AJUSTES', ['Producto','Motivo','Cantidad','Fecha']); await append('AJUSTES!A:D', [ajusteStock]); }
 
+    auditar(modo === 'ANULAR' ? 'ANULAR_VENTA' : 'DEVOLUCION', ref + ' · ' + g.cli + ' · ' + salidasRows.map(r => Math.abs(r[2]) + 'x ' + r[0]).join(', ') + (motivo ? ' · ' + motivo : ''), ref);
     toast(modo === 'ANULAR' ? '✓ Venta anulada' : '✓ Devolución registrada');
     cerrarModalAnular();
     cargarTodo().catch(() => {});
@@ -6880,7 +7856,7 @@ function renderCombosLista() {
   const cs = Object.values(DB.combos || {});
   if (!cs.length) { box.innerHTML = '<div class="empty">Todavía no creaste combos</div>'; return; }
   box.innerHTML = cs.map(c => `<div class="bal-row" style="align-items:flex-start;">
-    <span class="bal-key" style="line-height:1.4;">${escHTML(c.nombre)}<br><span style="font-size:10px;color:var(--text3);">${c.componentes.map(x => x.cantidad + 'x ' + escHTML(x.nombre)).join(' + ')}${c.valido ? '' : ' ⚠️ falta un producto'}</span></span>
+    <span class="bal-key" style="line-height:1.4;">${escHTML(c.nombre)}<br><span style="font-size:10px;color:var(--text3);">${c.componentes.map(x => x.cantidad + 'x ' + escHTML(x.nombre)).join(' + ')}${c.valido ? '' : ' ⚠️ falta un producto'}</span>${comboVigenciaTag(c)}</span>
     <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;">
       <b style="font-size:12px;">${fmt(c.precioTotal)}</b>
       <span style="display:flex;gap:6px;">
@@ -6897,6 +7873,7 @@ function editarCombo(id) {
   $('combo-nombre').value = c.nombre;
   $('combo-precio-total').value = c.precioTotal;
   COMBO_EDITANDO = id;
+  comboPrefillVigencia(id);
   const b = $('btn-guardar-combo'); if (b) b.textContent = '💾 Guardar cambios';
   const bc = $('btn-combo-cancelar'); if (bc) bc.style.display = 'flex';
   const card = b ? b.closest('.card') : null;
@@ -6906,7 +7883,7 @@ function editarCombo(id) {
 
 function cancelarEdicionCombo() {
   COMBO_EDITANDO = null; comboCart = []; renderComboCompItems();
-  $('combo-nombre').value = ''; $('combo-precio-total').value = '';
+  $('combo-nombre').value = ''; $('combo-precio-total').value = ''; comboLimpiarVigencia();
   const b = $('btn-guardar-combo'); if (b) b.textContent = '💾 Guardar Combo';
   const bc = $('btn-combo-cancelar'); if (bc) bc.style.display = 'none';
 }
@@ -6915,8 +7892,10 @@ async function borrarCombo(id) {
   const c = (DB.combos || {})[id];
   if (!c) return;
   if (!confirm('¿Borrar el combo "' + c.nombre + '"?\n\nLas ventas que ya hiciste con este combo no se tocan.')) return;
+  if (!(await requierePin('borrar un combo'))) return;
   try {
     await append('Combos!A:E', [[id, c.nombre, '__ELIMINADO__', 0, 0]]);
+    auditar('BORRAR_COMBO', c.nombre + ' (' + c.componentes.map(x => x.cantidad + 'x ' + x.nombre).join(' + ') + ') $' + c.precioTotal, id);
     if (COMBO_EDITANDO === id) cancelarEdicionCombo();
     toast('✓ Combo borrado');
     await cargarTodo();
