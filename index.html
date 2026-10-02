@@ -8,6 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>JuntechOS v6.0 - Master ERP</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-512.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   
@@ -462,6 +463,7 @@
       <div class="card">
         <div class="card-title">🎯 Para hacer hoy</div>
         <div id="res-auto"><div class="empty">Cargando...</div></div>
+        <button class="btn btn-ghost" onclick="copiarResumenDia()" style="margin-top:10px;font-size:12px;">📲 Copiar resumen del día (para WhatsApp)</button>
       </div>
 
       <div class="card">
@@ -472,6 +474,15 @@
         </div>
         <button class="btn btn-ghost" onclick="agregarTarea()" style="border-color:var(--green);color:var(--green);">+ Agregar tarea</button>
         <div id="res-tareas"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎯 Meta del mes</div>
+        <div id="res-meta"><div class="empty">Cargando...</div></div>
+        <div class="f-row" style="margin-top:10px;">
+          <div class="field" style="margin-bottom:0;"><input class="f-in" id="meta-input" type="text" inputmode="decimal" placeholder="Meta de ventas del mes ($)" onchange="evalMath(this)"></div>
+          <button class="btn btn-ghost" onclick="guardarMeta()" style="margin:0;font-size:12px;">Guardar meta</button>
+        </div>
       </div>
 
       <div class="card">
@@ -511,7 +522,8 @@
           <div class="field"><input class="f-in" id="vend-nombre-in" placeholder="Nombre del vendedor"></div>
           <button class="btn btn-ghost" onclick="activarModoVendedor()" style="font-size:12px;">Activar modo vendedor</button>
         </div>
-        <button class="btn btn-ghost" onclick="verAuditoria()" style="font-size:12px;margin-top:12px;">📜 Ver registro de auditoría</button>
+        <button class="btn btn-ghost" onclick="descargarRespaldo()" style="font-size:12px;margin-top:12px;">💾 Descargar respaldo de toda la planilla</button>
+        <button class="btn btn-ghost" onclick="verAuditoria()" style="font-size:12px;">📜 Ver registro de auditoría</button>
         <div id="seg-auditoria" style="margin-top:8px;"></div>
       </div>
 
@@ -650,6 +662,13 @@
           <label class="f-label">Cliente / Empresa</label>
           <input class="f-in" id="v-cli" list="cli-lista" placeholder="Escribí para buscar..." type="text" autocomplete="off" style="text-transform: uppercase;">
           <datalist id="cli-lista"></datalist>
+        </div>
+        <div class="field">
+          <label class="f-label">Escanear código de barras o SKU</label>
+          <div style="display:flex;gap:6px;">
+            <input class="f-in" id="v-scan" placeholder="Pasá el lector o escribí el código y Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearCodigoInput();}">
+            <button class="btn btn-ghost" onclick="abrirEscanerCamara()" style="width:auto;margin:0;padding:0 14px;flex-shrink:0;" title="Escanear con la cámara">📷</button>
+          </div>
         </div>
         <div class="field">
           <label class="f-label">Buscar Producto (Solo en Stock)</label>
@@ -1292,6 +1311,25 @@
       </div>
 
       <div class="card">
+        <div class="card-title">🔢 Conteo de inventario</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Contá lo que hay físicamente y cargalo acá (podés hacerlo desde el celular, de a partes). El sistema calcula las diferencias contra su stock y las corrige con un ajuste, que queda en Auditoría. Solo se ajustan los productos que contaste. Pide tu PIN si lo tenés.</div>
+        <input class="f-in" id="conteo-buscar" placeholder="Filtrar productos..." oninput="renderConteo()" style="margin-bottom:8px;">
+        <div id="conteo-lista" style="max-height:340px;overflow-y:auto;"></div>
+        <div id="conteo-resumen" style="font-size:12px;margin:10px 0;line-height:1.5;"></div>
+        <button class="btn btn-purple" id="btn-conteo" onclick="aplicarConteo()">💾 Aplicar diferencias de lo contado</button>
+        <button class="btn btn-ghost" onclick="limpiarConteo()" style="font-size:12px;">Borrar lo cargado</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏷️ Códigos de barras</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Asociá el código de barras del envase a cada producto (o sabor). Después, en Vender, lo escaneás con un lector USB/Bluetooth o con la cámara y se elige solo. Los productos sin código se siguen vendiendo con el buscador de siempre.</div>
+        <div class="field"><label class="f-label">Producto (o sabor)</label><input class="f-in" id="cod-prod" list="cod-lista" placeholder="Buscar producto..." autocomplete="off"><datalist id="cod-lista"></datalist></div>
+        <div class="field"><label class="f-label">Código de barras</label>
+          <div style="display:flex;gap:6px;"><input class="f-in" id="cod-valor" placeholder="Escaneá o escribí el código" autocomplete="off"><button class="btn btn-ghost" onclick="abrirEscanerCamara(c => { $('cod-valor').value = c; })" style="width:auto;margin:0;padding:0 14px;flex-shrink:0;">📷</button></div></div>
+        <button class="btn btn-ghost" id="btn-cod-guardar" onclick="guardarCodigo()" style="border-color:var(--cyan);color:var(--cyan);">💾 Guardar código</button>
+      </div>
+
+      <div class="card">
         <div class="card-title">📋 Auditoría de Stock</div>
         <button class="btn btn-ghost" onclick="prepararAuditoria('imprimir')" style="margin-bottom:0; border-color:var(--cyan); color:var(--cyan);">🖨️ Imprimir Hoja de Auditoría</button>
       </div>
@@ -1325,6 +1363,8 @@
         <div class="field"><label class="f-label">Quiero tener stock para (días)</label><input class="f-in" id="an-dias-obj" type="number" min="1" value="30" oninput="anRenderRepo()"></div>
         <div id="an-repo-resumen"></div>
         <div id="an-repo-lista"><div class="empty">Cargando...</div></div>
+        <button class="btn btn-ghost" onclick="anPedidoProveedor()" style="margin-top:10px;font-size:12px;">📲 Armar pedido por proveedor</button>
+        <textarea class="f-in" id="an-pedido-texto" rows="8" readonly style="font-size:11px;margin-top:6px;display:none;"></textarea>
       </div>
 
       <div class="card">
@@ -1343,6 +1383,29 @@
           <button type="button" class="curr-btn" id="an-rent-365" onclick="anSetRent(365)">1 año</button>
         </div>
         <div id="an-rent-lista"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔮 Proyección de caja</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Estimación de cuánta plata en caja tendrías en 7, 15 y 30 días si seguís al ritmo de tus últimos 30 días (ventas, costo de reposición y gastos operativos), más lo que esperás cobrar y pagar. No incluye dólares ni retiros personales.</div>
+        <div class="f-row">
+          <div class="field"><label class="f-label">% de lo que te deben que cobrás</label><input class="f-in" id="an-pct-cobro" type="number" min="0" max="100" value="50" oninput="anRenderProyeccion()"></div>
+          <div class="field"><label class="f-label">% de lo que debés a proveedores que pagás</label><input class="f-in" id="an-pct-prov" type="number" min="0" max="100" value="100" oninput="anRenderProyeccion()"></div>
+        </div>
+        <div id="an-proyeccion"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💬 Clientes para contactar</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;line-height:1.5;">Clientes que hace tiempo no compran (los que más te compraron primero) y clientes con saldo pendiente. El botón abre WhatsApp con el mensaje ya armado; si el cliente tiene teléfono en tu Agenda, abre su chat directo.</div>
+        <div id="an-contactos"><div class="empty">Cargando...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏭 Comparador de proveedores</div>
+        <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Mirá a qué costo te vendió cada proveedor un producto, según tus compras registradas.</div>
+        <div class="field"><input class="f-in" id="an-prov-prod" list="an-prod-lista" placeholder="Elegí un producto..." autocomplete="off" oninput="anRenderComparador()"><datalist id="an-prod-lista"></datalist></div>
+        <div id="an-comparador"><div class="empty">Elegí un producto para comparar.</div></div>
       </div>
 
       <div class="card">
@@ -1701,6 +1764,14 @@
     <div id="pin-error" style="font-size:11px; color:var(--red); min-height:16px; margin:6px 0;"></div>
     <button class="btn btn-blue" onclick="confirmarPin()">Confirmar</button>
     <button class="btn btn-ghost" onclick="cancelarPin()">Cancelar</button>
+  </div>
+</div>
+<div class="modal-bg" id="modal-scan">
+  <div class="modal-box" style="max-width:380px;">
+    <div style="font-weight:700;font-size:1.05rem;margin-bottom:10px;">📷 Escaneando...</div>
+    <video id="scan-video" playsinline muted style="width:100%;border-radius:10px;background:#000;min-height:180px;"></video>
+    <div style="font-size:11px;color:var(--text2);margin:8px 0 12px;">Apuntá la cámara al código de barras.</div>
+    <button class="btn btn-ghost" onclick="cerrarEscaner()">Cerrar</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -2225,7 +2296,7 @@ window.addEventListener('load', ()=>{ if(tokenGuardado()) setTimeout(()=>{ inici
 let _GET_CACHE = null;      // Map rango -> filas (vale solo durante una carga completa)
 let _CACHE_VER = 0;         // sube con cada escritura: un lote leído ANTES de una escritura se descarta
 let _TITULOS_HOJAS = null;  // Set con los nombres de hojas que existen en la planilla
-const RANGOS_PREFETCH = ['Productos!A2:G','Entradas!A2:G','Salidas!A2:M','SalidasHistorial!A2:M','AJUSTES!A2:D','CuentasCorrientes!A2:F','Caja!A2:G','Directorio!A2:D','PasivosPersonales!A2:I','Garantias!A2:O','Combos!A2:E','SeguimientoClientes!A2:D','Turnos!A2:G','Variantes!A2:E','CajaUSD!A2:F','CapitalMovimientos!A2:F','Config!A2:B','Salidas!A2:P','CuentasProveedores!A2:G','Promociones!A2:K','Tareas!A2:E','Salidas!A2:Q'];
+const RANGOS_PREFETCH = ['Productos!A2:H','Entradas!A2:G','Salidas!A2:M','SalidasHistorial!A2:M','AJUSTES!A2:D','CuentasCorrientes!A2:F','Caja!A2:G','Directorio!A2:D','PasivosPersonales!A2:I','Garantias!A2:O','Combos!A2:E','SeguimientoClientes!A2:D','Turnos!A2:G','Variantes!A2:E','CajaUSD!A2:F','CapitalMovimientos!A2:F','Config!A2:B','Salidas!A2:P','CuentasProveedores!A2:G','Promociones!A2:K','Tareas!A2:E','Salidas!A2:Q'];
 
 function sesionVencida(){
   try { localStorage.removeItem('jt_token'); localStorage.removeItem('jt_expiry'); } catch(e) {}
@@ -3002,8 +3073,9 @@ async function _cargarTodoReal(){
     await prefetchHojas();
     await cargarConfigUmbral();
     try { await cargarConfigPin(); } catch(e) { console.error('PIN:', e); }
-    const pRows = await get('Productos!A2:G');
-    const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2, umbral: (r[6]!==undefined && str(r[6])!=='') ? num(r[6]) : null}; });
+    try { await cargarMeta(); } catch(e) { console.error('Meta:', e); }
+    const pRows = await get('Productos!A2:H');
+    const pMap = {}; pRows.forEach((r, i) => { if(r[0]&&r[1]) pMap[str(r[1])] = {sku:str(r[0]), cat:str(r[3]), costo:num(r[4]), precio:num(r[5]), fila: i+2, prov:str(r[2]), codigo:str(r[7]), umbral: (r[6]!==undefined && str(r[6])!=='') ? num(r[6]) : null}; });
 
     const eRows = await get('Entradas!A2:G'); const stockE = {}, costoR = {};
     eRows.forEach(r => { if(!r[0]) return; const n=str(r[0]), c=num(r[2]), co=num(r[3]); stockE[n]=(stockE[n]||0)+c; if(co>0) costoR[n]=co; });
@@ -3042,7 +3114,7 @@ async function _cargarTodoReal(){
       const stock = (stockE[n] || 0) - (stockS[n] || 0) + (stockA[n] || 0);
       const umbralPropio = pMap[n].umbral;
       const umbralEfectivo = (umbralPropio !== null && umbralPropio !== undefined) ? umbralPropio : UMBRAL_GLOBAL_DEFAULT;
-const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, ultimoMov: ultimoMovMap[n] || 'SIN MOV.', umbralPropio, umbral: umbralEfectivo};      DB.todo.push(item); 
+const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costoR[n]||pMap[n].costo, precio:pMap[n].precio, stock:stock, fila:pMap[n].fila, prov:pMap[n].prov, codigo:pMap[n].codigo, ultimoMov: ultimoMovMap[n] || 'SIN MOV.', umbralPropio, umbral: umbralEfectivo};      DB.todo.push(item); 
       if(stock > 0){ DB.prods.push(item); totalU+=stock; valC+=stock*item.costo; }
     });
 
@@ -3188,7 +3260,7 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     // Se guarda en DB.finanzas (existía vacío, sin uso) para que el módulo de Distribución
     // de Ganancia pueda validar montos contra la Ganancia Disponible real y vigente, y para
     // que el modal de Auditoría de Capital pueda comparar ambos valores sin recalcular nada.
-    DB.finanzas = { ganD, capJ, capLedger, capitalLedgerActivo, fondo, fondoGan, billJ, activosTotales, ajusteInventarioTotal };
+    DB.finanzas = { ganD, capJ, capLedger, capitalLedgerActivo, fondo, fondoGan, billJ, activosTotales, ajusteInventarioTotal, totalCaja };
     
     setText('h-gan', fmt(ganD)); setText('h-cap', fmt(capMostrado)); setText('h-fondo', fmt(fondo)); setText('h-joaco', fmt(billJ));
     setText('h-total', fmt(totalCaja)); setText('h-units', Math.round(totalU)+' u'); setText('h-valor', fmt(valC));
@@ -3218,6 +3290,7 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     // CARGA DE DIRECTORIO
     let dRows = []; try { dRows = await get('Directorio!A2:D'); } catch(e){}
     DB.directorio = dRows.map(r => str(r[0]).toUpperCase()).filter(n => n);
+    DB.dirTel = {}; dRows.forEach(r => { if (r[0] && r[2]) DB.dirTel[str(r[0]).toUpperCase()] = str(r[2]); });
     Object.keys(DB.clientes).forEach(c => { if(!DB.directorio.includes(c)) DB.directorio.push(c); });
     
     const cliLista = $('cli-lista');
@@ -3232,6 +3305,7 @@ const item = {nombre:n, sku:pMap[n].sku, cat:pMap[n].cat||'General', costo:costo
     poblarListas();
     renderCatalogo(); // Rellena el catálogo de Stock
     renderAlertasStock();
+    try { renderConteo(); } catch(e) { console.error('Conteo:', e); }
     
     await cargarPasivosPersonales();
     try { await cargarGarantias(); } catch(e) { console.error('Garantías: no se pudo cargar', e); }
@@ -6405,6 +6479,380 @@ try { wspSetMoneda('ARS'); } catch(e) {}
 try { wspRenderFilas(); } catch(e) {}
 
 // ================================================================
+// MÓDULO ESCÁNER DE CÓDIGOS DE BARRAS (aditivo)
+// ----------------------------------------------------------------
+// Columna H de "Productos" = código de barras (opcional). Un producto sin código se vende como
+// siempre. Dos formas de leer: (1) lector USB/Bluetooth (se comporta como teclado: escribe el código
+// y Enter en el campo de Vender) y (2) la cámara del celular (necesita un navegador con
+// BarcodeDetector, como Chrome en Android; en iPhone usá un lector o escribí el código).
+// También reconoce el SKU interno. Un código puede ser de un sabor puntual: elige producto y sabor.
+// ================================================================
+let SCAN_STREAM = null, SCAN_TIMER = null, SCAN_CB = null;
+
+function buscarPorCodigo(cod) {
+  const c = String(cod || '').trim().toUpperCase();
+  if (!c) return null;
+  const todos = DB.todo || [];
+  return todos.find(p => p.codigo && p.codigo.toUpperCase() === c) || todos.find(p => (p.sku || '').toUpperCase() === c) || null;
+}
+
+function seleccionarProductoPorCodigo(cod) {
+  const p = buscarPorCodigo(cod);
+  if (!p) { toast('No encontré el código ' + cod + '. Podés asociarlo en Stock → Códigos de barras.', 'err'); return false; }
+  const vs = $('v-search');
+  if (p.esVariante) {
+    const padre = (DB.todo || []).find(x => x.nombre === p.padre);
+    const v = padre && padre.variantes ? padre.variantes.find(y => y.nombreCompleto === p.nombre) : null;
+    if (!padre || !v) { toast('El sabor de ese código no está bien cargado', 'err'); return false; }
+    vs.value = padre.nombre; selProduct();
+    const sel = $('v-variante'); if (sel) { sel.value = v.variante; selVariante(); }
+  } else { vs.value = p.nombre; selProduct(); }
+  toast('✓ ' + p.nombre);
+  const cant = $('v-cant'); if (cant) { cant.focus(); cant.select(); }
+  return true;
+}
+
+function escanearCodigoInput() {
+  const inp = $('v-scan');
+  if (!inp) return;
+  const cod = inp.value.trim();
+  if (!cod) return;
+  if (seleccionarProductoPorCodigo(cod)) inp.value = '';
+  else inp.select();
+}
+
+async function abrirEscanerCamara(cb) {
+  SCAN_CB = (typeof cb === 'function') ? cb : null;
+  if (!('BarcodeDetector' in window) || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Este navegador no lee códigos con la cámara (en iPhone no se puede). Usá un lector USB/Bluetooth o escribí el código.', 'err');
+    return;
+  }
+  mostrarModalSpring('modal-scan');
+  try {
+    SCAN_STREAM = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = $('scan-video');
+    video.srcObject = SCAN_STREAM;
+    await video.play();
+    const det = new BarcodeDetector();
+    SCAN_TIMER = setInterval(async () => {
+      try {
+        const r = await det.detect(video);
+        if (r && r.length) { const code = r[0].rawValue; cerrarEscaner(); (SCAN_CB || seleccionarProductoPorCodigo)(code); }
+      } catch (e) {}
+    }, 400);
+  } catch (e) { cerrarEscaner(); toast('No pude abrir la cámara: ' + e.message, 'err'); }
+}
+function cerrarEscaner() {
+  if (SCAN_TIMER) { clearInterval(SCAN_TIMER); SCAN_TIMER = null; }
+  if (SCAN_STREAM) { SCAN_STREAM.getTracks().forEach(t => t.stop()); SCAN_STREAM = null; }
+  ocultarModalSpring('modal-scan');
+}
+
+async function guardarCodigo() {
+  const nombre = ($('cod-prod').value || '').trim();
+  const codigo = ($('cod-valor').value || '').trim();
+  const p = (DB.todo || []).find(x => x.nombre === nombre);
+  if (!p) { toast('Elegí un producto de la lista', 'err'); return; }
+  if (p.tieneVariantes) { toast('Este producto tiene sabores: elegí el sabor puntual (ej: "' + p.nombre + ' - ' + (p.variantes[0] ? p.variantes[0].variante.toUpperCase() : 'SABOR') + '")', 'err'); return; }
+  if (!codigo) { toast('Escaneá o escribí el código', 'err'); return; }
+  const otro = (DB.todo || []).find(x => x.codigo && x.codigo.toUpperCase() === codigo.toUpperCase() && x.nombre !== nombre);
+  if (otro) { toast('Ese código ya está asignado a "' + otro.nombre + '"', 'err'); return; }
+  setBtn('btn-cod-guardar', true, '');
+  try {
+    // El apóstrofe evita que Sheets lo convierta en número (y pierda ceros iniciales).
+    await updateCell(`Productos!H${p.fila}`, [["'" + codigo]]);
+    toast('✓ Código guardado para ' + p.nombre);
+    $('cod-prod').value = ''; $('cod-valor').value = '';
+    await cargarTodo();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+  setBtn('btn-cod-guardar', false, '💾 Guardar código');
+}
+function poblarListaCodigos() {
+  const dl = $('cod-lista');
+  if (!dl) return;
+  dl.innerHTML = (DB.todo || []).filter(p => !p.tieneVariantes).map(p => `<option value="${escHTML(p.nombre)}"></option>`).join('');
+}
+// ================================================================
+// FIN MÓDULO ESCÁNER
+// ================================================================
+
+// ================================================================
+// MÓDULO CONTEO DE INVENTARIO (aditivo)
+// ----------------------------------------------------------------
+// Compara lo contado contra el stock del sistema y corrige SOLO las diferencias con filas en AJUSTES
+// (el mismo mecanismo de siempre para mermas/sobrantes). Pide PIN si hay uno y queda en Auditoría.
+// Lo cargado se guarda en este navegador hasta que lo apliques o lo borres (podés contar de a partes).
+// ================================================================
+let CONTEO = {};
+try { CONTEO = JSON.parse(localStorage.getItem('jt_conteo') || '{}'); } catch(e) { CONTEO = {}; }
+function _guardarConteoLocal() { try { localStorage.setItem('jt_conteo', JSON.stringify(CONTEO)); } catch(e) {} }
+
+function renderConteo() {
+  const box = $('conteo-lista');
+  if (!box) { poblarListaCodigos(); return; }
+  const f = ($('conteo-buscar') ? $('conteo-buscar').value : '').toUpperCase();
+  const lista = (DB.todo || []).filter(p => !p.tieneVariantes && (!f || p.nombre.toUpperCase().includes(f)));
+  box.innerHTML = lista.map((p, i) => {
+    const v = CONTEO[p.nombre];
+    return `<div class="bal-row" style="align-items:center;"><span class="bal-key" style="min-width:0;line-height:1.3;"><b style="color:var(--text);font-size:12px;">${escHTML(p.nombre)}</b><br><span style="font-size:10px;color:var(--text3);">Sistema: ${p.stock} u. <span id="cdif-${i}" style="font-weight:700;">${conteoDifTxt(p.stock, v)}</span></span></span><input class="f-in" type="number" min="0" inputmode="numeric" placeholder="contado" value="${v !== undefined ? v : ''}" style="width:84px;padding:6px 8px;font-size:12px;flex-shrink:0;" oninput="conteoCargar('${escJS(p.nombre)}', this.value, ${p.stock}, ${i})"></div>`;
+  }).join('') || '<div class="empty">Sin productos.</div>';
+  conteoResumen();
+  poblarListaCodigos();
+}
+function conteoDifTxt(stock, v) {
+  if (v === undefined || v === '' || isNaN(v)) return '';
+  const d = Number(v) - stock;
+  return d === 0 ? '<span style="color:var(--green)">✓ coincide</span>' : `<span style="color:${d > 0 ? 'var(--green)' : 'var(--red)'}">${d > 0 ? '+' : ''}${d}</span>`;
+}
+function conteoCargar(nombre, valor, stock, i) {
+  if (valor === '' || valor === null) delete CONTEO[nombre]; else CONTEO[nombre] = parseInt(valor, 10);
+  _guardarConteoLocal();
+  const el = $('cdif-' + i); if (el) el.innerHTML = conteoDifTxt(stock, CONTEO[nombre]);
+  conteoResumen();
+}
+function conteoDiferencias() {
+  const out = [];
+  Object.keys(CONTEO).forEach(n => {
+    const p = (DB.todo || []).find(x => x.nombre === n);
+    if (!p || p.tieneVariantes || isNaN(CONTEO[n])) return;
+    const d = CONTEO[n] - p.stock;
+    out.push({ nombre: n, stock: p.stock, contado: CONTEO[n], dif: d, costo: p.costo || 0 });
+  });
+  return out;
+}
+function conteoResumen() {
+  const el = $('conteo-resumen');
+  if (!el) return;
+  const l = conteoDiferencias(), dif = l.filter(x => x.dif !== 0);
+  if (!l.length) { el.innerHTML = ''; return; }
+  const valor = dif.reduce((a, x) => a + x.dif * x.costo, 0);
+  el.innerHTML = `Contaste <b>${l.length}</b> producto(s): <b>${dif.length}</b> con diferencia${dif.length ? ` (valor al costo: <b style="color:${valor >= 0 ? 'var(--green)' : 'var(--red)'}">${valor >= 0 ? '+' : '−'}${fmt(Math.abs(valor))}</b>)` : ''}.`;
+}
+function limpiarConteo() { CONTEO = {}; _guardarConteoLocal(); renderConteo(); }
+async function aplicarConteo() {
+  const dif = conteoDiferencias().filter(x => x.dif !== 0);
+  if (!dif.length) { toast(conteoDiferencias().length ? 'Todo lo que contaste coincide con el sistema 👍' : 'Primero cargá lo que contaste', conteoDiferencias().length ? 'ok' : 'err'); return; }
+  if (!confirm('Vas a ajustar el stock de ' + dif.length + ' producto(s):\n\n' + dif.slice(0, 10).map(x => x.nombre + ': ' + x.stock + ' → ' + x.contado + ' (' + (x.dif > 0 ? '+' : '') + x.dif + ')').join('\n') + (dif.length > 10 ? '\n…y ' + (dif.length - 10) + ' más' : '') + '\n\n¿Aplicar?')) return;
+  if (!(await requierePin('ajustar el stock por conteo'))) return;
+  setBtn('btn-conteo', true, '');
+  try {
+    await asegurarHoja('AJUSTES', ['Producto','Motivo','Cantidad','Fecha']);
+    const fecha = new Date().toLocaleDateString('es-AR');
+    await append('AJUSTES!A:D', dif.map(x => [x.nombre, 'Conteo de inventario', x.dif, fecha]));
+    auditar('CONTEO_INVENTARIO', dif.length + ' ajustes: ' + dif.slice(0, 10).map(x => x.nombre + ' ' + x.stock + '→' + x.contado).join(', '), '');
+    CONTEO = {}; _guardarConteoLocal();
+    toast('✓ Stock ajustado (' + dif.length + ' producto' + (dif.length === 1 ? '' : 's') + ')');
+    await cargarTodo(); renderConteo();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+  setBtn('btn-conteo', false, '💾 Aplicar diferencias de lo contado');
+}
+// ================================================================
+// FIN MÓDULO CONTEO
+// ================================================================
+
+// ================================================================
+// MÓDULO METAS, PROYECCIÓN Y CONTACTOS (aditivo, solo lectura salvo guardar la meta)
+// ================================================================
+let META_MES = 0;
+async function cargarMeta() {
+  let rows = []; try { rows = await get('Config!A2:B'); } catch(e) {}
+  const f = rows.find(r => str(r[0]).toUpperCase() === 'META_MENSUAL');
+  META_MES = f ? num(f[1]) : 0;
+}
+async function guardarMeta() {
+  const v = parseFloat(($('meta-input').value || '').toString().replace(',', '.'));
+  if (!(v >= 0)) { toast('Poné un monto', 'err'); return; }
+  try {
+    await asegurarHoja('Config', ['Clave','Valor']);
+    const rows = await get('Config!A2:B', true);
+    const idx = rows.findIndex(r => str(r[0]).toUpperCase() === 'META_MENSUAL');
+    if (idx >= 0) await updateCell(`Config!B${idx + 2}`, [[v]]); else await append('Config!A:B', [['META_MENSUAL', v]]);
+    META_MES = v; $('meta-input').value = '';
+    toast('✓ Meta guardada'); renderMeta();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+function renderMeta() {
+  const box = $('res-meta');
+  if (!box) return;
+  if (!META_MES) { box.innerHTML = '<div class="empty">Poné una meta de ventas para este mes y te muestro cuánto te falta por día.</div>'; return; }
+  const h = new Date(), ini = new Date(h.getFullYear(), h.getMonth(), 1).getTime(), fin = new Date(h.getFullYear(), h.getMonth() + 1, 1).getTime();
+  const vendido = resSumaVentas(ini, fin).vend, diasMes = Math.round((fin - ini) / RES_DIA), dia = h.getDate(), quedan = Math.max(1, diasMes - dia + 1);
+  const pct = Math.min(100, vendido / META_MES * 100), falta = Math.max(0, META_MES - vendido), ritmo = vendido / dia * diasMes;
+  box.innerHTML = `<div style="height:10px;background:var(--s3);border-radius:6px;overflow:hidden;margin-bottom:8px;"><div style="width:${pct}%;height:100%;background:var(--green-g);"></div></div>
+    <div style="font-size:13px;line-height:1.6;">Vendiste <b>${fmt(vendido)}</b> de <b>${fmt(META_MES)}</b> (${pct.toFixed(0)}%).<br>${falta > 0 ? `Te faltan <b>${fmt(falta)}</b>: ${fmt(falta / quedan)} por día durante ${quedan} día${quedan === 1 ? '' : 's'}.` : '🎉 <b>¡Meta cumplida!</b>'}<br><span style="font-size:11px;color:var(--text3);">A este ritmo cerrás el mes en ${fmt(ritmo)} (${ritmo >= META_MES ? 'llegás' : 'no llegás'} a la meta).</span></div>`;
+}
+
+function anProyeccionCalc(pctCobro, pctProv) {
+  if (!AN_DATA) return null;
+  const ahora = Date.now(), v30 = resSumaVentas(ahora - 30 * RES_DIA, ahora + RES_DIA);
+  const ratioCosto = v30.vend > 0 ? (v30.vend - v30.gan) / v30.vend : 0;
+  let gastos30 = 0;
+  (AN_DATA.caja || []).forEach(x => {
+    if (!x[0]) return;
+    const tipo = str(x[2]).toUpperCase(), cat = str(x[3]).toUpperCase(), t = parseExcelDate(x[1]).t;
+    if (tipo === 'EGRESO' && cat.indexOf('GASTO OPERATIVO') >= 0 && t > Date.UTC(2000, 0, 1) && t >= ahora - 30 * RES_DIA && t <= ahora + RES_DIA) gastos30 += num(x[5]);
+  });
+  const d = resDeuda(), efectivo = (DB.finanzas && DB.finanzas.totalCaja) || 0;
+  const filas = [7, 15, 30].map(h => {
+    const ventas = v30.vend / 30 * h, compras = ventas * ratioCosto, gastos = gastos30 / 30 * h, cobros = d.cobrar * pctCobro / 100, pagos = d.provARS * pctProv / 100;
+    return { dias: h, ventas, compras, gastos, cobros, pagos, saldo: efectivo + ventas - compras - gastos + cobros - pagos };
+  });
+  return { efectivo, filas, v30, gastos30, ratioCosto };
+}
+function anRenderProyeccion() {
+  const box = $('an-proyeccion');
+  if (!box) return;
+  const pc = Math.min(100, Math.max(0, parseFloat($('an-pct-cobro').value) || 0)), pp = Math.min(100, Math.max(0, parseFloat($('an-pct-prov').value) || 0));
+  const r = anProyeccionCalc(pc, pp);
+  if (!r) { box.innerHTML = '<div class="empty">Sin datos todavía.</div>'; return; }
+  box.innerHTML = `<div class="bal-row"><span class="bal-key">Efectivo en cajas hoy</span><span class="bal-val">${fmt(r.efectivo)}</span></div>` + r.filas.map(f => `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.5;"><b style="color:var(--text)">En ${f.dias} días</b><br><span style="font-size:10px;color:var(--text3);">+ ventas ${fmt(f.ventas)} − reposición ${fmt(f.compras)} − gastos ${fmt(f.gastos)} + cobros ${fmt(f.cobros)} − proveedores ${fmt(f.pagos)}</span></span><span class="bal-val" style="color:${f.saldo >= 0 ? 'var(--green)' : 'var(--red)'};flex-shrink:0;">${f.saldo < 0 ? '−' : ''}${fmt(Math.abs(f.saldo))}</span></div>`).join('');
+}
+
+function waLink(nombre, mensaje) {
+  let tel = (DB.dirTel || {})[String(nombre).toUpperCase()] || '';
+  let d = String(tel).replace(/\D/g, '');
+  if (d.indexOf('00') === 0) d = d.slice(2);
+  if (d.indexOf('0') === 0) d = d.slice(1);
+  if (d && d.length <= 10 && d.indexOf('54') !== 0) d = '549' + d;
+  return 'https://wa.me/' + d + '?text=' + encodeURIComponent(mensaje);
+}
+function anContactos() {
+  const hoy = Date.now(), dormidos = [], deudores = [];
+  Object.keys(DB.clientes || {}).forEach(c => {
+    const d = DB.clientes[c];
+    if (!(d.totalComprado > 0) || !(d.ultCompraTs > 0)) return;
+    const dias = Math.floor((hoy - d.ultCompraTs) / RES_DIA);
+    if (dias < 45) return;
+    let estrella = '', max = 0;
+    Object.keys(d.items || {}).forEach(n => { if (d.items[n] > max) { max = d.items[n]; estrella = n; } });
+    dormidos.push({ nombre: c, dias, total: d.totalComprado, estrella });
+  });
+  dormidos.sort((a, b) => b.total - a.total);
+  Object.keys(DB.saldosCC || {}).forEach(c => { const s = DB.saldosCC[c]; if ((s.ARS || 0) > 0.5) deudores.push({ nombre: c, saldo: s.ARS }); });
+  deudores.sort((a, b) => b.saldo - a.saldo);
+  return { dormidos: dormidos.slice(0, 15), deudores: deudores.slice(0, 15) };
+}
+function anRenderContactos() {
+  const box = $('an-contactos');
+  if (!box) return;
+  const { dormidos, deudores } = anContactos();
+  const btn = (href) => `<a href="${href}" target="_blank" rel="noopener" class="btn btn-ghost" style="margin:0;padding:6px 10px;font-size:11px;width:auto;flex-shrink:0;text-decoration:none;border-color:#25D366;color:#25D366;">💬 WhatsApp</a>`;
+  let html = '<div class="f-label" style="margin:0 0 6px;">Hace tiempo que no compran</div>';
+  html += dormidos.length ? dormidos.map(x => {
+    const promo = x.estrella ? mejorPromoPrecio(x.estrella, ((DB.todo || []).find(p => p.nombre === x.estrella) || {}).precio || 0) : null;
+    const msg = `¡Hola ${x.nombre.split(' ')[0].charAt(0) + x.nombre.split(' ')[0].slice(1).toLowerCase()}! ¿Cómo andás? Hace un tiempo que no pasás por Juntech Store. ${x.estrella ? 'Tenemos novedades' + (promo ? ' y ' + x.estrella + ' está en promo a ' + fmt(promo.precio) + (promo.promo.hasta ? ' hasta el ' + formatFechaISO(promo.promo.hasta) : '') : ' de ' + x.estrella) + '.' : 'Tenemos novedades.'} ¿Querés que te pase la lista de precios?`;
+    return `<div class="bal-row" style="align-items:center;"><span class="bal-key" style="line-height:1.4;"><b style="color:var(--text)">${escHTML(x.nombre)}</b><br><span style="font-size:10px;color:var(--text3);">${x.dias} días sin comprar · compró ${fmt(x.total)}${x.estrella ? ' · le gusta: ' + escHTML(x.estrella) : ''}</span></span>${btn(waLink(x.nombre, msg))}</div>`;
+  }).join('') : '<div class="empty" style="padding:6px 0;">Ningún cliente con más de 45 días sin comprar.</div>';
+  html += '<div class="f-label" style="margin:14px 0 6px;">Con saldo pendiente</div>';
+  html += deudores.length ? deudores.map(x => {
+    const msg = `¡Hola ${x.nombre.split(' ')[0].charAt(0) + x.nombre.split(' ')[0].slice(1).toLowerCase()}! Te escribo de Juntech Store para recordarte que tenés un saldo pendiente de ${fmt(x.saldo)}. ¿Cuándo podés pasar a regularizarlo? ¡Gracias!`;
+    return `<div class="bal-row" style="align-items:center;"><span class="bal-key"><b style="color:var(--text)">${escHTML(x.nombre)}</b><br><span style="font-size:10px;color:var(--red);">Debe ${fmt(x.saldo)}</span></span>${btn(waLink(x.nombre, msg))}</div>`;
+  }).join('') : '<div class="empty" style="padding:6px 0;">Nadie te debe plata. 🎉</div>';
+  box.innerHTML = html;
+}
+// ================================================================
+// FIN MÓDULO METAS, PROYECCIÓN Y CONTACTOS
+// ================================================================
+
+// ================================================================
+// MÓDULO PEDIDOS Y PROVEEDORES (aditivo, solo lectura)
+// ================================================================
+function provDeProducto(p) {
+  const base = p.esVariante ? ((DB.todo || []).find(x => x.nombre === p.padre) || p) : p;
+  return (base.prov || '').trim().toUpperCase() || 'SIN PROVEEDOR';
+}
+function anPedidoProveedor() {
+  if (!AN_DATA) { toast('Todavía no hay datos', 'err'); return; }
+  const obj = Math.max(1, parseInt($('an-dias-obj') ? $('an-dias-obj').value : 30, 10) || 30);
+  const lista = anReposicion(DB.todo, AN_DATA.ventas, Date.now(), obj);
+  if (!lista.length) { toast('No hace falta reponer nada para ' + obj + ' días 👍'); return; }
+  const grupos = {};
+  lista.forEach(x => { const p = (DB.todo || []).find(y => y.nombre === x.nombre) || {}; const k = provDeProducto(p); (grupos[k] = grupos[k] || []).push(x); });
+  let txt = '';
+  Object.keys(grupos).sort().forEach(k => {
+    const items = grupos[k], total = items.reduce((a, x) => a + x.inversion, 0);
+    txt += `📦 PEDIDO A ${k}\n` + items.map(x => `• ${x.comprar} x ${x.nombre}`).join('\n') + `\nTotal estimado: ${fmt(total)}\n\n`;
+  });
+  txt = txt.trim();
+  const ta = $('an-pedido-texto');
+  if (ta) { ta.value = txt; ta.style.display = 'block'; }
+  navigator.clipboard.writeText(txt).then(() => toast('✓ Pedido copiado: pegalo en WhatsApp')).catch(() => toast('Copialo de la caja de abajo', 'err'));
+}
+
+function anPoblarListaProd() {
+  const dl = $('an-prod-lista');
+  if (!dl) return;
+  dl.innerHTML = (DB.todo || []).filter(p => !p.esVariante).map(p => `<option value="${escHTML(p.nombre)}"></option>`).join('');
+}
+function anComparadorCalc(entradas, nombre) {
+  const base = nombre.toUpperCase();
+  const filas = (entradas || []).filter(x => x.nombre.toUpperCase() === base || x.nombre.toUpperCase().indexOf(base + ' - ') === 0);
+  const por = {};
+  filas.forEach(x => {
+    const g = por[x.prov] = por[x.prov] || { prov: x.prov, compras: 0, unidades: 0, total: 0, ultimoCosto: 0, ultimaT: 0 };
+    g.compras++; g.unidades += x.cant; g.total += x.cant * x.costo;
+    if (x.t >= g.ultimaT) { g.ultimaT = x.t; g.ultimoCosto = x.costo; }
+  });
+  return Object.values(por).map(g => Object.assign(g, { promedio: g.unidades > 0 ? g.total / g.unidades : 0 })).sort((a, b) => a.ultimoCosto - b.ultimoCosto);
+}
+function anRenderComparador() {
+  const box = $('an-comparador');
+  if (!box) return;
+  const nombre = ($('an-prov-prod') ? $('an-prov-prod').value : '').trim();
+  if (!nombre || !AN_DATA) { box.innerHTML = '<div class="empty">Elegí un producto para comparar.</div>'; return; }
+  const r = anComparadorCalc(AN_DATA.entradas, nombre);
+  if (!r.length) { box.innerHTML = '<div class="empty">No hay compras registradas de ese producto.</div>'; return; }
+  box.innerHTML = r.map((g, i) => `<div class="bal-row" style="align-items:flex-start;"><span class="bal-key" style="line-height:1.5;"><b style="color:var(--text)">${escHTML(g.prov)}</b>${i === 0 && r.length > 1 ? ' <span class="pill pill-green">más barato</span>' : ''}<br><span style="font-size:10px;color:var(--text3);">${g.compras} compra(s) · ${Math.round(g.unidades)} u. · promedio ${fmt(g.promedio)}${g.ultimaT > 0 ? ' · última ' + new Date(g.ultimaT).toLocaleDateString('es-AR') : ''}</span></span><span class="bal-val" style="flex-shrink:0;">${fmt(g.ultimoCosto)}<br><span style="font-size:10px;color:var(--text2);font-weight:500;">último costo</span></span></div>`).join('');
+}
+// ================================================================
+// FIN MÓDULO PEDIDOS Y PROVEEDORES
+// ================================================================
+
+// ================================================================
+// RESUMEN DEL DÍA Y RESPALDO (aditivo)
+// ================================================================
+function copiarResumenDia() {
+  if (!AN_DATA) { toast('Todavía no hay datos', 'err'); return; }
+  const t0 = resInicioHoy(), h = resSumaVentas(t0, t0 + RES_DIA);
+  const porProd = {};
+  AN_DATA.ventas.forEach(v => { if (v.t >= t0 && v.t < t0 + RES_DIA) porProd[v.nombre] = (porProd[v.nombre] || 0) + v.cant; });
+  const top = Object.entries(porProd).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const bajos = (DB.todo || []).filter(p => !p.tieneVariantes && p.stock <= p.umbral);
+  const f = DB.finanzas || {}, d = resDeuda();
+  let txt = `📊 *RESUMEN DEL DÍA* — ${new Date().toLocaleDateString('es-AR')}\n\n💰 Ventas: *${fmt(h.vend)}* (${Math.round(h.un)} unidades)\n📈 Ganancia bruta: *${fmt(h.gan)}*\n`;
+  if (top.length) txt += `\n🔥 Más vendidos:\n` + top.map(e => `• ${Math.round(e[1])} x ${e[0]}`).join('\n') + '\n';
+  txt += `\n💵 Efectivo en cajas: ${fmt(f.totalCaja || 0)}\n🧾 Te deben: ${fmt(d.cobrar)}\n`;
+  if (d.provARS > 0.5 || d.provUSD > 0.005) txt += `🏭 Debés a proveedores: ${[d.provARS > 0.5 ? fmt(d.provARS) : '', d.provUSD > 0.005 ? fmtUSD(d.provUSD) : ''].filter(Boolean).join(' + ')}\n`;
+  if (bajos.length) txt += `\n⚠️ Stock bajo (${bajos.length}): ${bajos.slice(0, 5).map(p => p.nombre).join(', ')}${bajos.length > 5 ? '…' : ''}\n`;
+  navigator.clipboard.writeText(txt.trim()).then(() => toast('✓ Resumen copiado: pegalo en WhatsApp')).catch(() => toast('No pude copiar', 'err'));
+}
+
+async function descargarRespaldo() {
+  try {
+    toast('Preparando respaldo...');
+    const titulos = Array.from(await cargarTitulosHojas(true));
+    const hojas = {};
+    for (const n of titulos) hojas[n] = await get("'" + n.replace(/'/g, "''") + "'!A1:Z", true);
+    const blob = new Blob([JSON.stringify({ app: 'JuntechOS', fecha: new Date().toISOString(), hojas }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'juntechos-respaldo-' + promoHoy() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    try { localStorage.setItem('jt_ult_respaldo', String(Date.now())); } catch(e) {}
+    auditar('RESPALDO', titulos.length + ' hojas descargadas', '');
+    toast('✓ Respaldo descargado (' + titulos.length + ' hojas)');
+    renderResumen();
+  } catch (e) { toast('No se pudo hacer el respaldo: ' + e.message, 'err'); }
+}
+
+// Instalable como app + abre sin internet (la pantalla; los datos siguen necesitando conexión)
+try { if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch(e) {}
+// ================================================================
+// FIN RESUMEN DEL DÍA Y RESPALDO
+// ================================================================
+
+// ================================================================
 // MÓDULO REVISIÓN DE PRECIOS POR MARGEN (aditivo)
 // ----------------------------------------------------------------
 // Compara el margen actual de cada producto (precio − costo) / precio contra el margen que querés.
@@ -6860,6 +7308,8 @@ function resTareasAuto() {
     if (e === 'ACTIVA' && p.cupo > 0 && promoRestante(p) <= Math.max(1, p.cupo * 0.2)) add('🏷️', `Quedan ${Math.round(promoRestante(p))} en la promo de <b>${escHTML(nombre)}</b>`, 'var(--orange)', 'stock');
     if (e === 'PROGRAMADA' && promoDiasHasta(p.desde) <= 2) add('🏷️', `La promo de <b>${escHTML(nombre)}</b> empieza el ${formatFechaISO(p.desde)}`, 'var(--text)', 'stock');
   });
+  // Respaldo
+  try { const ult = parseInt(localStorage.getItem('jt_ult_respaldo') || '0', 10); if (!ult || Date.now() - ult > 14 * RES_DIA) add('💾', ult ? 'Hace más de 2 semanas que no descargás un respaldo de tu planilla' : 'Todavía no descargaste ningún respaldo de tu planilla (Resumen → Seguridad)', 'var(--text)', null); } catch(e) {}
   // Plata
   const d = resDeuda();
   if (d.provARS > 0.5 || d.provUSD > 0.005) add('🏭', `Debés a proveedores: ${[d.provARS > 0.5 ? fmt(d.provARS) : '', d.provUSD > 0.005 ? fmtUSD(d.provUSD) : ''].filter(Boolean).join(' + ')}`, 'var(--text)', 'cc');
@@ -6904,6 +7354,7 @@ function renderResumen() {
   }).join('') : '<div class="empty">No hay promociones vigentes ni programadas.</div>');
   renderTareas();
   renderSeguridad();
+  renderMeta();
 }
 
 // ---- Informe para IA
@@ -6941,7 +7392,7 @@ function copiarInformeIA() {
 // ================================================================
 
 // Tarjetas plegables del Resumen y Stock (promos): ya se aplican a las que existen
-try { hacerPlegables('tab-resumen', ['Para hacer hoy', 'Mis tareas', 'Promociones y combos']); } catch(e) { console.error('plegables resumen', e); }
+try { hacerPlegables('tab-resumen', ['Para hacer hoy', 'Mis tareas', 'Promociones y combos', 'Meta del mes']); } catch(e) { console.error('plegables resumen', e); }
 
 // ================================================================
 // MÓDULO SEGURIDAD (PIN) Y AUDITORÍA (aditivo)
@@ -7214,7 +7665,8 @@ async function anCargarDatos(forzar) {
     const t = parseExcelDate(r[5]).t, n = str(r[0]);
     if (t > (ultimaEntrada[n] || 0)) ultimaEntrada[n] = t;
   });
-  AN_DATA = { ventas, ultimaVenta, ultimaEntrada, caja: c };
+  const entradas = e.filter(r => r[0] && num(r[2]) > 0).map(r => ({ nombre: str(r[0]), cant: num(r[2]), costo: num(r[3]), t: parseExcelDate(r[5]).t, prov: str(r[6]).toUpperCase() || '—' }));
+  AN_DATA = { ventas, ultimaVenta, ultimaEntrada, caja: c, entradas };
   return AN_DATA;
 }
 
@@ -7307,6 +7759,7 @@ async function renderAnalisis() {
   if (mes && !mes.value) { const d = new Date(); mes.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   await anCargarDatos(false);
   anRenderRepo(); anRenderMuerto(); anRenderRent(); anRenderEstado(); anRenderPrecios();
+  anRenderProyeccion(); anRenderContactos(); anPoblarListaProd();
 }
 
 const anNombre = n => escHTML(n);
